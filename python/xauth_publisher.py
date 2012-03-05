@@ -20,6 +20,9 @@ def build_oauth_client():
     client.set_signature_method = oauth.SignatureMethod_HMAC_SHA1()
     return client
 
+# TODO: posts データ →  post に変換する為の alias 関数か何かを作成する
+
+
 
 class Post(object):
 
@@ -54,76 +57,75 @@ class Post(object):
 
 class Text(Post):
     def __init__(self, tumblelog, json):
-        super(Post, self).__init__(tumblelog)
+        super(Text, self).__init__(tumblelog)
 
         self.data['type'] = 'text'
 
-        self.data['title'] = ''  #FIXME
-        self.data['body'] = ''  #FIXME
+        self.data['title'] = self.data['title']
+        self.data['body'] = self.data['body']
 
 
 class Photo(Post):
-    def __init__(self, parent, json):
-        super(Photo, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Photo, self).__init__(tumblelog)
 
         self.data['type'] = 'photo'
         
-        self.data['caption'] = json['caption']
-        self.data['link'] = json['link_url']
-        self.data['source']  #FIXME
-        self.data['data']  #FIXME
+        self.data['caption'] = json['caption']  #TODO: photoset にも対応する
+        if 'link_url' in json:
+            self.data['link'] = json['link_url']
+        # self.data['source']  #unnecessary
+        # self.data['data']  #unnecessary
 
 
 class Quote(Post):
-    def __init__(Quote, parent, json):
-        super(Post, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Quote, self).__init__(tumblelog)
 
         self.data['type'] = 'quote'
 
-        self.data['quote']  #FIXME
-        self.data['source']  #FIXME
+        self.data['quote'] = json['text']
+        self.data['source'] = json['source']
 
 
 class Link(Post):
-    def __init__(self, parent, json):
-        super(Link, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Link, self).__init__(tumblelog)
 
         self.data['type'] = 'link'
 
-        self.data['title']  #FIXME
-        self.data['url']  #FIXME
-        self.data['description']  #FIXME
+        self.data['title'] = json['title']
+        self.data['url'] = json['url']
+        self.data['description'] = json['description']
 
 
 class Chat(Post):
-    def __init__(self, parent, json):
-        super(Chat, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Chat, self).__init__(tumblelog)
 
         self.data['type'] = 'chat'
 
-        self.data['title']  #FIXME
-        self.data['conversation']  #FIXME
+        self.data['title'] = json['title']
+        self.data['body'] = json['conversation']
 
 
 class Audio(Post):
-    def __init__(self, parent, json):
-        super(Audio, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Audio, self).__init__(tumblelog)
 
         self.data['type'] = 'audio'
 
-        self.data['caption']  #FIXME
-        self.data['external_url']  #FIXME
-        self.data['data']  #FIXME
+        self.data['caption'] = json['caption']
+        # self.data['external_url']
+
 
 class Video(Post):
-    def __init__(self, parent, json):
-        super(Video, self).__init__()
+    def __init__(self, tumblelog, json):
+        super(Video, self).__init__(tumblelog)
 
         self.data['type'] = 'video'
 
-        self.data['caption']  #FIXME
-        self.data['embed']  #FIXME
-        self.data['data']  #FIXME
+        self.data['caption'] = json['caption']
 
 
 class Tumblelog(object):
