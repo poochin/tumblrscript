@@ -22,6 +22,12 @@ def build_oauth_client():
 
 # TODO: posts データ →  post に変換する為の alias 関数か何かを作成する
 
+def pickup_alias(src, aliases):
+    results = {}
+    for key, value in aliases.iteritems():
+        if key in src:
+            results[value] = src[key]
+    return results
 
 
 class Post(object):
@@ -55,14 +61,16 @@ class Post(object):
         pass
 
 
+
+
 class Text(Post):
     def __init__(self, tumblelog, json):
         super(Text, self).__init__(tumblelog)
 
         self.data['type'] = 'text'
 
-        self.data['title'] = self.data['title']
-        self.data['body'] = self.data['body']
+        alias = {'title': 'title', 'body': 'body'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Photo(Post):
@@ -70,12 +78,10 @@ class Photo(Post):
         super(Photo, self).__init__(tumblelog)
 
         self.data['type'] = 'photo'
-        
-        self.data['caption'] = json['caption']  #TODO: photoset にも対応する
-        if 'link_url' in json:
-            self.data['link'] = json['link_url']
-        # self.data['source']  #unnecessary
-        # self.data['data']  #unnecessary
+       
+        # photo set にも対応させる
+        alias = {'caption': 'caption', 'link_url': 'link'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Quote(Post):
@@ -84,8 +90,8 @@ class Quote(Post):
 
         self.data['type'] = 'quote'
 
-        self.data['quote'] = json['text']
-        self.data['source'] = json['source']
+        alias = {'text': 'quote', 'source': 'source'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Link(Post):
@@ -94,9 +100,8 @@ class Link(Post):
 
         self.data['type'] = 'link'
 
-        self.data['title'] = json['title']
-        self.data['url'] = json['url']
-        self.data['description'] = json['description']
+        alias = {'title': 'title', 'url': 'url', 'description': 'description'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Chat(Post):
@@ -105,8 +110,8 @@ class Chat(Post):
 
         self.data['type'] = 'chat'
 
-        self.data['title'] = json['title']
-        self.data['body'] = json['conversation']
+        alias = {'title': 'title', 'conversation': 'body'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Audio(Post):
@@ -115,7 +120,8 @@ class Audio(Post):
 
         self.data['type'] = 'audio'
 
-        self.data['caption'] = json['caption']
+        alias = {'caption': 'caption'}
+        self.data.update(pickup_alias(json, alias))
         # self.data['external_url']
 
 
@@ -125,7 +131,8 @@ class Video(Post):
 
         self.data['type'] = 'video'
 
-        self.data['caption'] = json['caption']
+        alias = {'caption': 'caption'}
+        self.data.update(pickup_alias(json, alias))
 
 
 class Tumblelog(object):
@@ -154,7 +161,9 @@ class Tumblelog(object):
 t = Tumblelog('poochin.tumblr.com')
 t.drafts()
 
-print len(t.posts)
+for post in t.posts:
+    print post.data
+
 
 # params['x_auth_mode'] = 'client_auth'
 # params['oauth_version'] = '1.0a'
