@@ -123,7 +123,7 @@ def main(email, password, tumblelog, options):
         print drafts
         return
 
-    tumblelog = Tumblelog()
+    tumblelog = Tumblelog(drafts)
 
     posts = tumblelog.posts if not options.reverse else tumblelog.posts[::-1]
     lenposts = len(posts)
