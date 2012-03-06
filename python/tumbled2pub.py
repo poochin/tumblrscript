@@ -151,7 +151,7 @@ def main(email, password, tumblelog, options):
         if totalcount and curnum > totalcount:
             break
         print "\rWait: %3f sec" % (nexttime - time.time()),
-        time.sleep(0.0001)
+        time.sleep(0.0005)
     print "\r%d drafts was published." % (curnum - 1)
 
 
