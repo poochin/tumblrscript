@@ -270,22 +270,27 @@ def pickup_aliases(src, aliases):
     return results
 
 
-def main():
+def arg_parsing():
+    # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_command = ['relike']
-    # git のような３項オペレータにする
-    # %prog get_option put_opition
-    # xauth_token の入力
-    parser.add_argument("fetch", dest="fetch", help=u"ポストの読み込みタイプ")
-    parser.add_argument("command", dest="command", choice=choice_command, help=u"読み込んだポストの処理法")
-    parser.add_argument("-t", "--tumblelog", dest="tumblelog", help=u"ターゲットのTumblelogを指定してください。")
+    choice_fetch = ['drafts', 'relike']
+    choice_command = ['publish']
+
+    parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
+    parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
+    parser.add_argument("-t", "--tumblelog", dest="tumblelog", help=u"ターゲットのTumblelogを指定します")
     parser.add_argument("-V", "--like-vacuum", dest="like_vacuum", action="store_true", default=False,
-                      help=u"Likes を全て Unlike にします。")
+                      help=u"Likes を全て Unlike にします")
     parser.add_argument("-O", "--save", dest="content_file", default=None,
-                      help=u"APIで取得したテキストを全て保存します。")
+                      help=u"APIで取得したテキストを全て保存します")
 
     args = parser.parse_args()
+    return args
+
+
+def main():
+    args = arg_parsing()
 
     if not args.tumblelog:
         tumblelog = raw_input('Input tumblelog: ')
@@ -293,8 +298,8 @@ def main():
     else:
         t = Tumblelog(args.tumblelog)
 
-    # 特殊なオプションの場合
-    if args.second == 'relike':
+    # 特殊なコマンドの場合
+    if args.fetch == 'relike':
         tempfile = __import__('tempfile')
         fn = tempfile.mktemp()
         f = open(fn, 'w')
@@ -328,11 +333,13 @@ def main():
         return
 
     # posts を取得する
+    posts = []
     if args.fetch == 'dashboard':
         pass
     elif args.fetch == 'posts':
         pass
     elif args.fetch == 'drafts':
+        posts = t.drafts()
         pass
     elif args.fetch == 'likes':
         pass
