@@ -26,7 +26,6 @@ from xml.dom import minidom
 usage = "usage: %prog [options]"
 
 
-
 def unescape(str):
     return xml.sax.saxutils.unescape(str, {'&quot;': '"'})
 
