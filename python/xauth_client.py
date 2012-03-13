@@ -61,6 +61,8 @@ class Post(object):
         self.tumblelog = parent
 
     def publish(self):
+        # TODO: oauth でデータを送信して state を 'published' に変更する
+        # エラー時の内容が手に入ったらここに保存しておく
         pass
 
     def like(self):
@@ -280,10 +282,18 @@ def arg_parsing():
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
     parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
     parser.add_argument("-t", "--tumblelog", dest="tumblelog", help=u"ターゲットのTumblelogを指定します")
-    parser.add_argument("-V", "--like-vacuum", dest="like_vacuum", action="store_true", default=False,
-                      help=u"Likes を全て Unlike にします")
     parser.add_argument("-O", "--save", dest="content_file", default=None,
-                      help=u"APIで取得したテキストを全て保存します")
+                        help=u"APIで取得したテキストを全て保存します")
+    parser.add_argument("--retry-delay", dest="delay", type="float", default=1,
+                        help=u"失敗時に遅延する秒数を指定します")
+    parser.add_argument("-r", "--reverse", store="store_true",
+                        help=u"ポストへのコマンドを逆順に処理する")
+    parser.add_argument("-c", "--count", dest="count",
+                        help=u"各ステップで一度に処理するポスト数")
+    parser.add_argument("-m", "--max-count", dest="max",
+                        help=u"全ステップを通して処理するポスト数")
+    parser.add_argument("-s", "--step-time", dest="second",
+                        help=u"各ステップ間の秒数")
 
     args = parser.parse_args()
     return args
@@ -300,6 +310,7 @@ def main():
 
     # 特殊なコマンドの場合
     if args.fetch == 'relike':
+        # FIXME: relike の機能は動作確認をしていません
         tempfile = __import__('tempfile')
         fn = tempfile.mktemp()
         f = open(fn, 'w')
@@ -346,11 +357,15 @@ def main():
     else:
         return
 
+    if args.reverse:
+        posts = posts[::-1]
+
     # posts を処理する
     if args.command == 'like':
         pass
     elif args.command == 'publish':
-        pass
+        # posts を [(post1, post2, post3, ...), (postN, postN+1, postN+3, ...), ...] というリストに区切る
+        # 区切ったら second や count, maxcount に従いイテレートしながら publish する
     else:
         return
 
