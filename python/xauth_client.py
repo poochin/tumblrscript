@@ -25,10 +25,6 @@ if ini.read('xauth.ini'):
         xauth_token = ini.get('xauth', 'token')
     if ini.has_option('xauth', 'token_secret'):
         xauth_token_secret = ini.get('xauth', 'token_secret')
-else:
-    nrc = netrc.netrc()
-    consumer_key, _, consumer_secret = nrc.authenticators('tumblr_consumer')
-    xauth_token, _, xauth_token_secret = nrc.authenticators('tumblr_xauth_token')
 
 
 class Post(object):
@@ -46,6 +42,7 @@ class Post(object):
         }[json['type']](parent, json)
 
         # post.data['state']
+        post.json = json
         post.data['tags'] = json['tags']
         post.id = json['id']
         post.reblog_key = json['reblog_key']
@@ -58,9 +55,20 @@ class Post(object):
 
     def __init__(self, parent):
         self.data = {}
-        self.tumblelog = parent
+        self.parent = parent
 
     def publish(self):
+        self.data['state'] = 'published'
+        self.data['id'] = self.id
+
+        url = 'http://api.tumblr.com/v2/blog/%s/post/edit' % (self.parent.name)
+
+        client = build_oauth_client()
+        resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
+
+        print content
+
+
         # TODO: oauth でデータを送信して state を 'published' に変更する
         # エラー時の内容が手に入ったらここに保存しておく
         pass
@@ -69,8 +77,6 @@ class Post(object):
         client = build_oauth_client()
         url = 'http://api.tumblr.com/v2/user/like'
         resp, content = client.request(url, method='POST', body='id=%d&reblog_key=%s' % (self.id, self.reblog_key))
-
-        print content
 
         json = simplejson.loads(content)
         if json['meta']['msg'] == 'OK':
@@ -85,8 +91,6 @@ class Post(object):
         url = 'http://api.tumblr.com/v2/user/unlike'
         resp, content = client.request(url, method='POST', body='id=%d&reblog_key=%s' % (self.id, self.reblog_key))
 
-        print content
-
         json = simplejson.loads(content)
         if json['meta']['msg'] == 'OK':
             return True
@@ -99,6 +103,7 @@ class Text(Post):
 
         self.data['type'] = 'text'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'title': 'title', 'body': 'body'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -109,7 +114,8 @@ class Photo(Post):
 
         self.data['type'] = 'photo'
 
-        # photo set にも対応させる
+        # FIXME: photo set にも対応させる
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption', 'link_url': 'link'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -120,6 +126,7 @@ class Quote(Post):
 
         self.data['type'] = 'quote'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'text': 'quote', 'source': 'source'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -130,6 +137,7 @@ class Link(Post):
 
         self.data['type'] = 'link'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'title': 'title', 'url': 'url', 'description': 'description'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -140,6 +148,7 @@ class Chat(Post):
 
         self.data['type'] = 'chat'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'title': 'title', 'conversation': 'body'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -150,6 +159,7 @@ class Audio(Post):
 
         self.data['type'] = 'audio'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption'}
         self.data.update(pickup_aliases(json, alias))
         # self.data['external_url']
@@ -161,6 +171,7 @@ class Video(Post):
 
         self.data['type'] = 'video'
 
+        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -170,7 +181,6 @@ class Tumblelog(object):
     def __init__(self, tumblelog):
         self.name = tumblelog
         self.posts = []
-        self.content_log = content_log
 
     def info(self, tumblelog=None):
         client = build_oauth_client()
@@ -188,12 +198,12 @@ class Tumblelog(object):
         return self.json
 
     def getpost(self, post_url):
-        client = build_oauth_client()
         m = re.match('http://([^/]+)/post/(\d+)', post_url)
-        tumblelog = m.group(1)
-        post_id = m.group(2)
+        tumblelog, post_id = m.group(1), m.group(2)
         url = "http://api.tumblr.com/v2/blog/%s/posts?api_key=%s&id=%s" % (
             tumblelog, consumer_key, post_id)
+
+        client = build_oauth_client()
         resp, content = client.request(url, method='GET')
 
         self.content = content
@@ -240,6 +250,15 @@ class Tumblelog(object):
         for post in self.json['response']['posts']:
             self.posts.append(Post.parse(self, post))
 
+        return self.posts
+
+def load_netrc():
+    global consumer_key, consumer_secret, \
+           xauth_token, xauth_token_secret
+    nrc = netrc.netrc()
+    consumer_key, _, consumer_secret = nrc.authenticators('tumblr_consumer')
+    xauth_token, _, xauth_token_secret = nrc.authenticators('tumblr_xauth_token')
+
 
 def posts_from_content(content):
     json = simplejson.loads(content)
@@ -266,9 +285,10 @@ def build_oauth_client():
 
 def pickup_aliases(src, aliases):
     results = {}
-    for key, value in aliases.iteritems():
-        if key in src:
-            results[value] = src[key]
+    for alias_from, alias_to in aliases.iteritems():
+        if alias_from in src:
+            if src[alias_from]:
+                results[alias_to] = src[alias_from].encode('UTF-8')
     return results
 
 
@@ -284,23 +304,80 @@ def arg_parsing():
     parser.add_argument("-t", "--tumblelog", dest="tumblelog", help=u"ターゲットのTumblelogを指定します")
     parser.add_argument("-O", "--save", dest="content_file", default=None,
                         help=u"APIで取得したテキストを全て保存します")
-    parser.add_argument("--retry-delay", dest="delay", type="float", default=1,
+    parser.add_argument("--retry-delay", dest="delay", type=float, default=1,
                         help=u"失敗時に遅延する秒数を指定します")
-    parser.add_argument("-r", "--reverse", store="store_true",
+    parser.add_argument("-r", "--reverse", action="store_true",
                         help=u"ポストへのコマンドを逆順に処理する")
-    parser.add_argument("-c", "--count", dest="count",
+    parser.add_argument("-c", "--count", dest="count", type=int, default=30,
                         help=u"各ステップで一度に処理するポスト数")
-    parser.add_argument("-m", "--max-count", dest="max",
+    parser.add_argument("-m", "--max-count", dest="max", type=int,
                         help=u"全ステップを通して処理するポスト数")
-    parser.add_argument("-s", "--step-time", dest="second",
+    parser.add_argument("-s", "--step-time", dest="second", default=600,
                         help=u"各ステップ間の秒数")
+    parser.add_argument("-n", "--netrc", action="store_true",
+                        help=u"認証情報を .netrc を元に構築します。")
 
     args = parser.parse_args()
     return args
 
 
+def cmd_relike(args, t):
+    # FIXME: relike は動作確認をしていません
+    tempfile = __import__('tempfile')
+    fn = tempfile.mktemp()
+
+    t.likes(0, 1)
+    liked_count = t.liked_count
+
+    f = open(fn, 'w')
+    fail_unlikes = []  # unlike が必ず失敗するポストが溜まって無限ループに陥るのを防ぎます
+    for i in xrange(0, (liked_count - 1 / 20.0) + 1):
+        posts = t.likes(len(fail_unlikes), 20)
+        for post in posts:
+            if not post.unlike():
+                fail_unlikes.append(post)
+        f.write(t.content)
+        f.write('\n')
+    f.close()
+    del fail_unlikes
+
+    f = open(fn, 'r')
+    fail_likes = []  # like fail は致命的なため確保しておきます
+    for line in f:
+        posts = posts_from_content(line)
+        for post in posts:
+            if not post.like():
+                fail_likes.append(post)
+    f.close()
+
+    print 'Failed likes:'
+    for post in fail_likes:
+        print post.post_url
+
+
+def cmd_publish(args, posts):
+    time = __import__('time')
+    posts_seq = [posts[i:i + args.count] for i in xrange(0, len(posts), args.count)]
+
+    next_time = time.time()
+    for posts in posts_seq:
+        if next_time <= time.time():
+            for post in posts:
+                print 'publish: %d ...' % post.id, 
+                if post.publish():
+                    print 'OK'
+                else:
+                    print 'Fail'
+            next_time = time.time() + args.second
+        print "\rWait: %3f sec" % (next_time - time.time()),
+        time.sleep(0.0005)
+
+
 def main():
     args = arg_parsing()
+
+    if args.netrc:
+        load_netrc()
 
     if not args.tumblelog:
         tumblelog = raw_input('Input tumblelog: ')
@@ -308,39 +385,9 @@ def main():
     else:
         t = Tumblelog(args.tumblelog)
 
-    # 特殊なコマンドの場合
+    # 特殊コマンド
     if args.fetch == 'relike':
-        # FIXME: relike の機能は動作確認をしていません
-        tempfile = __import__('tempfile')
-        fn = tempfile.mktemp()
-        f = open(fn, 'w')
-
-        t.likes(0, 1)
-        liked_count = t.liked_count
-
-        fail_unlikes = []  # unlike が必ず失敗するポストが溜まって無限ループに陥るのを防ぎます
-        for i in xrange(0, (liked_count - 1 / 20.0) + 1):
-            posts = t.likes(len(fail_unlikes), 20)
-            for post in posts:
-                if not post.unlike():
-                    fail_unlikes.append(post)
-            f.write(t.content)
-            f.write('\n')
-        f.close()
-        del fail_unlikes
-
-        f = open(fn, 'r')
-        fail_likes = []  # like fail は致命的なため確保しておきます
-        for line in f:
-            posts = posts_from_content(line)
-            for post in posts:
-                if not post.like():
-                    fail_likes.append(post)
-        f.close()
-
-        print 'Failed likes:'
-        for post in fail_likes:
-            print post.post_url
+        cmd_relike(args, t)
         return
 
     # posts を取得する
@@ -351,23 +398,25 @@ def main():
         pass
     elif args.fetch == 'drafts':
         posts = t.drafts()
-        pass
     elif args.fetch == 'likes':
         pass
     else:
         return
 
+    # post に対するオプションがあれば先に処理をしておく
     if args.reverse:
         posts = posts[::-1]
+    if args.max:
+        posts = posts[:args.max]
 
     # posts を処理する
     if args.command == 'like':
         pass
     elif args.command == 'publish':
-        # posts を [(post1, post2, post3, ...), (postN, postN+1, postN+3, ...), ...] というリストに区切る
-        # 区切ったら second や count, maxcount に従いイテレートしながら publish する
+        cmd_publish(args, posts)
     else:
-        return
+        pass
+    return
 
 
 if __name__ == '__main__':
