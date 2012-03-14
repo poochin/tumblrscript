@@ -362,7 +362,7 @@ def cmd_publish(args, posts):
         next_time = time.time() + args.second
         for post in posts:
             i += 1
-            print '\r[%d/%d] publish: %d ...' % (i, lne_posts, post.id),
+            print '\r[%d/%d] publish: %d ...' % (i, len_posts, post.id),
             if post.publish():
                 print 'OK'
             else:
