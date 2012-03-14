@@ -36,14 +36,14 @@ class Post(object):
             'photo': Photo,
             'quote': Quote,
             'link': Link,
-            'answer': Chat,  # checking name
+            'chat': Chat,
             'audio': Audio,
             'video': Video
         }[json['type']](parent, json)
 
         # post.data['state']
         post.json = json
-        post.data['tags'] = json['tags']
+        post.data['tags'] = ','.join(json['tags'])
         post.id = json['id']
         post.reblog_key = json['reblog_key']
         post.post_url = json['post_url']
@@ -66,12 +66,10 @@ class Post(object):
         client = build_oauth_client()
         resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
 
-        print content
-
-
-        # TODO: oauth でデータを送信して state を 'published' に変更する
-        # エラー時の内容が手に入ったらここに保存しておく
-        pass
+        json = simplejson.loads(content)
+        if json['meta']['msg'] == 'OK':
+            return True
+        return False
 
     def like(self):
         client = build_oauth_client()
@@ -103,7 +101,6 @@ class Text(Post):
 
         self.data['type'] = 'text'
 
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'title': 'title', 'body': 'body'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -126,7 +123,6 @@ class Quote(Post):
 
         self.data['type'] = 'quote'
 
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'text': 'quote', 'source': 'source'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -137,7 +133,6 @@ class Link(Post):
 
         self.data['type'] = 'link'
 
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'title': 'title', 'url': 'url', 'description': 'description'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -148,8 +143,7 @@ class Chat(Post):
 
         self.data['type'] = 'chat'
 
-        # FIXME: 名前の変更が適切か未確認です
-        alias = {'title': 'title', 'conversation': 'body'}
+        alias = {'title': 'title', 'body': 'conversation'}
         self.data.update(pickup_aliases(json, alias))
 
 
@@ -159,7 +153,6 @@ class Audio(Post):
 
         self.data['type'] = 'audio'
 
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption'}
         self.data.update(pickup_aliases(json, alias))
         # self.data['external_url']
@@ -171,7 +164,6 @@ class Video(Post):
 
         self.data['type'] = 'video'
 
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -312,7 +304,7 @@ def arg_parsing():
                         help=u"各ステップで一度に処理するポスト数")
     parser.add_argument("-m", "--max-count", dest="max", type=int,
                         help=u"全ステップを通して処理するポスト数")
-    parser.add_argument("-s", "--step-time", dest="second", default=600,
+    parser.add_argument("-s", "--step-time", dest="second", type=float, default=600,
                         help=u"各ステップ間の秒数")
     parser.add_argument("-n", "--netrc", action="store_true",
                         help=u"認証情報を .netrc を元に構築します。")
@@ -361,16 +353,17 @@ def cmd_publish(args, posts):
 
     next_time = time.time()
     for posts in posts_seq:
+        while next_time >= time.time():
+            print "\rWait: %3f sec" % (next_time - time.time()),
+            time.sleep(0.0005)
         if next_time <= time.time():
             for post in posts:
-                print 'publish: %d ...' % post.id, 
+                print '\rpublish: %d ...' % post.id, 
                 if post.publish():
                     print 'OK'
                 else:
                     print 'Fail'
             next_time = time.time() + args.second
-        print "\rWait: %3f sec" % (next_time - time.time()),
-        time.sleep(0.0005)
 
 
 def main():
