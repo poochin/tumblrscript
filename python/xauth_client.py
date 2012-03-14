@@ -112,7 +112,6 @@ class Photo(Post):
         self.data['type'] = 'photo'
 
         # FIXME: photo set にも対応させる
-        # FIXME: 名前の変更が適切か未確認です
         alias = {'caption': 'caption', 'link_url': 'link'}
         self.data.update(pickup_aliases(json, alias))
 
@@ -270,7 +269,7 @@ def build_oauth_client():
     client = oauth.Client(consumer, token)
     client.set_signature_method = oauth.SignatureMethod_HMAC_SHA1()
     return client
-    # この関数で使うかも知れないし使わないかも知れない
+    # この関数で使うかも知れないし使わないかも知れないパラメータの設定
     # params['x_auth_mode'] = 'client_auth'
     # params['oauth_version'] = '1.0a'
 
@@ -349,21 +348,25 @@ def cmd_relike(args, t):
 
 def cmd_publish(args, posts):
     time = __import__('time')
+    len_posts = len(posts)
     posts_seq = [posts[i:i + args.count] for i in xrange(0, len(posts), args.count)]
 
+    print "start to publish %d posts." % (len_posts)
+
+    i = 0
     next_time = time.time()
     for posts in posts_seq:
         while next_time >= time.time():
             print "\rWait: %3f sec" % (next_time - time.time()),
             time.sleep(0.0005)
-        if next_time <= time.time():
-            for post in posts:
-                print '\rpublish: %d ...' % post.id, 
-                if post.publish():
-                    print 'OK'
-                else:
-                    print 'Fail'
-            next_time = time.time() + args.second
+        next_time = time.time() + args.second
+        for post in posts:
+            i += 1
+            print '\r[%d/%d] publish: %d ...' % (i, lne_posts, post.id),
+            if post.publish():
+                print 'OK'
+            else:
+                print 'Fail'
 
 
 def main():
@@ -386,13 +389,13 @@ def main():
     # posts を取得する
     posts = []
     if args.fetch == 'dashboard':
-        pass
+        pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'posts':
-        pass
+        pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'drafts':
         posts = t.drafts()
     elif args.fetch == 'likes':
-        pass
+        pass  # 現在この機能を追加する予定はありません
     else:
         return
 
@@ -404,7 +407,7 @@ def main():
 
     # posts を処理する
     if args.command == 'like':
-        pass
+        pass  # 現在この機能を追加する予定はありません
     elif args.command == 'publish':
         cmd_publish(args, posts)
     else:
