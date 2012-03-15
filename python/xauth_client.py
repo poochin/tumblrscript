@@ -173,6 +173,17 @@ class Tumblelog(object):
         self.name = tumblelog
         self.posts = []
 
+    def load_json(self, content):
+        json = simplejson.loads(content)
+        posts = []
+        if 'posts' in json['response']:
+            for post in json['response']['posts']:
+                posts.append(Post.parse(self, post))
+        elif 'liked_posts' in json['response']:
+            for post in json['response']['liked_posts']:
+                posts.append(Post.parse(self, post))
+        return posts
+
     def info(self, tumblelog=None):
         client = build_oauth_client()
         if tumblelog == None:
@@ -251,18 +262,6 @@ def load_netrc():
     xauth_token, _, xauth_token_secret = nrc.authenticators('tumblr_xauth_token')
 
 
-def posts_from_content(content):
-    json = simplejson.loads(content)
-    posts = []
-    if 'posts' in self.json['response']:
-        for post in json['response']['posts']:
-            posts.append(Post.parse(self, post))
-    elif 'liked_posts' in self.json['response']:
-        for post in json['response']['liked_posts']:
-            posts.append(Post.parse(self, post))
-    return posts
-
-
 def build_oauth_client():
     consumer = oauth.Consumer(consumer_key, consumer_secret)
     token = oauth.Token(xauth_token, xauth_token_secret)
@@ -287,8 +286,8 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'relike']
-    choice_command = ['publish']
+    choice_fetch = ['drafts', 'logs', 'relike']
+    choice_command = ['publish', 'like', 'show']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
     parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
@@ -307,6 +306,7 @@ def arg_parsing():
                         help=u"各ステップ間の秒数")
     parser.add_argument("-n", "--netrc", action="store_true",
                         help=u"認証情報を .netrc を元に構築します。")
+    parser.add_argument("--log", dest="log", help=u"読み込みするログのパスを入力します。")
 
     args = parser.parse_args()
     return args
@@ -316,34 +316,46 @@ def cmd_relike(args, t):
     # FIXME: relike は動作確認をしていません
     tempfile = __import__('tempfile')
     fn = tempfile.mktemp()
+    print "Temporary json file:", fn
 
     t.likes(0, 1)
     liked_count = t.liked_count
 
     f = open(fn, 'w')
     fail_unlikes = []  # unlike が必ず失敗するポストが溜まって無限ループに陥るのを防ぎます
-    for i in xrange(0, (liked_count - 1 / 20.0) + 1):
+    for i in xrange(0, int((liked_count - 1) / 20.0) + 1):
         posts = t.likes(len(fail_unlikes), 20)
         for post in posts:
+            print "Unlike", post.post_url, "...",
             if not post.unlike():
+                print "NG"
                 fail_unlikes.append(post)
+            else:
+                print "OK"
         f.write(t.content)
         f.write('\n')
-    f.close()
     del fail_unlikes
+    f.close()
 
-    f = open(fn, 'r')
+    f = open(fn, 'r') 
     fail_likes = []  # like fail は致命的なため確保しておきます
     for line in f:
-        posts = posts_from_content(line)
+        posts = t.load_json(line)
         for post in posts:
+            print "Like", post.post_url, "...",
             if not post.like():
+                print "NG"
                 fail_likes.append(post)
+            else:
+                print "OK"
     f.close()
 
     print 'Failed likes:'
     for post in fail_likes:
         print post.post_url
+
+    # 念の為に再度、一時ファイルのパスを表示します
+    print 'Temporary content file', fn
 
 
 def cmd_publish(args, posts):
@@ -396,6 +408,13 @@ def main():
         posts = t.drafts()
     elif args.fetch == 'likes':
         pass  # 現在この機能を追加する予定はありません
+    elif args.fetch == 'logs':
+        log_path = args.log
+        if not log_path:
+            log_path = raw_input("Input log path: ")
+        f = open(log_path, 'r')
+        for line in f:
+            posts += t.load_json(line)
     else:
         return
 
@@ -407,9 +426,18 @@ def main():
 
     # posts を処理する
     if args.command == 'like':
+        for post in posts:
+            print 'Like:', post.id, post.post_url, '...',
+            if post.like():
+                print 'OK'
+            else:
+                print 'NG'
         pass  # 現在この機能を追加する予定はありません
     elif args.command == 'publish':
         cmd_publish(args, posts)
+    elif args.command == 'show':
+        for post in posts:
+            print "%d: %s" % (post.id, post.post_url)
     else:
         pass
     return
