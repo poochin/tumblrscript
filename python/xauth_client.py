@@ -10,8 +10,6 @@ import re
 import ConfigParser
 from argparse import ArgumentParser
 
-usage = "usage: %prog [options]"
-
 consumer_key, consumer_secret = None, None
 xauth_token, xauth_token_secret = None, None
 
@@ -216,7 +214,7 @@ class Tumblelog(object):
 
         self.post = Post.parse(self, self.json['response']['posts'][0])
 
-        return self.posts
+        return self.post
 
     def likes(self, offset=0, limit=20):
         client = build_oauth_client()
@@ -313,7 +311,7 @@ def arg_parsing():
 
 
 def cmd_relike(args, t):
-    # FIXME: relike は動作確認をしていません
+    # FIXME: likes が 20 個取得できないパターンがある為全部を取得し損ねてしまいます
     tempfile = __import__('tempfile')
     fn = tempfile.mktemp()
     print "Temporary json file:", fn
@@ -324,14 +322,15 @@ def cmd_relike(args, t):
     f = open(fn, 'w')
     fail_unlikes = []  # unlike が必ず失敗するポストが溜まって無限ループに陥るのを防ぎます
     for i in xrange(0, int((liked_count - 1) / 20.0) + 1):
+        print 'Unliking', liked_count * 20
         posts = t.likes(len(fail_unlikes), 20)
         for post in posts:
             print "Unlike", post.post_url, "...",
             if not post.unlike():
-                print "NG"
+                print 'NG'
                 fail_unlikes.append(post)
             else:
-                print "OK"
+                print 'OK'
         f.write(t.content)
         f.write('\n')
     del fail_unlikes
@@ -344,10 +343,10 @@ def cmd_relike(args, t):
         for post in posts:
             print "Like", post.post_url, "...",
             if not post.like():
-                print "NG"
+                print 'NG'
                 fail_likes.append(post)
             else:
-                print "OK"
+                print 'OK'
     f.close()
 
     print 'Failed likes:'
@@ -379,6 +378,14 @@ def cmd_publish(args, posts):
                 print 'OK'
             else:
                 print 'Fail'
+
+def debug():
+    load_netrc()
+    tumblelog = 'poochin.tumblr.com'
+    t = Tumblelog(tumblelog)
+    post = t.getpost('http://sho235711.tumblr.com/post/2867786386')
+    print post.unlike()
+    print post.like()
 
 
 def main():
@@ -432,12 +439,12 @@ def main():
                 print 'OK'
             else:
                 print 'NG'
-        pass  # 現在この機能を追加する予定はありません
     elif args.command == 'publish':
         cmd_publish(args, posts)
     elif args.command == 'show':
         for post in posts:
             print "%d: %s" % (post.id, post.post_url)
+        print "%d posts." % (len(posts))
     else:
         pass
     return
