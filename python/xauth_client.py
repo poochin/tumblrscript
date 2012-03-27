@@ -109,7 +109,7 @@ class Photo(Post):
 
         self.data['type'] = 'photo'
 
-        # FIXME: photo set にも対応させる
+        # FIXME: photo set に対応していません。 このまま使用すると photo set のレイアウトが崩れてしまいます。
         alias = {'caption': 'caption', 'link_url': 'link'}
         self.data.update(pickup_aliases(json, alias))
 
