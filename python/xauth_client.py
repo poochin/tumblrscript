@@ -311,7 +311,6 @@ def arg_parsing():
 
 
 def cmd_relike(args, t):
-    # FIXME: likes が 20 個取得できないパターンがある為全部を取得し損ねてしまいます
     tempfile = __import__('tempfile')
     fn = tempfile.mktemp()
     print "Temporary json file:", fn
@@ -320,20 +319,22 @@ def cmd_relike(args, t):
     liked_count = t.liked_count
 
     f = open(fn, 'w')
-    fail_unlikes = []  # unlike が必ず失敗するポストが溜まって無限ループに陥るのを防ぎます
-    for i in xrange(0, int((liked_count - 1) / 20.0) + 1):
-        print 'Unliking', liked_count * 20
-        posts = t.likes(len(fail_unlikes), 20)
+    unlike_msg = "Unliked %s ... %s"
+    unlike_status = ""
+    for i in xrange(0, (liked_count - 1) / 1000 + 1):
+        posts = []
+        for j in xrange(0, 1000 / 20):
+            print "caching likes %d to %d" % (j * 20, (j + 1) * 20)
+            posts += t.likes(j, 20)
+            f.write(t.content)
+            f.write('\n')
         for post in posts:
-            print "Unlike", post.post_url, "...",
-            if not post.unlike():
-                print 'NG'
-                fail_unlikes.append(post)
+            # FIXME: 連続で行うと unlike に失敗します。
+            if post.unlike():
+                unlike_status = 'OK'
             else:
-                print 'OK'
-        f.write(t.content)
-        f.write('\n')
-    del fail_unlikes
+                unlike_status = 'NG'
+            print unlike_msg % (post.post_url, unlike_status)
     f.close()
 
     f = open(fn, 'r') 
@@ -378,14 +379,6 @@ def cmd_publish(args, posts):
                 print 'OK'
             else:
                 print 'Fail'
-
-def debug():
-    load_netrc()
-    tumblelog = 'poochin.tumblr.com'
-    t = Tumblelog(tumblelog)
-    post = t.getpost('http://sho235711.tumblr.com/post/2867786386')
-    print post.unlike()
-    print post.like()
 
 
 def main():
@@ -452,3 +445,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
