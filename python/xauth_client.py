@@ -92,13 +92,15 @@ class Post(object):
             return True
         return False
 
-    def reblog(self):
+    def reblog(self, comment=''):
         client = build_oauth_client()
-        url = 'api.tumblr.com/v2/blog/%s/post/reblog' % (self.parent.name)
-        resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
+        url = 'http://api.tumblr.com/v2/blog/%s/post/reblog' % (self.parent.name)
+
+        post_data = {'id': self.id, 'reblog_key': self.reblog_key, 'comment': 'test'}
+        resp, content = client.request(url, method='POST', body=urllib.urlencode(post_data))
         
         json = simplejson.loads(content)
-        if json['meta']['msg'] == 'OK':
+        if json['meta']['msg'] == 'Created':
             return True
         return False
 
@@ -295,8 +297,8 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'logs', 'relike', 'post']
-    choice_command = ['publish', 'like', 'show', 'reblog']
+    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'none']
+    choice_command = ['publish', 'like', 'show', 'reblog', 'none']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
     parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
@@ -429,6 +431,8 @@ def main():
         f = open(log_path, 'r')
         for line in f:
             posts += t.load_json(line)
+    elif args.fetch == 'none':
+        pass  # do nothing
     else:
         return
 
@@ -455,6 +459,8 @@ def main():
     elif args.command == 'reblog':
         for post in posts:
             print post.reblog()
+    elif args.command == 'none':
+        pass  # do nothing
     else:
         pass
     return
