@@ -92,6 +92,16 @@ class Post(object):
             return True
         return False
 
+    def reblog(self):
+        client = build_oauth_client()
+        url = 'api.tumblr.com/v2/blog/%s/post/reblog' % (self.parent.name)
+        resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
+        
+        json = simplejson.loads(content)
+        if json['meta']['msg'] == 'OK':
+            return True
+        return False
+
 
 class Text(Post):
     def __init__(self, tumblelog, json):
@@ -213,8 +223,9 @@ class Tumblelog(object):
         self.status = self.json['meta']['status']
 
         self.post = Post.parse(self, self.json['response']['posts'][0])
+        self.posts = [self.post]
 
-        return self.post
+        return self.posts
 
     def likes(self, offset=0, limit=20):
         client = build_oauth_client()
@@ -284,8 +295,8 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'logs', 'relike']
-    choice_command = ['publish', 'like', 'show']
+    choice_fetch = ['drafts', 'logs', 'relike', 'post']
+    choice_command = ['publish', 'like', 'show', 'reblog']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
     parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
@@ -402,10 +413,13 @@ def main():
     posts = []
     if args.fetch == 'dashboard':
         pass  # 現在この機能を追加する予定はありません
-    elif args.fetch == 'posts':
-        pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'drafts':
         posts = t.drafts()
+    elif args.fetch == 'post':
+        post_url = raw_input('Input post url: ')
+        posts = t.getpost(post_url)
+    elif args.fetch == 'posts':
+        pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'likes':
         pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'logs':
@@ -438,6 +452,9 @@ def main():
         for post in posts:
             print "%d: %s" % (post.id, post.post_url)
         print "%d posts." % (len(posts))
+    elif args.command == 'reblog':
+        for post in posts:
+            print post.reblog()
     else:
         pass
     return
