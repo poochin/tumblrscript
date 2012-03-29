@@ -96,7 +96,7 @@ class Post(object):
         client = build_oauth_client()
         url = 'http://api.tumblr.com/v2/blog/%s/post/reblog' % (self.parent.name)
 
-        post_data = {'id': self.id, 'reblog_key': self.reblog_key, 'comment': 'test'}
+        post_data = {'id': self.id, 'reblog_key': self.reblog_key, 'comment': comment}
         resp, content = client.request(url, method='POST', body=urllib.urlencode(post_data))
         
         json = simplejson.loads(content)
@@ -122,7 +122,7 @@ class Photo(Post):
         self.data['type'] = 'photo'
 
         # FIXME: photo set に対応していません。 このまま使用すると photo set のレイアウトが崩れてしまいます。
-        alias = {'caption': 'caption', 'link_url': 'link'}
+        alias = {'caption': 'caption', 'link_url': 'link', 'photoset_layout': 'photoset_layout'}
         self.data.update(pickup_aliases(json, alias))
 
 
@@ -227,6 +227,8 @@ class Tumblelog(object):
         self.post = Post.parse(self, self.json['response']['posts'][0])
         self.posts = [self.post]
 
+        print content
+
         return self.posts
 
     def likes(self, offset=0, limit=20):
@@ -289,7 +291,10 @@ def pickup_aliases(src, aliases):
     for alias_from, alias_to in aliases.iteritems():
         if alias_from in src:
             if src[alias_from]:
-                results[alias_to] = src[alias_from].encode('UTF-8')
+                if isinstance(src[alias_from], int):
+                    results[alias_to] = str(src[alias_from]).encode('UTF-8')
+                else:
+                    results[alias_to] = src[alias_from].encode('UTF-8')
     return results
 
 
