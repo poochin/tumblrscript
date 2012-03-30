@@ -324,6 +324,8 @@ def arg_parsing():
                         help=u"認証情報を .netrc を元に構築します。")
     parser.add_argument("--log", dest="log", help=u"読み込みするログのパスを入力します。")
 
+    # TODO: -c オプションを 1:3:2 など一巡のポスト数を変化させる方法に対応させる
+
     args = parser.parse_args()
     return args
 
@@ -375,11 +377,26 @@ def cmd_relike(args, t):
     # 念の為に再度、一時ファイルのパスを表示します
     print 'Temporary content file', fn
 
+def ring_list(l):
+    while True:
+        for i in l:
+            yield i
+
+def iter_slice(it, xs):
+    result = []
+    for n in it:
+        if not xs:
+            break
+        result += [xs[0:n]]
+        xs = xs[n:]
+    return result
 
 def cmd_publish(args, posts):
     time = __import__('time')
     len_posts = len(posts)
-    posts_seq = [posts[i:i + args.count] for i in xrange(0, len(posts), args.count)]
+
+    curve = ring_list(args.count.split(':'))
+    posts_seq = iter_slice(curve, posts)
 
     print "start to publish %d posts." % (len_posts)
 
