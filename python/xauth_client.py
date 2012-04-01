@@ -54,6 +54,7 @@ class Post(object):
     def __init__(self, parent):
         self.data = {}
         self.parent = parent
+        pass
 
     def publish(self):
         self.data['state'] = 'published'
@@ -302,7 +303,7 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'none']
+    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'likes', 'none']
     choice_command = ['publish', 'like', 'show', 'reblog', 'none']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
@@ -446,7 +447,9 @@ def main():
     elif args.fetch == 'posts':
         pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'likes':
-        pass  # 現在この機能を追加する予定はありません
+        m = args.max or 1000
+        for i in xrange(0, m, 20):
+            posts += t.likes(i, 20)
     elif args.fetch == 'logs':
         log_path = args.log
         if not log_path:
