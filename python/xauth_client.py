@@ -65,7 +65,7 @@ class Post(object):
         client = build_oauth_client()
         resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
 
-        join = simplejson.loads(content)
+        json = simplejson.loads(content)
         if json['meta']['msg'] == 'OK':
             return True
         return False
@@ -318,7 +318,7 @@ def arg_parsing():
     parser = ArgumentParser()
 
     choice_fetch = ['drafts', 'logs', 'relike', 'post', 'likes', 'none']
-    choice_command = ['publish', 'like', 'show', 'reblog', 'none']
+    choice_command = ['publish', 'like', 'show', 'reblog', 'queue', 'none']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
     parser.add_argument("command", nargs='?', choices=choice_command, help=u"読み込んだポストの処理法")
@@ -499,6 +499,13 @@ def main():
     elif args.command == 'reblog':
         for post in posts:
             print post.reblog()
+    elif args.command == 'queue':
+        for post in posts:
+            print 'Enqueue:', post.id, post.post_url, '...',
+            if post.enqueue():
+                print 'OK'
+            else:
+                print 'NG'
     elif args.command == 'none':
         pass  # do nothing
     else:
