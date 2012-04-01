@@ -329,7 +329,7 @@ def arg_parsing():
                         help=u"失敗時に遅延する秒数を指定します")
     parser.add_argument("-r", "--reverse", action="store_true",
                         help=u"ポストへのコマンドを逆順に処理する")
-    parser.add_argument("-c", "--count", dest="count", type=str, default=30,
+    parser.add_argument("-c", "--count", dest="count", type=str, default="30",
                         help=u"各ステップで一度に処理するポスト数")
     parser.add_argument("-m", "--max-count", dest="max", type=int,
                         help=u"全ステップを通して処理するポスト数")
