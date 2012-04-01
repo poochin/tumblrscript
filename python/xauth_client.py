@@ -56,6 +56,9 @@ class Post(object):
         self.parent = parent
         pass
 
+    def enqueue(self):
+        pass
+
     def publish(self):
         self.data['state'] = 'published'
         self.data['id'] = self.id
