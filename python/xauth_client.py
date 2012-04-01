@@ -57,7 +57,18 @@ class Post(object):
         pass
 
     def enqueue(self):
-        pass
+        self.data['state'] = 'queue'
+        self.data['id'] = self.id
+
+        url = 'http://api.tumblr.com/v2/blog/%s/post/edit' % (self.parent.name)
+
+        client = build_oauth_client()
+        resp, content = client.request(url, method='POST', body=urllib.urlencode(self.data))
+
+        join = simplejson.loads(content)
+        if json['meta']['msg'] == 'OK':
+            return True
+        return False
 
     def publish(self):
         self.data['state'] = 'published'
