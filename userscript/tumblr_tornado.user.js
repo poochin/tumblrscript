@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
+// @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
 // @match       http://www.tumblr.com/blog/*
 // @version     1.0.0
@@ -10,7 +11,6 @@
 // @updated     2012-04-24
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
-
 
 /**
 TODO List:
