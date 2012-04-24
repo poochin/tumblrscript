@@ -3,7 +3,7 @@
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.0
+// @version     1.0.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @author      poochin
@@ -25,15 +25,9 @@ var whole_css = [
     "    color: red;",
     "}",
     ".pin_notification {",
-    "    -webkit-animation-name: pin_notification_animation;",
-    "    -webkit-animation-duration: 3s;",
-    "    -webkit-animation-fill-mode: forwards;",
-    "    -moz-animation-name: pin_notification_animation;",
-    "    -moz-animation-duration: 3s;",
-    "    -moz-animation-fill-mode: forwards;",
-    "    -o-animation-name: pin_notification_animation;",
-    "    -o-animation-duration: 3s;",
-    "    -o-animation-fill-mode: forwards;",
+    "    -webkit-animation: pin_notification_animation 3s forwards;",
+    "    -moz-animation: pin_notification_animation 3s forwards;",
+    "    -o-animation: pin_notification_animation 3s forwards;",
     "    position: fixed;",
     "    right: 15px;",
     "    bottom: 0;",
@@ -825,6 +819,11 @@ else {
 **/
 /*
 2012-04-23
+ver 1.0.1.0
+    * Google chrome, Firefox+GM, Opera に対応 *
+
+    box-shadow, animation を複数のブラウザに対応するように記述しました。
+
 ver 1.0.0.0
     * パイロット版を公開 *
 
