@@ -16,6 +16,7 @@
 
 /**
 TODO List:
+    * pin notification での文がおかしいものがあるので(rblg as draftとかへ)
     * Reload (/dashboard/2/xxx を /dashboard で)
 **/
 
