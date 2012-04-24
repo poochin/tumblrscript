@@ -31,6 +31,9 @@ var whole_css = [
     "    -webkit-animation-name: pin_notification_animation;",
     "    -webkit-animation-duration: 3s;",
     "    -webkit-animation-fill-mode: forwards;",
+    "    -moz-animation-name: pin_notification_animation;",
+    "    -moz-animation-duration: 3s;",
+    "    -moz-animation-fill-mode: forwards;",
     "    position: fixed;",
     "    right: 15px;",
     "    bottom: 0;",
@@ -61,8 +64,16 @@ var whole_css = [
     "    90%  { opacity: 1; }",
     "    100% { opacity: 0; }",
     "}",
-    ".reblogging {",
+    "@-moz-keyframes pin_notification_animation {",
+    "    0%   { opacity: 0; }",
+    "    5%   { opacity: 1; }",
+    "    90%  { opacity: 1; }",
+    "    100% { opacity: 0; }",
+    "}",
+    ".reblog_button.reblogging {",
+    "    background-position: -530px -270px !important;",
     "    -webkit-animation: reblogging 1s infinite;",
+    "    -moz-animation: reblogging 1s infinite;",
     "}",
     "@-webkit-keyframes reblogging {",
     "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
@@ -71,6 +82,14 @@ var whole_css = [
     "  50% { -webkit-transform: rotate(360deg) scale(1.1, 1.1); }",
     "  55% { -webkit-transform: rotate(360deg) scale(1, 1); }",
     "  100% { -webkit-transform: rotate(360deg) scale(1, 1); }",
+    "}",
+    "@-moz-keyframes reblogging {",
+    "  0% { -moz-transform: rotate(0deg) scale(1.5, 1.5); }",
+    "  25% { -moz-transform: rotate(360deg) scale(1, 1); }",
+    "  40% { -moz-transform: rotate(360deg) scale(1, 1); }",
+    "  50% { -moz-transform: rotate(360deg) scale(1.1, 1.1); }",
+    "  55% { -moz-transform: rotate(360deg) scale(1, 1); }",
+    "  100% { -moz-transform: rotate(360deg) scale(1, 1); }",
     "}",
     ".lite_dialog {",
     "  background-color: #fff;",
@@ -82,6 +101,7 @@ var whole_css = [
     "  max-width: 200px;",
     "  border-radius: 3px;",
     "  -webkit-box-shadow: 0 0 6px #000;",
+    "  -moz-box-shadow: 0 0 6px #000;",
     "}",
     ".lite_dialog_bar { }",
     ".lite_dialog_bar:after {",
@@ -93,11 +113,14 @@ var whole_css = [
     "}",
     ".lite_dialog_close {",
     "  line-height: 16px;",
+    "  width: 16px;",
     "  color: #888;",
     "  border: 1px dashed #888;",
     "  border-radius: 3px;",
     "  float: right;",
     "  cursor: pointer;",
+    "  font-family: monospace;",
+    "  text-align: center;",
     "}",
     ".lite_dialog_close:hover {",
     "  background-color: #ddd;",
@@ -152,7 +175,7 @@ var whole_css = [
 var base_lite_dialog = [
     '<div class="lite_dialog_bar">',
     '  <div class="lite_dialog_sysmenus">',
-    '    <span class="lite_dialog_close">☓</span>',
+    '    <span class="lite_dialog_close">× </span>',
     '  </div>',
     '  <div class="lite_dialog_caption">',
     '  </div>',
@@ -295,8 +318,8 @@ LiteDialog.prototype = {
     },
     centering: function(elm) {
         var view_info = {
-            scrollTop: document.body.scrollTop,
-            scrollLeft: document.body.scrollLeft,
+            scrollTop: document.documentElement.scrollTop || document.body.scrollTop,  // FIXME: Opera OK?
+            scrollLeft: document.documentElement.scrollLeft || document.body.scrollLeft,  // FIXME: Opera OK?
             width: document.documentElement.clientWidth,
             height: document.documentElement.clientHeight,
         };
@@ -347,7 +370,6 @@ var Tornado = {
     },
     reblog: function(post, default_postdata) {
         var reblog_button = post.querySelector('a.reblog_button');
-        reblog_button.style.backgroundPositionX = '-530px';
         reblog_button.className += ' reblogging';
 
         if (!default_postdata) {
@@ -423,7 +445,7 @@ var Tornado = {
             button.type = 'button';
             button.className = 'button' + (i + 1);
             button.name = elm.href.match(/[^\/]+$/)[0];
-            button.value = '[' + (i + 1) + ']: ' + elm.innerText.trim();
+            button.value = '[' + (i + 1) + ']: ' + elm.textContent.trim();  // FIXME: Opera OK?
             var button_click = function(e) {
                 postdata.channel_id = this.name;
                 Tornado.reblog(post, postdata);
@@ -439,7 +461,6 @@ var Tornado = {
         var reblog_button = post.querySelector('a.reblog_button');
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
 
-        reblog_button.style.backgroundPositionX = '-530px';
         reblog_button.className += ' reblogging';
 
         new Ajax('GET', url_fast_reblog, {}, function(xhr) {
@@ -472,10 +493,10 @@ var Tornado = {
     notes: function(post) {
         var notes_link = post.querySelector('.reblog_count');
         notes_link.dispatchEvent(left_click);  // TODO: Firefox OK?
+
+        new PinNotification('test');
     },
     scaleImage: function(post) {
-        var d = document;
-    
         var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
         var type = post.className.match(reg_type)[0];
         if (type != "photo" && type != "video") {
@@ -492,10 +513,10 @@ var Tornado = {
             }   
             else {
                 // Firefox: onclick of attr can't be launched by dispatchEvent
-                if (p.querySelector('img.image_thumbnail')) {
-                    post.querySelector('img.image_thumbnail').onclick.apply(obj);
+                if (post.querySelector('img.image_thumbnail')) {
+                    post.querySelector('img.image_thumbnail').dispatchEvent(left_click);
                 }   
-                else if (p.querySelector('a.photoset_photo')) {
+                else if (post.querySelector('a.photoset_photo')) {
                     with({elm: document.querySelector('#tumblr_lightbox') ||
                                post.querySelector('a.photoset_photo')}) {
                         elm.dispatchEvent(left_click);
@@ -504,11 +525,14 @@ var Tornado = {
             }   
         }   
         else if (type == 'video') {
-            // FIXME: Google chrome 以外での動作を確認していません。
             if (navigator.appVersion.search('Chrome') >= 0) {
                 var video = post.querySelector('.video_thumbnail');
                 video.dispatchEvent(left_click);
-            }   
+            }
+            else {
+                var video = post.querySelector('.video_thumbnail');
+                video.click();
+            }
         }   
     },
     cleanPosts: function(post) {
@@ -539,7 +563,7 @@ var Tornado = {
         var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
         var operator = this.shortcuts[e.keyCode];
 
-        current_top = document.body.scrollTop;
+        current_top = document.documentElement.scrollTop || document.body.scrollTop; // FIXME: Opera OK?
         posts = document.querySelectorAll('.post');
         for (var i = 0; i < posts.length; ++i) {
             if (current_top == posts[i].offsetTop - margin_top) {
@@ -577,6 +601,19 @@ var Tornado = {
                         }
                         break;
                     }
+                }
+            }
+        }
+        else {
+            if (operator.url.test(window.location) &&
+                e.shiftKey == operator.shift &&
+                e.ctrlKey == operator.ctrl &&
+                e.altKey == operator.alt) {
+                if ((typeof operator.func) == 'string') {
+                    this[operator.func](post);
+                }
+                else {
+                    this.func(post);
                 }
             }
         }
@@ -647,7 +684,6 @@ Tornado.shortcuts = {
     /* N */ 78: 'notes',
     // /* M */ 77: 'master'
 };
-
 
 /**
  * main execution functions
