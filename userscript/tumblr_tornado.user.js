@@ -16,7 +16,6 @@
 
 /**
 TODO List:
-    * pin notification での文がおかしいものがあるので(rblg as draftとかへ)
     * Reload (/dashboard/2/xxx を /dashboard で)
 **/
 
@@ -226,7 +225,8 @@ function selectDialogButton(e) {
         else if (48 <= e.keyCode && e.keyCode <= 57) {
             var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
             var name = 'button' + number;
-            document.querySelector('.lite_dialog input[type="button"].' + name).focus();
+            // document.querySelector('.lite_dialog input[type="button"].' + name).focus();
+            document.querySelector('.lite_dialog input[type="button"].' + name).click();
         }
     }
 }
@@ -439,7 +439,7 @@ var Tornado = {
                     if (default_postdata) {
                         var state_text = '', channel_text = '';
                         if (default_postdata['post[state]']) {
-                            state_text = 'to ' + Tornado.state_texts[default_postdata['post[state]']];
+                            state_text = 'as ' + Tornado.state_texts[default_postdata['post[state]']];
                         }
                         if (default_postdata['channel_id']) {
                             channel_text = 'to ' + default_postdata['channel_id'];
@@ -452,7 +452,7 @@ var Tornado = {
     },
     reblogToChannelDialog: function(post, postdata) {
         var state_text = Tornado.state_texts[postdata["post[state]"]] || '';
-        var dialog = new LiteDialog(['Reblog', (state_text) ? ('to ' + state_text) : ('') , 'to [channel]'].join(' '));
+        var dialog = new LiteDialog(['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' '));
         var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
         var channel_elms = document.querySelectorAll('#all_blogs_menu .item[id] a');
         for (var i = 0; i < channel_elms.length; ++i) {
@@ -682,20 +682,20 @@ Tornado.shortcuts = {
                  'reblog'],
     /* H */ 72: 'fast_reblog',
     /* J */ 74: [customkey('halfdown', {shift: true, desc: '下へ半スクロール'}),
-                 customkey('default', {desc: '下のポストへ'})],
+                 customkey('default', {desc: '下のポストへ移動'})],
     /* K */ 75: [customkey('halfup', {shift: true, desc: '上へ半スクロール'}),
-                 customkey('default', {desc: '上のポストへ'})],
-    /* G */ 71: [customkey('goBottom', {shift: true, desc: 'スクロールを一番下へ'}),
-                 customkey('goTop', {desc: 'スクロールを一番上へ'})],
+                 customkey('default', {desc: '上のポストへ移動'})],
+    /* G */ 71: [customkey('goBottom', {shift: true, desc: '一番下へスクロール'}),
+                 customkey('goTop', {desc: '一番上へスクロール'})],
     /* O */ 79: [customkey('jumpToLastCursor', {shift: true, usehelp: false})],
     /* L */ 76:  customkey('default', {desc: 'Like'}),
-    /* D */ 68: [customkey('draftToChannel', {shift: true, desc: 'channelのdraftsへリブログ'}),
+    /* D */ 68: [customkey('draftToChannel', {shift: true, desc: '下書きとしてchannelへリブログ'}),
                  'draft'],
-    /* Q */ 81: [customkey('queueToChannel', {shift: true, desc: 'channelのqueueへリブログ'}),
+    /* Q */ 81: [customkey('queueToChannel', {shift: true, desc: 'queueとしてchannelへリブログ'}),
                  'queue'],
-    /* P */ 80: [customkey('privateToChannel', {shift: true, desc: 'channelでprivateにリブログ'}),
+    /* P */ 80: [customkey('privateToChannel', {shift: true, desc: 'privateとしてchannelリブログ'}),
                  'private'],
-    /* I */ 73: customkey('scaleImage', {desc: '「画像・動画」を拡縮'}),
+    /* I */ 73: customkey('scaleImage', {desc: '"photo","video"を拡縮'}),
     /* C */ 67: 'cleanPosts',
     /* N */ 78: customkey('notes', {desc: 'Notes を表示'}),
     // /* M */ 77: 'master'
@@ -822,12 +822,13 @@ else {
  * History
 **/
 /*
-2012-04-23
+2012-04-24
 ver 1.0.1.0
     * Google chrome, Firefox+GM, Opera に対応 *
 
     box-shadow, animation を複数のブラウザに対応するように記述しました。
 
+2012-04-23
 ver 1.0.0.0
     * パイロット版を公開 *
 
@@ -837,7 +838,7 @@ ver 1.0.0.0
     また既存の UserScript にはチャンネル投稿に対応したものが見当たらないので新しく書きました。
 
     autoload 時にロケーションバーに記憶させる案は Tumblr Life からいただきました。
-    コピーはしていませんが、どのように書くのかはソースコードを読み勉強させてもらいました。
+    コピーはしていませんが、どのように書くのかをソースコードを読み勉強させてもらいました(実質コピー)。
 
     cleanPosts の案は SuperTumblr からいただきました。
     ただし li.post が残るとゆくゆくコマンドの遅延が危ぶまれるため .post を class から取り除くようにしています。
