@@ -14,6 +14,7 @@
 
 /**
 TODO List:
+    * Reload (/dashboard/2/xxx を /dashboard で)
 **/
 
 /**
