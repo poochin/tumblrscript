@@ -172,6 +172,7 @@ var whole_css = [
     "  font-weight: bold;",
     "}",
     "#tornado_shortcuts_help {",
+    "  color: #abb;",
     "  font-size: 12px;",
     "  line-height: 1em;",
     "}",
