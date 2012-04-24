@@ -2,6 +2,8 @@
 // @name        Tumblr Tornado
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
+// @match       http://www.tumblr.com/likes
+// @match       http://www.tumblr.com/likes/*
 // @match       http://www.tumblr.com/blog/*
 // @version     1.0.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
@@ -694,7 +696,7 @@ Tornado.shortcuts = {
                  'private'],
     /* I */ 73: customkey('scaleImage', {desc: '「画像・動画」を拡縮'}),
     /* C */ 67: 'cleanPosts',
-    /* N */ 78: 'notes',
+    /* N */ 78: customkey('notes', {desc: 'Notes を表示'}),
     // /* M */ 77: 'master'
 };
 
