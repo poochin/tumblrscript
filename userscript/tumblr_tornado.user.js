@@ -14,10 +14,7 @@
 
 /**
 TODO List:
-    * pjax page URL
-    * shortcuts の情報を #right_column で整理する
 **/
-
 
 /**
  * Variables
@@ -34,6 +31,9 @@ var whole_css = [
     "    -moz-animation-name: pin_notification_animation;",
     "    -moz-animation-duration: 3s;",
     "    -moz-animation-fill-mode: forwards;",
+    "    -o-animation-name: pin_notification_animation;",
+    "    -o-animation-duration: 3s;",
+    "    -o-animation-fill-mode: forwards;",
     "    position: fixed;",
     "    right: 15px;",
     "    bottom: 0;",
@@ -70,10 +70,17 @@ var whole_css = [
     "    90%  { opacity: 1; }",
     "    100% { opacity: 0; }",
     "}",
+    "@keyframes pin_notification_animation {",
+    "    0%   { opacity: 0; }",
+    "    5%   { opacity: 1; }",
+    "    90%  { opacity: 1; }",
+    "    100% { opacity: 0; }",
+    "}",
     ".reblog_button.reblogging {",
     "    background-position: -530px -270px !important;",
     "    -webkit-animation: reblogging 1s infinite;",
     "    -moz-animation: reblogging 1s infinite;",
+    "    -o-animation: reblogging 1s infinite;",
     "}",
     "@-webkit-keyframes reblogging {",
     "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
@@ -91,6 +98,14 @@ var whole_css = [
     "  55% { -moz-transform: rotate(360deg) scale(1, 1); }",
     "  100% { -moz-transform: rotate(360deg) scale(1, 1); }",
     "}",
+    "@keyframes reblogging {",
+    "  0% { -o-transform: rotate(0deg) scale(1.5, 1.5); }",
+    "  25% { -o-transform: rotate(360deg) scale(1, 1); }",
+    "  40% { -o-transform: rotate(360deg) scale(1, 1); }",
+    "  50% { -o-transform: rotate(360deg) scale(1.1, 1.1); }",
+    "  55% { -o-transform: rotate(360deg) scale(1, 1); }",
+    "  100% { -o-transform: rotate(360deg) scale(1, 1); }",
+    "}",
     ".lite_dialog {",
     "  background-color: #fff;",
     "  padding: 2px;",
@@ -102,6 +117,7 @@ var whole_css = [
     "  border-radius: 3px;",
     "  -webkit-box-shadow: 0 0 6px #000;",
     "  -moz-box-shadow: 0 0 6px #000;",
+    "  box-shadow: 0 0 6px #000;",
     "}",
     ".lite_dialog_bar { }",
     ".lite_dialog_bar:after {",
@@ -353,6 +369,7 @@ var Tornado = {
         window.scroll(0, 0);
     },
     goBottom: function(post) {
+        // FIXME: Firefox では動かない
         Tornado.prev_cursor = post;
         window.scroll(0, document.height);
     },
