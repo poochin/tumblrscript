@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @match       http://www.tumblr.com/*
+// @match       http://www.tumblr.com/dashboard/*
+// @match       http://www.tumblr.com/blog/*
 // @version     1.0.0
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-04-23
-// @updateURL   https://github.com/poochin/chrome/raw/master/userscript/**************
+// @updated     2012-04-24
+// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
 
@@ -64,24 +65,12 @@ var whole_css = [
     "    -webkit-animation: reblogging 1s infinite;",
     "}",
     "@-webkit-keyframes reblogging {",
-    "  0% {",
-    "    -webkit-transform: rotate(0deg) scale(1.5, 1.5);",
-    "  }",
-    "  25% {",
-    "    -webkit-transform: rotate(360deg) scale(1, 1); ",
-    "  }",
-    "  40% {",
-    "    -webkit-transform: rotate(360deg) scale(1, 1); ",
-    "  }",
-    "  50% {",
-    "    -webkit-transform: rotate(360deg) scale(1.1, 1.1);",
-    "  }",
-    "  55% {",
-    "    -webkit-transform: rotate(360deg) scale(1, 1);",
-    "  }",
-    "  100% {",
-    "    -webkit-transform: rotate(360deg) scale(1, 1);",
-    "  }",
+    "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
+    "  25% { -webkit-transform: rotate(360deg) scale(1, 1); }",
+    "  40% { -webkit-transform: rotate(360deg) scale(1, 1); }",
+    "  50% { -webkit-transform: rotate(360deg) scale(1.1, 1.1); }",
+    "  55% { -webkit-transform: rotate(360deg) scale(1, 1); }",
+    "  100% { -webkit-transform: rotate(360deg) scale(1, 1); }",
     "}",
     ".lite_dialog {",
     "  background-color: #fff;",
@@ -161,15 +150,15 @@ var whole_css = [
 ].join('');
 
 var base_lite_dialog = [
-    '    <div class="lite_dialog_bar">',
-    '      <div class="lite_dialog_sysmenus">',
-    '        <span class="lite_dialog_close">☓</span>',
-    '      </div>',
-    '      <div class="lite_dialog_caption">',
-    '      </div>',
-    '    </div>',
-    '    <div classdiv class="lite_dialog_body">',
-    '    </div>'].join('');
+    '<div class="lite_dialog_bar">',
+    '  <div class="lite_dialog_sysmenus">',
+    '    <span class="lite_dialog_close">☓</span>',
+    '  </div>',
+    '  <div class="lite_dialog_caption">',
+    '  </div>',
+    '</div>',
+    '<div classdiv class="lite_dialog_body">',
+    '</div>'].join('');
 
 var left_click = document.createEvent("MouseEvents"); 
 left_click.initEvent("click", false, true);
@@ -664,11 +653,33 @@ Tornado.shortcuts = {
  * main execution functions
 **/
 
-function pjax() {
-    // history.pushState, replaceState;
+function enhistory() {
+    var inner_code = (function() {
+        var papr = window._process_auto_paginator_response;
+        window._process_auto_paginator_response = function(transport) {
+            history.pushState('', '', window.next_page);
+            papr(transport);
+        }
+    }).toString();
+    window.location.href = [
+        'javascript:',
+        '(', inner_code, ')()'].join('');
 }
 
-function show_shortcuts() {
+function showShortcutHelp() {
+    function buildShortcutHelpLine(key, shortcut) {
+        var dd = document.createElement('dd');
+        dd.innerHTML = [
+            '<code>',
+            ((typeof shortcut == 'string' || shortcut.shift == false)
+                ? ('&nbsp;&nbsp;')
+                : ('s-')),
+            String.fromCharCode(key).toUpperCase(),
+            '</code>',
+            ((typeof shortcut == 'string')
+                ? (shortcut)
+                : (shortcut.desc || shortcut.func))].join('');
+    }
     /* TODO: 内部的に重複している部分があるので分離する */
     var help = document.createElement('dl');
     help.id = 'tornado_shortcuts_help';
@@ -741,7 +752,8 @@ function main() {
     style_element.appendChild(document.createTextNode(whole_css));
     document.head.appendChild(style_element);
 
-    show_shortcuts();
+    showShortcutHelp();
+    enhistory();
 
     style_element.Tornado = Tornado;
 }
@@ -752,3 +764,25 @@ if (window.document.body) {
 else {
     window.document.addEventListener('DOMContentLoaded', main, false);
 }
+
+
+/**
+ * History
+**/
+/*
+2012-04-23
+ver 1.0.0.0
+    * パイロット版を公開 *
+
+    Google chrome 上でのみ動作するようにしています。
+
+    Shift + Command でショートカットに拡張性をもたせやすい UserScript を目指して書きました。
+    また既存の UserScript にはチャンネル投稿に対応したものが見当たらないので新しく書きました。
+
+    autoload 時にロケーションバーに記憶させる案は Tumblr Life からいただきました。
+    コピーはしていませんが、どのように書くのかはソースコードを読み勉強させてもらいました。
+
+    cleanPosts の案は SuperTumblr からいただきました。
+    ただし li.post が残るとゆくゆくコマンドの遅延が危ぶまれるため .post を class から取り除くようにしています。
+    また実装部分も SuperTumblr とは違う方法を取っています。
+*/
