@@ -14,7 +14,7 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-// 追加予定
+// 追加予定(他の検索ページ等も)
 // @match       http://www.tumblr.com/tagged/*
 
 /**
@@ -670,8 +670,11 @@ var Tornado = {
     },
     rootInfo: function(post) {
         var post_id = post.id.match(/\d+/)[0];
-
         var post_info = post.querySelector('.post_info');
+        if (post_info.querySelector('.root_info')) {
+            return;
+        }
+
         var root_info = document.createElement('span');
         root_info.className = 'root_info';
         root_info.innerHTML = ' [...]';
