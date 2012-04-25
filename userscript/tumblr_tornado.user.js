@@ -5,14 +5,15 @@
 // @match       http://www.tumblr.com/likes
 // @match       http://www.tumblr.com/likes/*
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.1
+// @version     1.0.2
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-04-24
+// @updated     2012-04-25
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
+
 
 /**
 TODO List:
@@ -171,14 +172,21 @@ var whole_css = [
     "#tornado_shortcuts_help {",
     "  color: #abb;",
     "  font-size: 12px;",
-    "  line-height: 1em;",
+    "  line-height: 1.2em;",
+    "}",
+    "#tornado_shortcuts_help dt + dd code {",
+    "  border-radius: 3px 0 0 0;",
+    "}",
+    "#tornado_shortcuts_help dd:last-child code {",
+    "  border-radius: 0 0 0 3px;",
     "}",
     "#tornado_shortcuts_help dd {",
     "  margin-left: 1em;",
+    "  height: 1.2em;",
     "}",
     "#tornado_shortcuts_help code {",
     "  background: #1C3752;",
-    "  border-radius: 3px;",
+//     "  border-radius: 3px;",
     "}",
     "#tornado_shortcuts_help code:after {",
     "  content: ': ';",
@@ -200,6 +208,47 @@ var base_lite_dialog = [
 var left_click = document.createEvent("MouseEvents"); 
 left_click.initEvent("click", false, true);
 
+
+/**
+  Type Extention
+**/
+
+NodeList.prototype.map = function(func) {
+    var values = [];
+    for (var i = 0; i < this.length; ++i) {
+        values.push(func(this[i]));
+    }
+    return values;
+};
+NodeList.prototype.match = function(func) {
+    for (var i = 0; i < this.length; ++i) {
+        if (func(this[i])) {
+            return this[i];
+        }
+    }
+};
+
+Array.prototype.cmp = function(another) {
+    if (this.length != another.length) {
+        return false;
+    }
+
+    for (var i = 0; i < this.length; ++i) {
+        if (this[i] != another[i]) {
+            return false;
+        }
+    }
+    return true;
+};
+
+function nodeRect (elm) {
+    return {
+        'x': elm.offsetLeft,
+        'y': elm.offsetTop,
+        'cx': elm.offsetWidth,
+        'cy': elm.offsetHeight};
+};
+
 /**
   Library
 **/
@@ -212,9 +261,27 @@ function customkey(func, options)
         shift: options.shift || false,
         ctrl: options.ctrl || false,
         alt: options.alt || false,
+        follow: options.follow || [],
         usehelp: (typeof options.usehelp == 'undefined') ? true : options.usehelp,
         desc: options.desc || '',
     };
+}
+
+function buildShortcutLineHelp(key, shortcut) {
+    var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
+    var code = [
+        (shortcut.follow && shortcut.follow.join(' ')) || '',
+        (shortcut.shift && 's-') || '',
+        (String.fromCharCode(key).toUpperCase())].join('');
+    code = pre_spacing.slice(code.length).join('') + code;
+
+    return [
+        '<code>',
+        code,
+        '</code>',
+        ((typeof shortcut == 'string')
+            ? (shortcut)
+            : (shortcut.desc || shortcut.func))].join('');
 }
 
 function selectDialogButton(e) {
@@ -331,15 +398,25 @@ LiteDialog.prototype = {
         this.dialog.parentNode.removeChild(this.dialog);
         this.dialog = undefined;
     },
-    centering: function(elm) {
-        var view_info = {
-            scrollTop: document.documentElement.scrollTop || document.body.scrollTop,  // FIXME: Opera OK?
-            scrollLeft: document.documentElement.scrollLeft || document.body.scrollLeft,  // FIXME: Opera OK?
-            width: document.documentElement.clientWidth,
-            height: document.documentElement.clientHeight,
-        };
-        elm.style.top = (view_info.scrollTop + (view_info.height/2) - (elm.offsetHeight/2)) + 'px';
-        elm.style.left = (view_info.scrollLeft + (view_info.width/2) - (elm.offsetWidth/2)) + 'px';
+    centering: function(elm, parent) {
+        if (parent) {
+            var rect = {
+                x: parent.offsetLeft,
+                y: parent.offsetTop,
+                cx: parent.offsetWidth,
+                cy: parent.offsetHeight};
+            elm.style.top = (rect.y + (rect.cy / 2) - (elm.offsetHeight / 2)) + 'px';
+            elm.style.left = (rect.x + (rect.cx / 2) - (elm.offsetWidth / 2)) + 'px';
+        }
+        else {
+            var view_info = {
+                scrollTop: document.documentElement.scrollTop || document.body.scrollTop,  // FIXME: Opera OK?
+                scrollLeft: document.documentElement.scrollLeft || document.body.scrollLeft,  // FIXME: Opera OK?
+                width: document.documentElement.clientWidth,
+                height: document.documentElement.clientHeight};
+            elm.style.top = (view_info.scrollTop + (view_info.height/2) - (elm.offsetHeight/2)) + 'px';
+            elm.style.left = (view_info.scrollLeft + (view_info.width/2) - (elm.offsetWidth/2)) + 'px';
+        }
     },
 };
 
@@ -349,9 +426,15 @@ LiteDialog.prototype = {
  */
 
 var Tornado = {
+    /* const */
+    KEY_MAX_FOLLOWS: 2,
+
     /* variables */
     prev_cursor: null,
     state_texts: {'0': '', '1': 'drafts', '2': 'queue', 'private': 'private'},
+    key_input_time: 0,  // 前回入力した時刻
+    key_follows: [],
+
     /* shortcuts */
     downPost: undefined,
     halfdown: function() {
@@ -470,7 +553,10 @@ var Tornado = {
             button.addEventListener('click', button_click);
             dialog_body.appendChild(button);
         }
-        dialog.centering(dialog.dialog);
+
+        dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
+        dialog.dialog.style.left = (post.offsetLeft + 20) + 'px';
+
         dialog_body.querySelector('input[type="button"]').focus();
     },
     fast_reblog: function(post) {
@@ -575,18 +661,34 @@ var Tornado = {
 
     /* Event Listener */
     keyevent: function (e) {
+        function event_char(e) {
+            var c = String.fromCharCode(e.keyCode);
+            return (e.shiftKey ? c.toUpperCase() : c.toLowerCase());
+        }
+
         var post, posts;
         var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
         var operator = this.shortcuts[e.keyCode];
 
-        current_top = document.documentElement.scrollTop || document.body.scrollTop; // FIXME: Opera OK?
-        posts = document.querySelectorAll('.post');
-        for (var i = 0; i < posts.length; ++i) {
-            if (current_top == posts[i].offsetTop - margin_top) {
-                post = posts[i];
-                break;
+        if (String.fromCharCode(e.keyCode)) {
+            var time = (new Date()) * 1;
+            if (Tornado.key_input_time + 2000 < time) {
+                Tornado.key_follows = [];
             }
+            /* FIXME: ShiftKey などは記録しない */
+            Tornado.key_follows = Tornado.key_follows.concat(event_char(e));
+            Tornado.key_follows = Tornado.key_follows.splice(-Tornado.KEY_MAX_FOLLOWS);
+            Tornado.key_input_time = time;
         }
+
+        if (!operator) {
+            return;
+        }
+
+        current_top = document.documentElement.scrollTop || document.body.scrollTop; // FIXME: Opera OK?
+        post = Array.prototype.slice.call(document.querySelectorAll('.post')).filter(function(elm) {
+            return current_top == (elm.offsetTop - margin_top);
+        })[0];
         if (!post) {
             console.log('Post not found');
         }
@@ -603,18 +705,27 @@ var Tornado = {
                 var pattern = patterns[i];
                 if (typeof pattern == 'string') {
                     this[pattern](post);
+                    Tornado.key_follows = [];
                 }
                 else {
                     if (pattern.url.test(window.location) &&
                         e.shiftKey == pattern.shift &&
                         e.ctrlKey == pattern.ctrl &&
                         e.altKey == pattern.alt) {
+
+                        if (pattern.follow &&
+                            pattern.follow.length &&
+                            !Tornado.key_follows.cmp(pattern.follow.concat(event_char(e)))) {
+                            break;
+                        }
+
                         if (typeof pattern.func == 'string') {
                             this[pattern.func](post);
                         }
                         else {
                             pattern.func(post);
                         }
+                        Tornado.key_follows = [];
                         break;
                     }
                 }
@@ -631,6 +742,8 @@ var Tornado = {
                 else {
                     this.func(post);
                 }
+
+                Tornado.key_follows = [];
             }
         }
     },
@@ -686,14 +799,14 @@ Tornado.shortcuts = {
     /* K */ 75: [customkey('halfup', {shift: true, desc: '上へ半スクロール'}),
                  customkey('default', {desc: '上のポストへ移動'})],
     /* G */ 71: [customkey('goBottom', {shift: true, desc: '一番下へスクロール'}),
-                 customkey('goTop', {desc: '一番上へスクロール'})],
+                 customkey('goTop', {follow: ['g'], desc: '一番上へスクロール'})],
     /* O */ 79: [customkey('jumpToLastCursor', {shift: true, usehelp: false})],
     /* L */ 76:  customkey('default', {desc: 'Like'}),
-    /* D */ 68: [customkey('draftToChannel', {shift: true, desc: '下書きとしてchannelへリブログ'}),
+    /* D */ 68: [customkey('draftToChannel', {follow: ['g'], desc: '下書きとしてchannelへリブログ'}),
                  'draft'],
-    /* Q */ 81: [customkey('queueToChannel', {shift: true, desc: 'queueとしてchannelへリブログ'}),
+    /* Q */ 81: [customkey('queueToChannel', {follow: ['g'], desc: 'queueとしてchannelへリブログ'}),
                  'queue'],
-    /* P */ 80: [customkey('privateToChannel', {shift: true, desc: 'privateとしてchannelリブログ'}),
+    /* P */ 80: [customkey('privateToChannel', {follow: ['g'], desc: 'privateとしてchannelリブログ'}),
                  'private'],
     /* I */ 73: customkey('scaleImage', {desc: '"photo","video"を拡縮'}),
     /* C */ 67: 'cleanPosts',
@@ -719,20 +832,6 @@ function enhistory() {
 }
 
 function showShortcutHelp() {
-    function buildShortcutHelpLine(key, shortcut) {
-        var dd = document.createElement('dd');
-        dd.innerHTML = [
-            '<code>',
-            ((typeof shortcut == 'string' || shortcut.shift == false)
-                ? ('&nbsp;&nbsp;')
-                : ('s-')),
-            String.fromCharCode(key).toUpperCase(),
-            '</code>',
-            ((typeof shortcut == 'string')
-                ? (shortcut)
-                : (shortcut.desc || shortcut.func))].join('');
-    }
-    /* TODO: 内部的に重複している部分があるので分離する */
     var help = document.createElement('dl');
     help.id = 'tornado_shortcuts_help';
 
@@ -740,50 +839,30 @@ function showShortcutHelp() {
     normal_shortcuts.id = 'tornado_normal_shortcuts_help';
     normal_shortcuts.appendChild(document.createTextNode('Tornado (s-はShiftを同時押し)'));
     help.appendChild(normal_shortcuts);
+
     for (var key in Tornado.shortcuts) {
-        if (typeof Tornado.shortcuts[key] == 'string') {
+        var shortcuts = Tornado.shortcuts[key];
+        if (typeof shortcuts == 'string') {
             var dd = document.createElement('dd');
-            dd.innerHTML = [
-                '<code>&nbsp;&nbsp;', String.fromCharCode(key).toUpperCase() ,'</code>', Tornado.shortcuts[key]].join('');
+            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
             help.appendChild(dd);
         }
-        else if ('length' in Tornado.shortcuts[key]) {
-            var shortcuts = Tornado.shortcuts[key];
+        else if ('length' in shortcuts) {
             for (var i = 0; i < shortcuts.length; ++i) {
                 var shortcut = shortcuts[i];
                 var dd = document.createElement('dd');
-                if (typeof shortcut == 'string') {
-                    var dd = document.createElement('dd');
-                    dd.innerHTML = [
-                        '<code>&nbsp;&nbsp;', String.fromCharCode(key).toUpperCase() ,'</code>', shortcut].join('');
-                    help.appendChild(dd);
-                }
-                else if (shortcut.usehelp && shortcut.shift == false) {
-                    var dd = document.createElement('dd');
-                    dd.innerHTML = [
-                        '<code>&nbsp;&nbsp;', String.fromCharCode(key).toUpperCase() ,'</code>', shortcut.desc || shortcut.func].join('');
-                    help.appendChild(dd);
-                }
-                else if (shortcut.usehelp && shortcut.shift) {
-                    var dd = document.createElement('dd');
-                    dd.innerHTML = [
-                        '<code>s-', String.fromCharCode(key).toUpperCase() ,'</code>', shortcut.desc || shortcut.func].join('');
-                    help.appendChild(dd);
-                }
+                dd.innerHTML = buildShortcutLineHelp(key, shortcut);
+                help.appendChild(dd);
             }
         }
-        else if (Tornado.shortcuts[key].usehelp && Tornado.shortcuts[key].shift == false) {
-            var shortcut = Tornado.shortcuts[key];
+        else if (shortcuts.usehelp && !shortcuts.shift) {
             var dd = document.createElement('dd');
-            dd.innerHTML = [
-                '<code>&nbsp;&nbsp;', String.fromCharCode(key).toUpperCase() ,'</code>', shortcut.desc || shortcut.func].join('');
+            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
             help.appendChild(dd);
         }
-        else if (Tornado.shortcuts[key].usehelp && Tornado.shortcuts[key].shift) {
-            var shortcut = Tornado.shortcuts[key];
+        else if (shortcuts.usehelp && shortcuts.shift) {
             var dd = document.createElement('dd');
-            dd.innerHTML = [
-                '<code>s-', String.fromCharCode(key).toUpperCase() ,'</code>', shortcut.desc || shortcuts.func].join('');
+            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
             help.appendChild(dd);
         }
     }
@@ -822,6 +901,12 @@ else {
  * History
 **/
 /*
+2012-04-25
+ver 1.0.2
+    * ショートカットを拡張 *
+
+    Shift+D などが思いの外使いづらかったので G-D とキーバインドを繋げられるようにしました。
+
 2012-04-24
 ver 1.0.1.0
     * Google chrome, Firefox+GM, Opera に対応 *
