@@ -451,9 +451,8 @@ var Tornado = {
         window.scroll(0, 0);
     },
     goBottom: function(post) {
-        // FIXME: Firefox では動かない
         Tornado.prev_cursor = post;
-        window.scroll(0, document.height);
+        window.scroll(0, document.height || document.body.clientHeight);
     },
     jumpToLastCursor: function() {
         var y = Tornado.prev_cursor.offsetTop;
@@ -670,7 +669,9 @@ var Tornado = {
         var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
         var operator = this.shortcuts[e.keyCode];
 
-        if (String.fromCharCode(e.keyCode)) {
+        var key_code = e.keyCode;
+        if (65 <= key_code && key_code <= 90) {
+            // 65 == 'A', 90 == 'Z'
             var time = (new Date()) * 1;
             if (Tornado.key_input_time + 2000 < time) {
                 Tornado.key_follows = [];
@@ -713,6 +714,8 @@ var Tornado = {
                         e.ctrlKey == pattern.ctrl &&
                         e.altKey == pattern.alt) {
 
+                        console.log(pattern.func);
+
                         if (pattern.follow &&
                             pattern.follow.length &&
                             !Tornado.key_follows.cmp(pattern.follow.concat(event_char(e)))) {
@@ -736,14 +739,21 @@ var Tornado = {
                 e.shiftKey == operator.shift &&
                 e.ctrlKey == operator.ctrl &&
                 e.altKey == operator.alt) {
-                if ((typeof operator.func) == 'string') {
-                    this[operator.func](post);
+
+                if (operator.follow &&
+                    operator.follow.length &&
+                    !Tornado.key_follows.cmp(operator.follow.concat(event_char(e)))) {
                 }
                 else {
-                    this.func(post);
-                }
+                    if ((typeof operator.func) == 'string') {
+                        this[operator.func](post);
+                    }
+                    else {
+                        this.func(post);
+                    }
 
-                Tornado.key_follows = [];
+                    Tornado.key_follows = [];
+                }
             }
         }
     },
