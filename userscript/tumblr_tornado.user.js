@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name        Tumblr Tornado
+// @version     1.0.2
+// @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
 // @match       http://www.tumblr.com/likes
 // @match       http://www.tumblr.com/likes/*
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.2
-// @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @author      poochin
 // @license     MIT
@@ -14,6 +14,7 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
+// 追加予定
 // @match       http://www.tumblr.com/tagged/*
 
 /**
@@ -26,6 +27,7 @@ TODO List:
 **/
 
 var whole_css = [
+    /* Pin Notification */
     "#pin_notification_board {",
     "    position: fixed;",
     "    right: 15px;",
@@ -77,6 +79,7 @@ var whole_css = [
     "    90%  { opacity: 1; }",
     "    100% { opacity: 0; }",
     "}",
+    /* Reblog Button */
     ".reblog_button.reblogging {",
     "    background-position: -530px -270px !important;",
     "    -webkit-animation: reblogging 1s infinite;",
@@ -107,6 +110,7 @@ var whole_css = [
     "  55% { -o-transform: rotate(360deg) scale(1, 1); }",
     "  100% { -o-transform: rotate(360deg) scale(1, 1); }",
     "}",
+    /* Lite Dialog */
     ".lite_dialog {",
     "  background-color: #fff;",
     "  padding: 2px;",
@@ -121,8 +125,8 @@ var whole_css = [
     "  -moz-box-shadow: 0 0 6px #000;",
     "  box-shadow: 0 0 6px #000;",
     "}",
-    ".lite_dialog_bar { }",
-    ".lite_dialog_bar:after {",
+    ".lite_dialog_sysbar { }",
+    ".lite_dialog_sysbar:after {",
     "  content: '';",
     "  clear: both;",
     "  height: 0;",
@@ -173,6 +177,7 @@ var whole_css = [
     ".lite_dialog_body input[type='button']:focus {",
     "  font-weight: bold;",
     "}",
+    /* Shortcut Help */
     "#tornado_shortcuts_help {",
     "  color: #abb;",
     "  font-size: 12px;",
@@ -193,16 +198,24 @@ var whole_css = [
     "}",
     "#tornado_shortcuts_help code {",
     "  background: #1C3752;",
-//     "  border-radius: 3px;",
     "}",
     "#tornado_shortcuts_help code:after {",
     "  content: ': ';",
     "  background: #2C4762;",
     "}",
-].join('');
+    /* Clean Posts */
+    ".empty_post {",
+    "  background: #fff;",
+    "  border-radius: 10px;",
+    "  margin-top: 20px;",
+    "}",
+    ".empty_post.same_user_as_last {",
+    "  margin-top: 7px;",
+    "}",
+].join('\n');
 
 var base_lite_dialog = [
-    '<div class="lite_dialog_bar">',
+    '<div class="lite_dialog_sysbar">',
     '  <div class="lite_dialog_sysmenus">',
     '    <span class="lite_dialog_close">× </span>',
     '  </div>',
@@ -215,25 +228,11 @@ var base_lite_dialog = [
 var left_click = document.createEvent("MouseEvents"); 
 left_click.initEvent("click", false, true);
 
+var api_key = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
 /**
-  Type Extention
+ * Type Extention
 **/
-
-NodeList.prototype.map = function(func) {
-    var values = [];
-    for (var i = 0; i < this.length; ++i) {
-        values.push(func(this[i]));
-    }
-    return values;
-};
-NodeList.prototype.match = function(func) {
-    for (var i = 0; i < this.length; ++i) {
-        if (func(this[i])) {
-            return this[i];
-        }
-    }
-};
 
 Array.prototype.cmp = function(another) {
     if (this.length != another.length) {
@@ -248,17 +247,28 @@ Array.prototype.cmp = function(another) {
     return true;
 };
 
-function nodeRect (elm) {
+
+/**
+ * Library
+**/
+
+function viewRect()
+{
+    return {
+        x: document.documentElement.scrollLeft || document.body.scrollLeft,
+        y: document.documentElement.scrollTop || document.body.scrollTop,
+        cx: document.documentElement.clientWidth,
+        cy: document.documentElement.clientHeight};
+}
+
+function nodeRect (elm)
+{
     return {
         'x': elm.offsetLeft,
         'y': elm.offsetTop,
         'cx': elm.offsetWidth,
         'cy': elm.offsetHeight};
 };
-
-/**
-  Library
-**/
 
 function customkey(func, options)
 {
@@ -268,16 +278,15 @@ function customkey(func, options)
         shift: options.shift || false,
         ctrl: options.ctrl || false,
         alt: options.alt || false,
-        follow: options.follow || [],
+        follows: options.follows || [],
         usehelp: (typeof options.usehelp == 'undefined') ? true : options.usehelp,
-        desc: options.desc || '',
-    };
+        desc: options.desc || ''};
 }
 
 function buildShortcutLineHelp(key, shortcut) {
     var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
     var code = [
-        (shortcut.follow && shortcut.follow.join(' ')) || '',
+        (shortcut.follows && shortcut.follows.join(' ')) || '',
         (shortcut.shift && 's-') || '',
         (String.fromCharCode(key).toUpperCase())].join('');
     code = pre_spacing.slice(code.length).join('') + code;
@@ -299,7 +308,6 @@ function selectDialogButton(e) {
         else if (48 <= e.keyCode && e.keyCode <= 57) {
             var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
             var name = 'button' + number;
-            // document.querySelector('.lite_dialog input[type="button"].' + name).focus();
             document.querySelector('.lite_dialog input[type="button"].' + name).click();
         }
     }
@@ -308,7 +316,7 @@ function selectDialogButton(e) {
 function preapply(self, func, args) {
     return function() {
         func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
-    }
+    };
 }
 
 function buildQueryString(dict) {
@@ -322,6 +330,11 @@ function buildQueryString(dict) {
     }
     return queries.join('&');
 }
+
+
+/**
+ * Classes
+**/
 
 function Ajax(method, url, params, callback, failback) {
     var xhr = this.xhr = new XMLHttpRequest();
@@ -385,7 +398,7 @@ function LiteDialog(title) {
     close.addEventListener('click', preapply(this, this.close));
 
     document.body.appendChild(dialog);
-    this.centering(dialog);
+    this.centering();
 }
 
 LiteDialog.prototype = {
@@ -396,7 +409,6 @@ LiteDialog.prototype = {
         document.addEventListener('mousemove', this.mousemove);
         document.addEventListener('mouseup', this.mouseup);
   
-        // memo: e.clientX, e.layerX, e.pageX, e.screenX
         this.origin_offsetX = e.clientX - this.dialog.offsetLeft;
         this.origin_offsetY = e.clientY - this.dialog.offsetTop;
     },
@@ -413,32 +425,18 @@ LiteDialog.prototype = {
         this.dialog.parentNode.removeChild(this.dialog);
         this.dialog = undefined;
     },
-    centering: function(elm, parent) {
-        if (parent) {
-            var rect = {
-                x: parent.offsetLeft,
-                y: parent.offsetTop,
-                cx: parent.offsetWidth,
-                cy: parent.offsetHeight};
-            elm.style.top = (rect.y + (rect.cy / 2) - (elm.offsetHeight / 2)) + 'px';
-            elm.style.left = (rect.x + (rect.cx / 2) - (elm.offsetWidth / 2)) + 'px';
-        }
-        else {
-            var view_info = {
-                scrollTop: document.documentElement.scrollTop || document.body.scrollTop,  // FIXME: Opera OK?
-                scrollLeft: document.documentElement.scrollLeft || document.body.scrollLeft,  // FIXME: Opera OK?
-                width: document.documentElement.clientWidth,
-                height: document.documentElement.clientHeight};
-            elm.style.top = (view_info.scrollTop + (view_info.height/2) - (elm.offsetHeight/2)) + 'px';
-            elm.style.left = (view_info.scrollLeft + (view_info.width/2) - (elm.offsetWidth/2)) + 'px';
-        }
+    centering: function() {
+        var elm = this.dialog;
+        var vr = viewRect();
+        elm.style.top = (vr.y + (vr.cy / 2) - (elm.offsetHeight / 2)) + 'px';
+        elm.style.left = (vr.x + (vr.cx / 2) - (elm.offsetWidth / 2)) + 'px';
     },
 };
 
 
 /**
  * Tornado main object
- */
+**/
 
 var Tornado = {
     /* const */
@@ -521,8 +519,10 @@ var Tornado = {
             }
 
             new Ajax(form.method, form.action, postdata, function(_xhr) {
-                var reblog_button = post.querySelector('a.reblog_button');
-                if (post.querySelector('ul#errors')) {
+                var dummy_div = document.createElement('div');
+                dummy_div.innerHTML = _xhr.responseText;
+
+                if (dummy_div.querySelector('ul#errors')) {
                     reblog_button.innerHTML = 'NG';
                     reblog_button.className = 'reblog_button';
                     reblog_button.style.background = 'transparent';
@@ -590,19 +590,19 @@ var Tornado = {
         Tornado.reblogToChannelDialog(post, {});
     },
     draft: function(post) {
-        Tornado.reblog(post, {'post[state]': '1'});
+        Tornado.reblog(post, {'post[state]': '1', 'channel_id': '0'});
     },
     draftToChannel: function(post) {
         Tornado.reblogToChannelDialog(post, {'post[state]': '1'});
     },
     queue: function(post) {
-        Tornado.reblog(post, {'post[state]': '2'});
+        Tornado.reblog(post, {'post[state]': '2', 'channel_id': '0'});
     },
     queueToChannel: function(post) {
         Tornado.reblogToChannelDialog(post, {'post[state]': '2'});
     },
     private: function(post) {
-        Tornado.reblog(post, {'post[state]': 'private'});
+        Tornado.reblog(post, {'post[state]': 'private', 'channel_id': '0'});
     },
     privateToChannel: function(post) {
         Tornado.reblogToChannelDialog(post, {'post[state]': 'private'});
@@ -622,6 +622,7 @@ var Tornado = {
 
         if (type == "photo") {
             if (navigator.appVersion.search('Chrome') >= 0) {
+                /* FIXME: Firefox / Opera でもう一度、こちらで動かないか確認 */
                 with({elm: post.querySelector('img.image_thumbnail') ||
                            document.querySelector('#tumblr_lightbox') ||
                            post.querySelector('a.photoset_photo')}) {
@@ -652,23 +653,43 @@ var Tornado = {
             }
         }   
     },
-    cleanPosts: function(post) {
-        /* どうにも使い勝手が悪い */
-        var posts = document.querySelectorAll('#posts > .post');
+    cleanPosts: function(/* post */) {
+        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
         var dsbd = posts[0].parentNode;
-        for (var i = 1; i < posts.length; ++i) {
-            var elm = document.createElement('li');
-            elm.style.cssText = [
-                ';width:', posts[i].offsetWidth, 'px',
-                ';height:', posts[i].offsetHeight, 'px',
-                ';background:', '#fff',
-                ';margin-top:', (/\bsame_user_as_last\b/.test(posts[i].className) ? 7 : 20), 'px',
-                ';border-radius:', '10px'].join('');
-            dsbd.replaceChild(elm, posts[i]);
-            if (post == posts[i]) {
-                break;
-            }
+        var vr = viewRect();
+        var i;
+        for (i = 0; posts[i].offsetTop < vr.y && i < posts.length; ++i) {
+            var post = document.createElement('li');
+            post.className = ['empty_post', posts[i].className.match(/\bsame_user_as_last\b/)].join(' ');
+            post.style.cssText = [
+                'width:', posts[i].offsetWidth, 'px;',
+                'height:', posts[i].offsetHeight, 'px;'].join('');
+            dsbd.replaceChild(post, posts[i]);
         }
+        new PinNotification(i + '件のポストを空にしました。');
+    },
+    rootInfo: function(post) {
+        var post_id = post.id.match(/\d+/)[0];
+
+        var post_info = post.querySelector('.post_info');
+        var root_info = document.createElement('span');
+        root_info.className = 'root_info';
+        root_info.innerHTML = ' [...]';
+        post_info.insertBefore(root_info, post_info.lastChild);
+
+        var script = document.createElement('script');
+        script.id = 'showroot_' + post_id;
+
+        var permalink = post.querySelector('a.permalink').href;
+        var blog_name = permalink.match(/[^\/]*(?=\/post)/)[0];
+        var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: api_key});
+        var url = [
+            'http://api.tumblr.com/v2/blog',
+            blog_name,
+            'posts?' + qs].join('/');
+        script.src = url;
+
+        document.body.appendChild(script);
     },
     default: function() {
         return true;  /* threw up event */
@@ -701,7 +722,7 @@ var Tornado = {
             return;
         }
 
-        current_top = document.documentElement.scrollTop || document.body.scrollTop; // FIXME: Opera OK?
+        current_top = document.documentElement.scrollTop || document.body.scrollTop;
         post = Array.prototype.slice.call(document.querySelectorAll('.post')).filter(function(elm) {
             return current_top == (elm.offsetTop - margin_top);
         })[0];
@@ -729,11 +750,9 @@ var Tornado = {
                         e.ctrlKey == pattern.ctrl &&
                         e.altKey == pattern.alt) {
 
-                        console.log(pattern.func);
-
-                        if (pattern.follow &&
-                            pattern.follow.length &&
-                            !Tornado.key_follows.cmp(pattern.follow.concat(event_char(e)))) {
+                        if (pattern.follows &&
+                            pattern.follows.length &&
+                            !Tornado.key_follows.cmp(pattern.follows.concat(event_char(e)))) {
                         }
                         else {
                             if (typeof pattern.func == 'string') {
@@ -755,9 +774,9 @@ var Tornado = {
                 e.ctrlKey == operator.ctrl &&
                 e.altKey == operator.alt) {
 
-                if (operator.follow &&
-                    operator.follow.length &&
-                    !Tornado.key_follows.cmp(operator.follow.concat(event_char(e)))) {
+                if (operator.follows &&
+                    operator.follows.length &&
+                    !Tornado.key_follows.cmp(operator.follows.concat(event_char(e)))) {
                 }
                 else {
                     if ((typeof operator.func) == 'string') {
@@ -776,8 +795,8 @@ var Tornado = {
 
 
 /**
- * shortcuts info
- *
+ * shortcuts info *
+
  * h: fastReblog
  * t: ReblogNormally
  * j: Down
@@ -789,31 +808,14 @@ var Tornado = {
  * q: Queue
  * p: Private, (publish?)
  * i: scaleImage
- * c?: cleanPosts(by SuperTumblr)
+ * c: cleanPosts(by SuperTumblr)
  * n: Notes
  * m?: Poster Info(with APIv2?)
  * g: got top
  * G: goto bottom
  * r?: Reload
- * O?: Jump to prev post(ability passed g, G)
+ * O: Jump to prev post(ability passed g, G)
  */
-
-/**
-normal
-    t: reblog
-    h: fast_reblog
-    j: default
-    k: default
-    g: goTop
-    l: default
-    d: draft
-    p: private
-    i: scaleImage
-    c: cleanPosts
-    n: notes
-shift
-*/
-
 
 Tornado.shortcuts = {
     /* T */ 84: [customkey('reblogToChannel', {shift: true, desc: 'channelへリブログ'}),
@@ -824,24 +826,45 @@ Tornado.shortcuts = {
     /* K */ 75: [customkey('halfup', {shift: true, desc: '上へ半スクロール'}),
                  customkey('default', {desc: '前ポストへ移動'})],
     /* G */ 71: [customkey('goBottom', {shift: true, desc: '一番下へスクロール'}),
-                 customkey('goTop', {follow: ['g'], desc: '一番上へスクロール'})],
+                 customkey('goTop', {follows: ['g'], desc: '一番上へスクロール'})],
     /* O */ 79: [customkey('jumpToLastCursor', {shift: true, usehelp: false})],
     /* L */ 76:  customkey('default', {desc: 'Like'}),
-    /* D */ 68: [customkey('draftToChannel', {follow: ['g'], desc: '下書きとしてchannelへリブログ'}),
+    /* D */ 68: [customkey('draftToChannel', {follows: ['g'], desc: '下書きとしてchannelへ保存'}),
                  'draft'],
-    /* Q */ 81: [customkey('queueToChannel', {follow: ['g'], desc: 'queueとしてchannelへリブログ'}),
+    /* Q */ 81: [customkey('queueToChannel', {follows: ['g'], desc: 'queueとしてchannelへ保存'}),
                  'queue'],
-    /* P */ 80: [customkey('privateToChannel', {follow: ['g'], desc: 'privateとしてchannelリブログ'}),
+    /* P */ 80: [customkey('privateToChannel', {follows: ['g'], desc: 'privateとしてchannelへリブログ'}),
                  'private'],
     /* I */ 73: customkey('scaleImage', {desc: '"photo","video"を拡縮'}),
-    /* C */ 67: 'cleanPosts',
+    /* C */ 67: customkey('cleanPosts', {desc: '現在より上のポストを空の状態にする'}),
     /* N */ 78: customkey('notes', {desc: 'Notes を表示'}),
-    // /* M */ 77: 'master'
+    /* M */ 77: 'rootInfo'
 };
 
 /**
  * main execution functions
 **/
+
+function embedRootInfo() {
+    function jsonpRootInfo(json) {
+        var post = json.response.posts[0];
+        var node_post = document.querySelector('#post_' + post.id);
+        var root_info = node_post.querySelector('.root_info');
+        var root_name = post.reblogged_root_name;
+        var root_url = post.reblogged_root_url;
+
+        var text_root_link = (root_name ? (['<a herf="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
+
+        root_info.innerHTML = ' [' + text_root_link + ']';
+
+        var script = document.querySelector('#showroot_' + post.id);
+        script.parentNode.removeChild(script);
+    }
+    var jsonpRootInfo = jsonpRootInfo.toString();
+    window.location = [
+        'javascript:',
+        jsonpRootInfo].join('');
+}
 
 function enhistory() {
     var inner_code = (function() {
@@ -853,7 +876,9 @@ function enhistory() {
     }).toString();
     window.location.href = [
         'javascript:',
-        '(', inner_code, ')()'].join('');
+        '(',
+        inner_code,
+        ')()'].join('');
 }
 
 function showShortcutHelp() {
@@ -913,6 +938,7 @@ function main() {
 
     showShortcutHelp();
     enhistory();
+    embedRootInfo();
 
     style_element.Tornado = Tornado;
 }
