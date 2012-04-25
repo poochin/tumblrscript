@@ -26,7 +26,8 @@ TODO List:
  * Variables
 **/
 
-var whole_css = [
+/* ページに埋め込むスタイルシート */
+var embed_css = [
     /* Pin Notification */
     "#pin_notification_board {",
     "    position: fixed;",
@@ -214,21 +215,12 @@ var whole_css = [
     "}",
 ].join('\n');
 
-var base_lite_dialog = [
-    '<div class="lite_dialog_sysbar">',
-    '  <div class="lite_dialog_sysmenus">',
-    '    <span class="lite_dialog_close">× </span>',
-    '  </div>',
-    '  <div class="lite_dialog_caption">',
-    '  </div>',
-    '</div>',
-    '<div classdiv class="lite_dialog_body">',
-    '</div>'].join('');
-
+/* dispatch 用の左クリックイベント */
 var left_click = document.createEvent("MouseEvents"); 
 left_click.initEvent("click", false, true);
 
-var api_key = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
+var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
+
 
 /**
  * Type Extention
@@ -252,6 +244,7 @@ Array.prototype.cmp = function(another) {
  * Library
 **/
 
+/* クライントエリアの位置・サイズを返します */
 function viewRect()
 {
     return {
@@ -261,6 +254,8 @@ function viewRect()
         cy: document.documentElement.clientHeight};
 }
 
+/* 要素の位置・サイズを返します */
+// FIXME: absolute, fixed などは static, relative 親要素になるまで再帰的に取る必要があります
 function nodeRect (elm)
 {
     return {
@@ -270,6 +265,17 @@ function nodeRect (elm)
         'cy': elm.offsetHeight};
 };
 
+/* キーイベント用のオブジェクトを生成して返します */
+/**
+ * func
+ * url
+ * shift
+ * ctrl
+ * alt
+ * follows
+ * usehelp
+ * desc
+ */
 function customkey(func, options)
 {
     return {
@@ -283,6 +289,7 @@ function customkey(func, options)
         desc: options.desc || ''};
 }
 
+/* keyCode と customkey が返すオブジェクトを元に一行ヘルプのテキストを作成します */
 function buildShortcutLineHelp(key, shortcut) {
     var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
     var code = [
@@ -300,6 +307,7 @@ function buildShortcutLineHelp(key, shortcut) {
             : (shortcut.desc || shortcut.func))].join('');
 }
 
+/* 数字キーが入力された際に対応したチャンネルのボタンをクリックします */
 function selectDialogButton(e) {
     if (document.querySelector('.lite_dialog')) {
         if (e.keyCode == 27) {
@@ -313,12 +321,14 @@ function selectDialogButton(e) {
     }
 }
 
+/* self が func を呼び出した事にします */
 function preapply(self, func, args) {
     return function() {
         func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
     };
 }
 
+/* {}オブジェクトから HTTP 送信クエリストリングを作成します */
 function buildQueryString(dict) {
     if (typeof dict == 'undefined') {
         return '';
@@ -336,6 +346,7 @@ function buildQueryString(dict) {
  * Classes
 **/
 
+/* Ajax 通信を行います */
 function Ajax(method, url, params, callback, failback) {
     var xhr = this.xhr = new XMLHttpRequest();
 
@@ -363,7 +374,8 @@ function Ajax(method, url, params, callback, failback) {
     xhr.send(buildQueryString(params));
 }
 
-function PinNotification (infomation) {
+/* クライアントエリアの右下にピンバルーンとメッセージを表示します */
+function PinNotification (message) {
     var board = document.querySelector('#pin_notification_board');
     if (!board) {
         board = document.createElement('div');
@@ -373,7 +385,7 @@ function PinNotification (infomation) {
 
     var elm = this.elm = document.createElement('div');
     elm.className = 'pin_notification';
-    elm.appendChild(document.createTextNode(infomation));
+    elm.appendChild(document.createTextNode(message));
 
     board.appendChild(elm);
 
@@ -382,13 +394,15 @@ function PinNotification (infomation) {
     }), 3000);
 }
 
+
+/* 軽量 Dialog ボックスを作成します */
 function LiteDialog(title) {
     this.origin_offsetX = this.origin_offsetY = null;
     var dialog = this.dialog = document.createElement('div');
     dialog.object = dialog;
 
     dialog.className = 'lite_dialog';
-    dialog.innerHTML = base_lite_dialog;
+    dialog.innerHTML = this.base_lite_dialog;
 
     var caption = dialog.querySelector('.lite_dialog_caption');
     caption.appendChild(document.createTextNode(title));
@@ -402,6 +416,17 @@ function LiteDialog(title) {
 }
 
 LiteDialog.prototype = {
+    base_lite_dialog: [
+        '<div class="lite_dialog_sysbar">',
+        '  <div class="lite_dialog_sysmenus">',
+        '    <span class="lite_dialog_close">× </span>',
+        '  </div>',
+        '  <div class="lite_dialog_caption">',
+        '  </div>',
+        '</div>',
+        '<div classdiv class="lite_dialog_body">',
+        '</div>'].join('')
+    ,
     mousedown: function(e) {
         this.mousemove = preapply(this, this.mousemove);
         this.mouseup = preapply(this, this.mouseup);
@@ -685,7 +710,7 @@ var Tornado = {
 
         var permalink = post.querySelector('a.permalink').href;
         var blog_name = permalink.match(/[^\/]*(?=\/post)/)[0];
-        var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: api_key});
+        var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: API_KEY});
         var url = [
             'http://api.tumblr.com/v2/blog',
             blog_name,
@@ -700,6 +725,7 @@ var Tornado = {
 
     /* Event Listener */
     keyevent: function (e) {
+        // FIXME: 長すぎるので分割する
         function event_char(e) {
             var c = String.fromCharCode(e.keyCode);
             return (e.shiftKey ? c.toUpperCase() : c.toLowerCase());
@@ -848,6 +874,7 @@ Tornado.shortcuts = {
  * main execution functions
 **/
 
+/* rootInfo の jsonp を処理する関数をページに埋め込みます */
 function embedRootInfo() {
     function jsonpRootInfo(json) {
         var post = json.response.posts[0];
@@ -869,6 +896,7 @@ function embedRootInfo() {
         jsonpRootInfo].join('');
 }
 
+/* オートロードするたびにURLを現在のページに置き換える処理をページに埋め込みます */
 function enhistory() {
     var inner_code = (function() {
         var papr = window._process_auto_paginator_response;
@@ -884,6 +912,7 @@ function enhistory() {
         ')()'].join('');
 }
 
+/* right column に各ショートカットのヘルプを表示します */
 function showShortcutHelp() {
     var help = document.createElement('dl');
     help.id = 'tornado_shortcuts_help';
@@ -936,7 +965,7 @@ function main() {
     document.addEventListener('keydown', selectDialogButton, true);
 
     var style_element = document.createElement('style');
-    style_element.appendChild(document.createTextNode(whole_css));
+    style_element.appendChild(document.createTextNode(embed_css));
     document.head.appendChild(style_element);
 
     showShortcutHelp();
@@ -959,6 +988,11 @@ else {
 **/
 /*
 2012-04-25
+ver 1.0.3.0
+    * rootInfo を取得できるようにしました *
+
+    最初にポストした投稿者の情報を取得する機能を付けました。
+
 ver 1.0.2
     * ショートカットを拡張 *
 
