@@ -722,17 +722,17 @@ var Tornado = {
                         if (pattern.follow &&
                             pattern.follow.length &&
                             !Tornado.key_follows.cmp(pattern.follow.concat(event_char(e)))) {
-                            break;
-                        }
-
-                        if (typeof pattern.func == 'string') {
-                            this[pattern.func](post);
                         }
                         else {
-                            pattern.func(post);
+                            if (typeof pattern.func == 'string') {
+                                this[pattern.func](post);
+                            }
+                            else {
+                                pattern.func(post);
+                            }
+                            Tornado.key_follows = [];
+                            break;
                         }
-                        Tornado.key_follows = [];
-                        break;
                     }
                 }
             }
