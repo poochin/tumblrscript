@@ -14,6 +14,7 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
+// @match       http://www.tumblr.com/tagged/*
 
 /**
 TODO List:
@@ -25,6 +26,11 @@ TODO List:
 **/
 
 var whole_css = [
+    "#pin_notification_board {",
+    "    position: fixed;",
+    "    right: 15px;",
+    "    bottom: 0;",
+    "}",
     ".pin_notification.error {",
     "    color: red;",
     "}",
@@ -32,15 +38,12 @@ var whole_css = [
     "    -webkit-animation: pin_notification_animation 3s forwards;",
     "    -moz-animation: pin_notification_animation 3s forwards;",
     "    -o-animation: pin_notification_animation 3s forwards;",
-    "    position: fixed;",
-    "    right: 15px;",
-    "    bottom: 0;",
-    "    margin-bottom: 10px;",
+    "    margin-bottom: 8px;",
     "    padding: 5px;",
     "    min-width: 100px;",
     "    max-width: 400px;",
     "    border-radius: 5px;",
-    "    border: 1px solid #888;",
+    "    border: 2px solid #888;",
     "    background: #efefef;",
     "}",
     ".pin_notification:after {",
@@ -107,6 +110,7 @@ var whole_css = [
     ".lite_dialog {",
     "  background-color: #fff;",
     "  padding: 2px;",
+    "  z-index: 10;",
     "  position: absolute;",
     "  top: 0;",
     "  left: 0;",
@@ -347,10 +351,18 @@ function Ajax(method, url, params, callback, failback) {
 }
 
 function PinNotification (infomation) {
+    var board = document.querySelector('#pin_notification_board');
+    if (!board) {
+        board = document.createElement('div');
+        board.id = 'pin_notification_board';
+        document.body.appendChild(board);
+    }
+
     var elm = this.elm = document.createElement('div');
     elm.className = 'pin_notification';
     elm.appendChild(document.createTextNode(infomation));
-    document.body.appendChild(elm);
+
+    board.appendChild(elm);
 
     setTimeout(preapply(this, function() {
         this.elm.parentNode.removeChild(this.elm);
@@ -808,9 +820,9 @@ Tornado.shortcuts = {
                  'reblog'],
     /* H */ 72: 'fast_reblog',
     /* J */ 74: [customkey('halfdown', {shift: true, desc: '下へ半スクロール'}),
-                 customkey('default', {desc: '下のポストへ移動'})],
+                 customkey('default', {desc: '次ポストへ移動'})],
     /* K */ 75: [customkey('halfup', {shift: true, desc: '上へ半スクロール'}),
-                 customkey('default', {desc: '上のポストへ移動'})],
+                 customkey('default', {desc: '前ポストへ移動'})],
     /* G */ 71: [customkey('goBottom', {shift: true, desc: '一番下へスクロール'}),
                  customkey('goTop', {follow: ['g'], desc: '一番上へスクロール'})],
     /* O */ 79: [customkey('jumpToLastCursor', {shift: true, usehelp: false})],
