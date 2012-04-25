@@ -174,6 +174,9 @@ var whole_css = [
     "  font-size: 12px;",
     "  line-height: 1.2em;",
     "}",
+    "#tornado_normal_shortcuts_help {",
+    "  white-space: pre;",
+    "}",
     "#tornado_shortcuts_help dt + dd code {",
     "  border-radius: 3px 0 0 0;",
     "}",
@@ -428,6 +431,7 @@ LiteDialog.prototype = {
 var Tornado = {
     /* const */
     KEY_MAX_FOLLOWS: 2,
+    KEY_CONTINUAL_TIME: 2000, // milli
 
     /* variables */
     prev_cursor: null,
@@ -673,10 +677,9 @@ var Tornado = {
         if (65 <= key_code && key_code <= 90) {
             // 65 == 'A', 90 == 'Z'
             var time = (new Date()) * 1;
-            if (Tornado.key_input_time + 2000 < time) {
+            if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < time) {
                 Tornado.key_follows = [];
             }
-            /* FIXME: ShiftKey などは記録しない */
             Tornado.key_follows = Tornado.key_follows.concat(event_char(e));
             Tornado.key_follows = Tornado.key_follows.splice(-Tornado.KEY_MAX_FOLLOWS);
             Tornado.key_input_time = time;
@@ -847,7 +850,10 @@ function showShortcutHelp() {
 
     var normal_shortcuts = document.createElement('dt');
     normal_shortcuts.id = 'tornado_normal_shortcuts_help';
-    normal_shortcuts.appendChild(document.createTextNode('Tornado (s-はShiftを同時押し)'));
+    normal_shortcuts.appendChild(document.createTextNode([
+        'Tumblr Tornado',
+        '* s-はShift同時押し',
+        '* 小文字は連続入力'].join('\n')));
     help.appendChild(normal_shortcuts);
 
     for (var key in Tornado.shortcuts) {
