@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-04-25
+// @updated     2012-04-26
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -271,7 +271,7 @@ function toggleVideoEmbed(post) {
 /* */
 function createDummyNode(html) {
     var node = document.createElement('div');
-    node.innerHTML = node;
+    node.innerHTML = html;
     return node;
 }
 
@@ -634,6 +634,7 @@ var Tornado = {
                 Tornado.reblog(post, postdata);
                 dialog.close();
             });
+            console.log(button);
 
             dialog_body.appendChild(button);
         }
@@ -693,9 +694,6 @@ var Tornado = {
         }
 
         if (type == "photo") {
-            // FIXME: google chrome で
-            // http://himmelkei.tumblr.com/post/21838431259/thatdudejoey-grossier-sb-to-cute-for-my
-            // を i するとリンク先へ飛んでしまいます
             with({elm: post.querySelector('img.image_thumbnail') ||
                        document.querySelector('#tumblr_lightbox') ||
                        post.querySelector('a.photoset_photo')}) {
