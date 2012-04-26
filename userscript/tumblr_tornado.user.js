@@ -634,7 +634,6 @@ var Tornado = {
                 Tornado.reblog(post, postdata);
                 dialog.close();
             });
-            console.log(button);
 
             dialog_body.appendChild(button);
         }
