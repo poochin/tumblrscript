@@ -244,6 +244,12 @@ Array.prototype.cmp = function(another) {
  * Library
 **/
 
+/* 一度の処理で一度の javascript コードを location に指定できない為、遅延させて実行させます */
+function execClient(code)
+{
+    setTimeout(function() {location.assign('javascript:' + code)}, Math.random() * 100)
+}
+
 /* クライントエリアの位置・サイズを返します */
 function viewRect()
 {
@@ -307,19 +313,7 @@ function buildShortcutLineHelp(key, shortcut) {
             : (shortcut.desc || shortcut.func))].join('');
 }
 
-/* 数字キーが入力された際に対応したチャンネルのボタンをクリックします */
-function selectDialogButton(e) {
-    if (document.querySelector('.lite_dialog')) {
-        if (e.keyCode == 27) {
-            document.querySelector('.lite_dialog_close').dispatchEvent(left_click);
-        }
-        else if (48 <= e.keyCode && e.keyCode <= 57) {
-            var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
-            var name = 'button' + number;
-            document.querySelector('.lite_dialog input[type="button"].' + name).click();
-        }
-    }
-}
+
 
 /* self が func を呼び出した事にします */
 function preapply(self, func, args) {
@@ -413,6 +407,8 @@ function LiteDialog(title) {
 
     document.body.appendChild(dialog);
     this.centering();
+
+    document.addEventListener('keydown', LiteDialog.prototype.keyevent, true);
 }
 
 LiteDialog.prototype = {
@@ -449,6 +445,20 @@ LiteDialog.prototype = {
     close: function(e) {
         this.dialog.parentNode.removeChild(this.dialog);
         this.dialog = undefined;
+    },
+    keyevent: function (e) {
+        /* 数字キーが入力された際に対応したチャンネルのボタンをクリックします */
+        if (document.querySelector('.lite_dialog')) {
+            enhistory();
+            if (e.keyCode == 27) {
+                document.querySelector('.lite_dialog_close').dispatchEvent(left_click);
+            }
+            else if (48 <= e.keyCode && e.keyCode <= 57) {
+                var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
+                var name = 'button' + number;
+                document.querySelector('.lite_dialog input[type="button"].' + name).click();
+            }
+        }
     },
     centering: function() {
         var elm = this.dialog;
@@ -694,6 +704,7 @@ var Tornado = {
         new PinNotification(i + '件のポストを空にしました。');
     },
     rootInfo: function(post) {
+        // FIXME: "rebloged you:" に対応していません
         var post_id = post.id.match(/\d+/)[0];
         var post_info = post.querySelector('.post_info');
         if (post_info.querySelector('.root_info')) {
@@ -878,22 +889,18 @@ Tornado.shortcuts = {
 function embedRootInfo() {
     function jsonpRootInfo(json) {
         var post = json.response.posts[0];
-        var node_post = document.querySelector('#post_' + post.id);
-        var root_info = node_post.querySelector('.root_info');
         var root_name = post.reblogged_root_name;
         var root_url = post.reblogged_root_url;
-
         var text_root_link = (root_name ? (['<a herf="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
 
+        var node_post = document.querySelector('#post_' + post.id);
+        var root_info = node_post.querySelector('.root_info');
         root_info.innerHTML = ' [' + text_root_link + ']';
 
         var script = document.querySelector('#showroot_' + post.id);
         script.parentNode.removeChild(script);
     }
-    var jsonpRootInfo = jsonpRootInfo.toString();
-    window.location = [
-        'javascript:',
-        jsonpRootInfo].join('');
+    execClient(jsonpRootInfo.toString());
 }
 
 /* オートロードするたびにURLを現在のページに置き換える処理をページに埋め込みます */
@@ -905,11 +912,7 @@ function enhistory() {
             papr(transport);
         }
     }).toString();
-    window.location.href = [
-        'javascript:',
-        '(',
-        inner_code,
-        ')()'].join('');
+    execClient('(' + inner_code + ')()');
 }
 
 /* right column に各ショートカットのヘルプを表示します */
@@ -927,33 +930,21 @@ function showShortcutHelp() {
 
     for (var key in Tornado.shortcuts) {
         var shortcuts = Tornado.shortcuts[key];
-        if (typeof shortcuts == 'string') {
-            var dd = document.createElement('dd');
-            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
-            help.appendChild(dd);
-        }
-        else if ('length' in shortcuts) {
-            for (var i = 0; i < shortcuts.length; ++i) {
-                var shortcut = shortcuts[i];
-                var dd = document.createElement('dd');
-                dd.innerHTML = buildShortcutLineHelp(key, shortcut);
-                help.appendChild(dd);
+        shortcuts = [].concat(shortcuts);  // 強制的に配列にして処理を一様にします
+
+        for (var i = shortcuts.length - 1; 0 <= i; --i) {
+            var shortcut = shortcuts[i];
+            if (typeof shortcut != 'string' && !shortcut.usehelp) {
+                continue;
             }
-        }
-        else if (shortcuts.usehelp && !shortcuts.shift) {
+
             var dd = document.createElement('dd');
-            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
-            help.appendChild(dd);
-        }
-        else if (shortcuts.usehelp && shortcuts.shift) {
-            var dd = document.createElement('dd');
-            dd.innerHTML = buildShortcutLineHelp(key, shortcuts);
+            dd.innerHTML = buildShortcutLineHelp(key, shortcut);
             help.appendChild(dd);
         }
     }
     document.querySelector('#right_column').appendChild(help);
 }
-
 
 /**
  * main
@@ -962,7 +953,6 @@ function showShortcutHelp() {
 function main() {
     var keyevent = preapply(Tornado, Tornado.keyevent);
     document.addEventListener('keydown', keyevent, false);
-    document.addEventListener('keydown', selectDialogButton, true);
 
     var style_element = document.createElement('style');
     style_element.appendChild(document.createTextNode(embed_css));
@@ -987,6 +977,10 @@ else {
  * History
 **/
 /*
+2012-04-26
+ver 1.0.4.0
+    * リファクタリング *
+
 2012-04-25
 ver 1.0.3.0
     * rootInfo を取得できるようにしました *
