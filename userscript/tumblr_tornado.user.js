@@ -22,6 +22,29 @@ TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
 **/
 
+// has_selector
+// selectormatch
+// has childSelector
+
+/**
+ * publish
+ *  li.post form[id^=publish]
+ *    form > input[name=id].id
+ *    form > input[name=form_key].value
+ */
+/**
+ * queue
+ *  li.post form[id^=queue]
+ *    form > input[name=id].id
+ *    form > input[name=form_key].value
+      form > input[name=queue].value == queue
+ */
+/**
+ * delete
+ *  li.post form[id^=delete]
+ *    form > input[name=id].id
+ */
+
 /**
  * Variables
 **/
@@ -330,6 +353,7 @@ function customkey(match, func, options)
         match: match,
         func: func,
         follows: options.follows || [],
+        has_selector: options.has_selector || null,
         url: options.url || /.*/,
         shift: options.shift || false,
         ctrl: options.ctrl || false,
@@ -874,6 +898,11 @@ Tornado.shortcuts = [
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('t', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
+
+    // TODO: publish, queue, delete を has_selector を指定して実装します
+    // customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
+    // customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
+    // customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
 ];
 
 
