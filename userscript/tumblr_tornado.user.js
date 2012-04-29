@@ -20,7 +20,6 @@
 /**
 TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
-    // shortcuts をリストに変更する
 **/
 
 /**
@@ -252,6 +251,7 @@ Array.prototype.cmp = function(another) {
 
 /* Tumblr/script を元に UserScript から動かせるように書き換えました */
 function toggleVideoEmbed(post) {
+    console.log(post);
     var post_id = post.id.match(/\d+/)[0];
     var toggle = post.querySelector('.video_thumbnail');
     var embed = post.querySelector('.video_embed');
@@ -383,7 +383,8 @@ function buildQueryString(dict) {
 **/
 
 /* Ajax 通信を行います */
-function Ajax(method, url, params, callback, failback) {
+// Opera で prototype.js の Ajax.Request を潰してしまうので避難させました
+function _Ajax(method, url, params, callback, failback) {
     var xhr = this.xhr = new XMLHttpRequest();
 
     xhr.onreadystatechange = function() {
@@ -564,7 +565,7 @@ var Tornado = {
             default_postdata = {};
         }
         var url_reblog = post.querySelector('.reblog_button').href;
-        new Ajax('GET', url_reblog, {}, preapply(window, function(_xhr) {
+        new _Ajax('GET', url_reblog, {}, preapply(window, function(_xhr) {
             var dummy_elm = createDummyNode(_xhr.responseText);
 
             /* forms のうち有効なデータを集めます */
@@ -586,7 +587,7 @@ var Tornado = {
                 postdata[name] = default_postdata[name];
             }
 
-            new Ajax(form.method, form.action, postdata, function(_xhr) {
+            new _Ajax(form.method, form.action, postdata, function(_xhr) {
                 var dummy_div = createDummyNode(_xhr.responseText);
 
                 if (dummy_div.querySelector('ul#errors')) {
@@ -649,7 +650,7 @@ var Tornado = {
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
 
-        new Ajax('GET', url_fast_reblog, {}, function(xhr) {
+        new _Ajax('GET', url_fast_reblog, {}, function(xhr) {
             if (xhr.responseText == 'OK') {
                 reblog_button.outerHTML = '<span>OK</span>';
                 new PinNotification('Reblogged');
@@ -764,7 +765,7 @@ var Tornado = {
         var key_char = String.fromCharCode(e.keyCode);
         key_char = (e.shiftKey ? key_char.toUpperCase() : key_char.toLowerCase());
 
-        if (e.keyIdentifier.match(/^F\d+$/)) {
+        if (112 <= e.keyCode && e.keyCode <= 123) {
             /* Function keys */
             return;
         }
@@ -778,8 +779,6 @@ var Tornado = {
             Tornado.key_input_time = time;
 
             Tornado.key_follows = Tornado.key_follows.concat(key_char).slice(-Tornado.KEY_MAX_FOLLOWS);
-        }
-        else {
         }
 
         var vr = viewRect();
@@ -871,9 +870,10 @@ Tornado.shortcuts = [
     customkey('p', 'privateToChannel', {follows: ['g'], desc: 'privateとしてchannelへリブログ'}),
 
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
+    customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
+
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
-    customkey('r', 'rootInfo', {usehelp: 'hide'}),
     customkey('t', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 ];
@@ -947,26 +947,6 @@ function showShortcutHelp() {
         dd.innerHTML = buildShortcutLineHelp(shortcut);
         help.appendChild(dd);
     }
-    /*
-    for (var key in Tornado.shortcuts) {
-        var shortcuts = Tornado.shortcuts[key];
-        shortcuts = [].concat(shortcuts);  // 強制的に配列にして処理を一様にします
-
-        for (var i = shortcuts.length - 1; 0 <= i; --i) {
-            var shortcut = shortcuts[i];
-            if (typeof shortcut != 'string' && !shortcut.usehelp) {
-                continue;
-            }
-
-            var dd = document.createElement('dd');
-            if (shortcut.usehelp == 'hide') {
-                dd.className = 'hide';
-            }
-            dd.innerHTML = buildShortcutLineHelp(key, shortcut);
-            help.appendChild(dd);
-        }
-    }
-    */
     document.querySelector('#right_column').appendChild(help);
 }
 
@@ -1002,10 +982,16 @@ else {
 **/
 /*
 2012-04-27
+ver 1.0.6
+    * shortcuts を dict から list に変更 *
+
+    Tornado.shortcuts を辞書型からリスト型に変更しました。
+    これによりヘルプの順序の設定が任意に行えるようになりました。
+
 ver 1.0.5
     * トップリロード機能 *
 
-    dashboard, likes, blog, drafts, queue などで各トップに飛ぶリロード機能を付けました
+    dashboard, likes, blog, drafts, queue などで各トップに飛ぶリロード機能を付けました。
 
 2012-04-26
 ver 1.0.4.0
