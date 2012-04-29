@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.6
+// @version     1.0.7
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -20,30 +20,8 @@
 /**
 TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
+    // スコープの為に全体をfunctionで括る
 **/
-
-// has_selector
-// selectormatch
-// has childSelector
-
-/**
- * publish
- *  li.post form[id^=publish]
- *    form > input[name=id].id
- *    form > input[name=form_key].value
- */
-/**
- * queue
- *  li.post form[id^=queue]
- *    form > input[name=id].id
- *    form > input[name=form_key].value
-      form > input[name=queue].value == queue
- */
-/**
- * delete
- *  li.post form[id^=delete]
- *    form > input[name=id].id
- */
 
 /**
  * Variables
@@ -353,7 +331,7 @@ function customkey(match, func, options)
         match: match,
         func: func,
         follows: options.follows || [],
-        has_selector: options.has_selector || null,
+        has_selector: options.has_selector || '',
         url: options.url || /.*/,
         shift: options.shift || false,
         ctrl: options.ctrl || false,
@@ -777,6 +755,38 @@ var Tornado = {
         var url = location.href.match(reg_top_path)[0];
         location.assign(url);
     },
+    delete: function(post) {
+        // FIXME: アニメーションが欲しい
+        var delete_button = post.querySelector('a[onclick^="if (confirm(\'D"]');
+        var id = post.id.match(/\d+/)[0];
+        var form_key = post.querySelector('form[id^=delete] input[name=form_key]').value;
+
+        new _Ajax('post', '/delete', {id: id, form_key: form_key}, function(_xhr) {
+            delete_button.innerHTML = 'Deleted!';
+            new PinNotification('Post [' + id + '] deleted.');
+        }, function(_xhr) {alert('fail to delete');});
+    },
+    publish: function(post) {
+        // FIXME: アニメーションが欲しい
+        var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
+        var id = post.id.match(/\d+/)[0];
+        var form_key = post.querySelector('form[id^=publish] input[name=form_key]').value;
+
+        new _Ajax('post', '/publish', {id: id, form_key: form_key}, function(_xhr) {
+            publish_button.innerHTML = 'Published!';
+            new PinNotification('Post [' + id + '] published.');
+        }, function(_xhr) {alert('fail to publish');});
+    },
+    enqueue: function(post) {
+        var queue_button = post.querySelector('a[onclick^="if (confirm(\'Q"]');
+        var id = post.id.match(/\d+/)[0];
+        var form_key = post.querySelector('form[id^=queue] input[name=form_key]').value;
+
+        new _Ajax('post', '/publish', {id: id, form_key: form_key, queue: 'queue'}, function(_xhr) {
+            queue_button.innerHTML = 'Enqueued!';
+            new PinNotification('Post [' + id + '] enqueued.');
+        }, function(_xhr) {alert('fail to enqueue');});
+    },
     default: function() {
         return true;  /* threw up event */
     },
@@ -814,7 +824,10 @@ var Tornado = {
         }
 
         var shortcuts = Tornado.shortcuts.slice(0);
-        shortcuts.sort(function(a, b) {return b.follows.length - a.follows.length;});
+        shortcuts.sort(function(a, b) {
+            return (b.follows.length - a.follows.length) ||
+                   (b.has_selector.length - a.has_selector.length);
+        });
 
         for (var i = 0; i < shortcuts.length; ++i) {
             var shortcut = shortcuts[i];
@@ -823,6 +836,12 @@ var Tornado = {
                 e.shiftKey == shortcut.shift &&
                 e.ctrlKey == shortcut.ctrl &&
                 e.altKey == shortcut.alt) {
+
+                if (shortcut.has_selector &&
+                    !post.querySelector(shortcut.has_selector)) {
+                    continue;
+                }
+
                 if (shortcut.follows &&
                     shortcut.follows.length &&
                     !Tornado.key_follows.cmp(shortcut.follows.concat(shortcut.match))) {
@@ -899,10 +918,9 @@ Tornado.shortcuts = [
     customkey('t', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 
-    // TODO: publish, queue, delete を has_selector を指定して実装します
-    // customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
-    // customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
-    // customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
+    customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
 
 
@@ -1008,6 +1026,14 @@ else {
  * History
 **/
 /*
+2012-04-29
+ver 1.0.7
+    * is_mine のポストを queue, draft, delete する機能を付けました *
+
+    customkey に子孫要素の css selector を探るオプションを付けることで、
+    is_mine のポストで queue, draft, delete する機能を付けました。
+    これによって drafts と delete は同じキーが割り当てられています。
+
 2012-04-27
 ver 1.0.6
     * shortcuts を dict から list に変更 *
