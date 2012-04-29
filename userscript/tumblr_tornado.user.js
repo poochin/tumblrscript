@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.4
+// @version     1.0.6
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -19,9 +19,8 @@
 
 /**
 TODO List:
-    * Reload (/dashboard/2/xxx を /dashboard で)
-    // for Reload RegExp
-    // http://www.tumblr.com/(?:dashboard|likes|(?:blog/[^/]+)|(?:tagged/[^?]+)|(?:show/[^/]+))
+    /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
+    // shortcuts をリストに変更する
 **/
 
 /**
@@ -225,6 +224,7 @@ var embed_css = [
 var left_click = document.createEvent("MouseEvent"); 
 left_click.initEvent("click", false, true);
 
+/* root info を取得するのに使います */
 var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
 
@@ -321,26 +321,30 @@ function nodeRect (elm)
  * usehelp
  * desc
  */
-function customkey(func, options)
+function customkey(match, func, options)
 {
+    if (typeof options == 'undefined') {
+        options = {};
+    }
     return {
+        match: match,
         func: func,
+        follows: options.follows || [],
         url: options.url || /.*/,
         shift: options.shift || false,
         ctrl: options.ctrl || false,
         alt: options.alt || false,
-        follows: options.follows || [],
         usehelp: (typeof options.usehelp == 'undefined') ? true : options.usehelp,
         desc: options.desc || ''};
 }
 
 /* keyCode と customkey が返すオブジェクトを元に一行ヘルプのテキストを作成します */
-function buildShortcutLineHelp(key, shortcut) {
+function buildShortcutLineHelp(shortcut) {
     var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
     var code = [
         (shortcut.follows && shortcut.follows.join(' ')) || '',
         (shortcut.shift && 's-') || '',
-        (String.fromCharCode(key).toUpperCase())].join('');
+        shortcut.match.toUpperCase()].join('');
     code = pre_spacing.slice(code.length).join('') + code;
 
     // FIXME: 読みづらい
@@ -586,11 +590,8 @@ var Tornado = {
                 var dummy_div = createDummyNode(_xhr.responseText);
 
                 if (dummy_div.querySelector('ul#errors')) {
-                    reblog_button.innerHTML = 'NG';
-                    reblog_button.className = 'reblog_button';
-                    reblog_button.style.background = 'transparent';
-
-                    new PinNotification(document.querySelector('ul#errors > li').innerHTML);
+                    reblog_button.className.replace('reblogging', '');
+                    alert(dummy_div.querySelector('ul#errors'));
                 }
                 else {
                     // a.reblog_button リンクの潰し方があればそちらを試します
@@ -654,7 +655,8 @@ var Tornado = {
                 new PinNotification('Reblogged');
             }
             else {
-                new PinNotification('Error: Reblog fails');
+                alert('Error: Fast reblog fails');
+                reblog_button.className.replace('reblogging', '');
             }
         });
     },
@@ -745,6 +747,11 @@ var Tornado = {
 
         document.body.appendChild(script);
     },
+    topReload: function() {
+        var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
+        var url = location.href.match(reg_top_path)[0];
+        location.assign(url);
+    },
     default: function() {
         return true;  /* threw up event */
     },
@@ -754,11 +761,13 @@ var Tornado = {
         var post, posts;
         var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
 
-        var shortcuts = this.shortcuts[e.keyCode];
-        shortcuts = [].concat(shortcuts);
-
         var key_char = String.fromCharCode(e.keyCode);
         key_char = (e.shiftKey ? key_char.toUpperCase() : key_char.toLowerCase());
+
+        if (e.keyIdentifier.match(/^F\d+$/)) {
+            /* Function keys */
+            return;
+        }
 
         if (65 <= e.keyCode && e.keyCode <= 90) {
             // 65 == 'A', 90 == 'Z'
@@ -770,9 +779,7 @@ var Tornado = {
 
             Tornado.key_follows = Tornado.key_follows.concat(key_char).slice(-Tornado.KEY_MAX_FOLLOWS);
         }
-
-        if (shortcuts[0] == undefined) {
-            return;
+        else {
         }
 
         var vr = viewRect();
@@ -783,34 +790,31 @@ var Tornado = {
             console.log('Post not found');
         }
 
-        /* execute Tornado Event */
+        var shortcuts = Tornado.shortcuts.slice(0);
+        shortcuts.sort(function(a, b) {return b.follows.length - a.follows.length;});
+
         for (var i = 0; i < shortcuts.length; ++i) {
             var shortcut = shortcuts[i];
-            if (typeof shortcut == 'string' &&
-                (e.shiftKey || e.shiftKey || e.altKey) == false) {
-                this[shortcut](post);
-                Tornado.key_follows = [];
-            }
-            else {
-                if (shortcut.url.test(window.location) &&
-                    e.shiftKey == shortcut.shift &&
-                    e.ctrlKey == shortcut.ctrl &&
-                    e.altKey == shortcut.alt) {
-
-                    if (shortcut.follows &&
-                        shortcut.follows.length &&
-                        !Tornado.key_follows.cmp(shortcut.follows.concat(key_char))) {
+            if (shortcut.url.test(location) &&
+                key_char.toLowerCase() == shortcut.match &&
+                e.shiftKey == shortcut.shift &&
+                e.ctrlKey == shortcut.ctrl &&
+                e.altKey == shortcut.alt) {
+                if (shortcut.follows &&
+                    shortcut.follows.length &&
+                    !Tornado.key_follows.cmp(shortcut.follows.concat(shortcut.match))) {
+                    continue;
+                    // FIXME: shortcut.match.toUpperCase, toLowerCase()
+                }
+                else {
+                    if (typeof shortcut.func == 'string') {
+                        this[shortcut.func](post);
                     }
                     else {
-                        if (typeof shortcut.func == 'string') {
-                            this[shortcut.func](post);
-                        }
-                        else {
-                            shortcut.func(post);
-                        }
-                        Tornado.key_follows = [];
-                        break;
+                        shortcut.func(post);
                     }
+                    Tornado.key_follows = [];
+                    break;
                 }
             }
         }
@@ -841,29 +845,39 @@ var Tornado = {
  * O: Jump to prev post(ability passed g, G)
  */
 
-Tornado.shortcuts = {
-    /* T */ 84: [customkey('reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
-                 'reblog'],
-    /* H */ 72: 'fast_reblog',
-    /* J */ 74: [customkey('halfdown', {shift: true, usehelp: 'hide', desc: '下へ半スクロール'}),
-                 customkey('default', {desc: '次ポストへ移動'})],
-    /* K */ 75: [customkey('halfup', {shift: true, usehelp: 'hide', desc: '上へ半スクロール'}),
-                 customkey('default', {desc: '前ポストへ移動'})],
-    /* G */ 71: [customkey('goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
-                 customkey('goTop', {follows: ['g'], usehelp: 'hide', desc: '一番上へスクロール'})],
-    /* O */ 79: [customkey('jumpToLastCursor', {shift: true, usehelp: false})],
-    /* L */ 76:  customkey('default', {desc: 'Like'}),
-    /* D */ 68: [customkey('draftToChannel', {follows: ['g'], desc: '下書きとしてchannelへ送る'}),
-                 customkey('draft', {desc: '下書きへ送る'})],
-    /* Q */ 81: [customkey('queueToChannel', {follows: ['g'], desc: 'queueとしてchannelへ送る'}),
-                 customkey('queue', {desc: 'キューへ送る'})],
-    /* P */ 80: [customkey('privateToChannel', {follows: ['g'], desc: 'privateとしてchannelへリブログ'}),
-                 'private'],
-    /* I */ 73: customkey('scaleImage', {desc: 'photo, video を開閉'}),
-    /* C */ 67: customkey('cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
-    /* N */ 78: customkey('notes', {usehelp: 'hide', desc: 'Notes を表示'}),
-    /* M */ 77: customkey('rootInfo', {usehelp: 'hide'})
-};
+Tornado.shortcuts = [
+    customkey('j', 'default', {desc: '次ポストへ移動'}),
+    customkey('j', 'halfdown', {shift: true, usehelp: 'hide', desc: '下へ半スクロール'}),
+
+    customkey('k', 'default', {desc: '前ポストへ移動'}),
+    customkey('k', 'halfup', {shift: true, usehelp: 'hide', desc: '上へ半スクロール'}),
+
+    customkey('l', 'default', {desc: 'Like'}),
+
+    customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
+    customkey('g', 'goTop', {follows: ['g'], usehelp: 'hide', desc: '一番上へスクロール'}),
+
+    customkey('t', 'reblog'),
+    customkey('h', 'fast_reblog'),
+    customkey('t', 'reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
+
+    customkey('d', 'draft', {desc: '下書きへ送る'}),
+    customkey('d', 'draftToChannel', {follows: ['g'], desc: '下書きとしてchannelへ送る'}),
+
+    customkey('q', 'queue', {desc: 'キューへ送る'}),
+    customkey('q', 'queueToChannel', {follows: ['g'], desc: 'queueとしてchannelへ送る'}),
+
+    customkey('p', 'private'),
+    customkey('p', 'privateToChannel', {follows: ['g'], desc: 'privateとしてchannelへリブログ'}),
+
+    customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
+    customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
+    customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
+    customkey('r', 'rootInfo', {usehelp: 'hide'}),
+    customkey('t', 'topReload', {shift: true, usehelp: 'hide'}),
+    customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
+];
+
 
 /**
  * main execution functions
@@ -921,6 +935,19 @@ function showShortcutHelp() {
         this.parentNode.removeChild(this);
     });
 
+    for (var i = 0; i < Tornado.shortcuts.length; ++i) {
+        var shortcut = Tornado.shortcuts[i];
+        var dd = document.createElement('dd');
+        if (!shortcut.usehelp) {
+            continue;
+        }
+        if (shortcut.usehelp == 'hide') {
+            dd.className = 'hide';
+        }
+        dd.innerHTML = buildShortcutLineHelp(shortcut);
+        help.appendChild(dd);
+    }
+    /*
     for (var key in Tornado.shortcuts) {
         var shortcuts = Tornado.shortcuts[key];
         shortcuts = [].concat(shortcuts);  // 強制的に配列にして処理を一様にします
@@ -939,6 +966,7 @@ function showShortcutHelp() {
             help.appendChild(dd);
         }
     }
+    */
     document.querySelector('#right_column').appendChild(help);
 }
 
@@ -973,6 +1001,12 @@ else {
  * History
 **/
 /*
+2012-04-27
+ver 1.0.5
+    * トップリロード機能 *
+
+    dashboard, likes, blog, drafts, queue などで各トップに飛ぶリロード機能を付けました
+
 2012-04-26
 ver 1.0.4.0
     * リファクタリング *
