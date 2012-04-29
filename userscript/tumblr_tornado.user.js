@@ -858,16 +858,14 @@ Tornado.shortcuts = [
 
     customkey('t', 'reblog'),
     customkey('h', 'fast_reblog'),
-    customkey('t', 'reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
-
     customkey('d', 'draft', {desc: '下書きへ送る'}),
-    customkey('d', 'draftToChannel', {follows: ['g'], desc: '下書きとしてchannelへ送る'}),
-
     customkey('q', 'queue', {desc: 'キューへ送る'}),
-    customkey('q', 'queueToChannel', {follows: ['g'], desc: 'queueとしてchannelへ送る'}),
-
     customkey('p', 'private'),
-    customkey('p', 'privateToChannel', {follows: ['g'], desc: 'privateとしてchannelへリブログ'}),
+
+    customkey('t', 'reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
+    customkey('d', 'draftToChannel', {follows: ['g'], desc: 'channelへ下書き'}),
+    customkey('q', 'queueToChannel', {follows: ['g'], desc: 'channelのキューへ送る'}),
+    customkey('p', 'privateToChannel', {follows: ['g'], desc: 'channelのprivateでリブログ'}),
 
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
