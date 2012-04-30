@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.7
+// @version     1.0.8
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -26,9 +26,6 @@ TODO List:
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
     // reblog success した歳に className から reblog_button を削って reblogged を付ける
-
-    // queue ページで j/k が効かない
-    // start_processing_image_queue(0 or 1); // 中の数字は LightBox でローテーションするかどうか
 **/
 
 
@@ -1077,6 +1074,8 @@ ver 1.0.8
     Pin Notification バルーンが複数表示された際に一つのバルーンで表示するようにしました。
 
     Opera 向けに現在の URL をチェックする分岐を追加しました。
+
+    quque ページでデフォルトのショートカットキー(J/K)が動作していなかったので動くようにしました。
 
 2012-04-29
 ver 1.0.7
