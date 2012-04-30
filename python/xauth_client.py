@@ -282,6 +282,25 @@ class Tumblelog(object):
 
         return self.posts
 
+    def queue(self):
+        client = build_oauth_client()
+        url = 'http://api.tumblr.com/v2/blog/%s/posts/queue' % (self.name)
+        resp, content = client.request(url, method='GET')
+
+        self.content = content
+        self.json = simplejson.loads(content)
+
+        self.msg = self.json['meta']['msg']
+        self.status = self.json['meta']['status']
+
+        self.posts = []
+        for post in self.json['response']['posts']:
+            self.posts.append(Post.parse(self, post))
+
+        return self.posts
+
+
+
 def load_netrc():
     global consumer_key, consumer_secret, \
            xauth_token, xauth_token_secret
@@ -317,7 +336,7 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'likes', 'none']
+    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'likes', 'none', 'queue']
     choice_command = ['publish', 'like', 'show', 'reblog', 'queue', 'none']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
@@ -455,6 +474,8 @@ def main():
         pass  # 現在この機能を追加する予定はありません
     elif args.fetch == 'drafts':
         posts = t.drafts()
+    elif args.fetch == 'queue':
+        posts = t.queue()
     elif args.fetch == 'post':
         post_url = raw_input('Input post url: ')
         posts = t.getpost(post_url)
@@ -495,6 +516,7 @@ def main():
     elif args.command == 'show':
         for post in posts:
             print "%d: %s" % (post.id, post.post_url)
+            print "%s" % post.data['quote']
         print "%d posts." % (len(posts))
     elif args.command == 'reblog':
         for post in posts:
