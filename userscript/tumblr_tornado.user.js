@@ -20,10 +20,15 @@
 /**
 TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
+
     // show/videos などのオートロードに対応する
+
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
     // reblog success した歳に className から reblog_button を削って reblogged を付ける
+
+    // queue ページで j/k が効かない
+    // start_processing_image_queue(0 or 1); // 中の数字は LightBox でローテーションするかどうか
 **/
 
 
