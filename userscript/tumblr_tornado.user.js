@@ -23,6 +23,7 @@ TODO List:
     // show/videos などのオートロードに対応する
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
+    // reblog success した歳に className から reblog_button を削って reblogged を付ける
 **/
 
 
@@ -256,7 +257,7 @@ Array.prototype.cmp = function(another) {
  * Library
 **/
 
-/* Tumblr/script を元に UserScript から動かせるように書き換えました */
+/* Tumblr/script を元に UserScript から動かせるように取り込みました */
 function toggleVideoEmbed(post) {
     console.log(post);
     var post_id = post.id.match(/\d+/)[0];
@@ -319,12 +320,14 @@ function nodeRect (elm)
 
 /* キーイベント用のオブジェクトを生成して返します */
 /**
+ * match
  * func
+ * follows
+ * has_selector
  * url
  * shift
  * ctrl
  * alt
- * follows
  * usehelp
  * desc
  */
@@ -443,9 +446,9 @@ function PinNotification (message) {
 /* 軽量 Dialog ボックスを作成します */
 function LiteDialog(title) {
     this.origin_offsetX = this.origin_offsetY = null;
+
     var dialog = this.dialog = document.createElement('div');
     dialog.object = dialog;
-
     dialog.className = 'lite_dialog';
     dialog.innerHTML = this.base_lite_dialog;
 
@@ -764,6 +767,8 @@ var Tornado = {
     delete: function(post) {
         // FIXME: アニメーションが欲しい
         var delete_button = post.querySelector('a[onclick^="if (confirm(\'D"]');
+        delete_button.innerHTML = 'Deleting...';
+
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=delete] input[name=form_key]').value;
 
@@ -775,6 +780,8 @@ var Tornado = {
     publish: function(post) {
         // FIXME: アニメーションが欲しい
         var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
+        publish_button.innerHTML = 'Publishing...';
+
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=publish] input[name=form_key]').value;
 
@@ -785,6 +792,8 @@ var Tornado = {
     },
     enqueue: function(post) {
         var queue_button = post.querySelector('a[onclick^="if (confirm(\'Q"]');
+        queue_button.innerHTML = 'Enqueueing...';
+
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=queue] input[name=form_key]').value;
 
