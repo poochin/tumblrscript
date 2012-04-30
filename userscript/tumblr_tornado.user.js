@@ -259,7 +259,6 @@ Array.prototype.cmp = function(another) {
 
 /* Tumblr/script を元に UserScript から動かせるように取り込みました */
 function toggleVideoEmbed(post) {
-    console.log(post);
     var post_id = post.id.match(/\d+/)[0];
     var toggle = post.querySelector('.video_thumbnail');
     var embed = post.querySelector('.video_embed');
@@ -734,6 +733,7 @@ var Tornado = {
     },
     rootInfo: function(post) {
         // FIXME: "rebloged you:" に対応していません
+        // FIXME: private ポストの情報の取得に対応していません
         var post_id = post.id.match(/\d+/)[0];
         var post_info = post.querySelector('.post_info');
         if (post_info.querySelector('.root_info')) {
@@ -749,7 +749,7 @@ var Tornado = {
         script.id = 'showroot_' + post_id;
 
         var permalink = post.querySelector('a.permalink').href;
-        var blog_name = permalink.match(/[^\/]*(?=\/post)/)[0];
+        var blog_name = permalink.match(/[^\/]*(?=\/(?:post|private))/)[0];
         var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: API_KEY});
         var url = [
             'http://api.tumblr.com/v2/blog',
