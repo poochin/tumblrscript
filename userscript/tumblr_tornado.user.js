@@ -20,7 +20,7 @@
 /**
 TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
-    // スコープの為に全体をfunctionで括る
+    // show/videos などのオートロードに対応する
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
 **/
