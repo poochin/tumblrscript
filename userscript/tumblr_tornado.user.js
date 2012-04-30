@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-04-29
+// @updated     2012-04-30
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -605,7 +605,6 @@ var Tornado = {
                     alert(dummy_div.querySelector('ul#errors').textContent.trim());
                 }
                 else {
-                    // a.reblog_button リンクの潰し方があればそちらを試します
                     reblog_button.outerHTML = '<span>OK</span>';
                     reblog_button.className += 'reblogged';
 
@@ -765,7 +764,6 @@ var Tornado = {
         location.assign(url);
     },
     delete: function(post) {
-        // FIXME: アニメーションが欲しい
         var delete_button = post.querySelector('a[onclick^="if (confirm(\'D"]');
         delete_button.innerHTML = 'Deleting...';
 
@@ -778,7 +776,6 @@ var Tornado = {
         }, function(_xhr) {alert('fail to delete');});
     },
     publish: function(post) {
-        // FIXME: アニメーションが欲しい
         var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
         publish_button.innerHTML = 'Publishing...';
 
