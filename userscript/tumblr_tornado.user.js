@@ -956,6 +956,11 @@ Tornado.shortcuts = [
  * main execution functions
 **/
 
+/* 無効になっているデフォルトのショートカットキーを有効にします */
+function wakeupDefaultShortcut() {
+    execClient('start_observing_key_commands(1);', 1000);
+}
+
 /* rootInfo の jsonp を処理する関数をページに埋め込みます */
 function embedRootInfo() {
     function jsonpRootInfo(json) {
@@ -1039,6 +1044,10 @@ function main() {
     showShortcutHelp();
     enhistory();
     embedRootInfo();
+
+    if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
+        wakeupDefaultShortcut();
+    }
 
     style_element.Tornado = Tornado;
 }
