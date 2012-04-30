@@ -1056,6 +1056,14 @@ else {
  * History
 **/
 /*
+2012-04-30
+ver 1.0.8
+    * Pin Notification の表示方法を変えました *
+
+    Pin Notification バルーンが複数表示された際に一つのバルーンで表示するようにしました。
+
+    Opera 向けに現在の URL をチェックする分岐を追加しました。
+
 2012-04-29
 ver 1.0.7
     * is_mine のポストを queue, draft, delete する機能を付けました *
