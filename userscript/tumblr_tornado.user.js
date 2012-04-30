@@ -21,7 +21,13 @@
 TODO List:
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
     // スコープの為に全体をfunctionで括る
+    // pub, que, del 中の css 変化を考える
+    // pub, que, del したものに className += 各付けます
 **/
+
+
+/* escaping global scope poisoning */
+(function () {
 
 /**
  * Variables
@@ -386,7 +392,7 @@ function buildQueryString(dict) {
 
 /* Ajax 通信を行います */
 // Opera で prototype.js の Ajax.Request を潰してしまうので避難させました
-function _Ajax(method, url, params, callback, failback) {
+function Ajax(method, url, params, callback, failback) {
     var xhr = this.xhr = new XMLHttpRequest();
 
     xhr.onreadystatechange = function() {
@@ -567,7 +573,7 @@ var Tornado = {
             default_postdata = {};
         }
         var url_reblog = post.querySelector('.reblog_button').href;
-        new _Ajax('GET', url_reblog, {}, preapply(window, function(_xhr) {
+        new Ajax('GET', url_reblog, {}, preapply(window, function(_xhr) {
             var dummy_elm = createDummyNode(_xhr.responseText);
 
             /* forms のうち有効なデータを集めます */
@@ -589,12 +595,12 @@ var Tornado = {
                 postdata[name] = default_postdata[name];
             }
 
-            new _Ajax(form.method, form.action, postdata, function(_xhr) {
+            new Ajax(form.method, form.action, postdata, function(_xhr) {
                 var dummy_div = createDummyNode(_xhr.responseText);
 
                 if (dummy_div.querySelector('ul#errors')) {
-                    reblog_button.className.replace('reblogging', '');
-                    alert(dummy_div.querySelector('ul#errors'));
+                    reblog_button.className = reblog_button.className.replace('reblogging', '');
+                    alert(dummy_div.querySelector('ul#errors').textContent.trim());
                 }
                 else {
                     // a.reblog_button リンクの潰し方があればそちらを試します
@@ -652,14 +658,14 @@ var Tornado = {
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
 
-        new _Ajax('GET', url_fast_reblog, {}, function(xhr) {
+        new Ajax('GET', url_fast_reblog, {}, function(xhr) {
             if (xhr.responseText == 'OK') {
                 reblog_button.outerHTML = '<span>OK</span>';
                 new PinNotification('Reblogged');
             }
             else {
                 alert('Error: Fast reblog fails');
-                reblog_button.className.replace('reblogging', '');
+                reblog_button.className = reblog_button.className.replace('reblogging', '');
             }
         });
     },
@@ -761,7 +767,7 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=delete] input[name=form_key]').value;
 
-        new _Ajax('post', '/delete', {id: id, form_key: form_key}, function(_xhr) {
+        new Ajax('post', '/delete', {id: id, form_key: form_key}, function(_xhr) {
             delete_button.innerHTML = 'Deleted!';
             new PinNotification('Post [' + id + '] deleted.');
         }, function(_xhr) {alert('fail to delete');});
@@ -772,7 +778,7 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=publish] input[name=form_key]').value;
 
-        new _Ajax('post', '/publish', {id: id, form_key: form_key}, function(_xhr) {
+        new Ajax('post', '/publish', {id: id, form_key: form_key}, function(_xhr) {
             publish_button.innerHTML = 'Published!';
             new PinNotification('Post [' + id + '] published.');
         }, function(_xhr) {alert('fail to publish');});
@@ -782,7 +788,7 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=queue] input[name=form_key]').value;
 
-        new _Ajax('post', '/publish', {id: id, form_key: form_key, queue: 'queue'}, function(_xhr) {
+        new Ajax('post', '/publish', {id: id, form_key: form_key, queue: 'queue'}, function(_xhr) {
             queue_button.innerHTML = 'Enqueued!';
             new PinNotification('Post [' + id + '] enqueued.');
         }, function(_xhr) {alert('fail to enqueue');});
@@ -915,7 +921,7 @@ Tornado.shortcuts = [
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
-    customkey('t', 'topReload', {shift: true, usehelp: 'hide'}),
+    customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 
     customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
@@ -948,6 +954,7 @@ function embedRootInfo() {
 
 /* オートロードするたびにURLを現在のページに置き換える処理をページに埋め込みます */
 function enhistory() {
+    // /show/text,
     var inner_code = (function() {
         var papr = window._process_auto_paginator_response;
         window._process_auto_paginator_response = function(transport) {
@@ -1020,6 +1027,10 @@ if (window.document.body) {
 else {
     window.document.addEventListener('DOMContentLoaded', main, false);
 }
+
+})();
+/* escaping global scope poisoning */
+
 
 
 /**
