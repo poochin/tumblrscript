@@ -7,6 +7,7 @@ import simplejson
 import urllib
 import netrc
 import re
+import time
 import ConfigParser
 from argparse import ArgumentParser
 
@@ -224,6 +225,23 @@ class Tumblelog(object):
 
         return self.json
 
+    def followings(self, offset=0):
+        url = 'http://api.tumblr.com/v2/user/following?offset=%d' % (offset)
+
+        client = build_oauth_client()
+        resp, content = client.request(url, method='GET')
+
+        self.content = content
+        self.json = simplejson.loads(content)
+
+        self.msg = self.json['meta']['msg']
+        self.status = self.json['meta']['status']
+
+        self.users = self.json['response']['blogs']
+
+        return self.users
+
+
     def getpost(self, post_url):
         m = re.match('http://([^/]+)/post/(\d+)', post_url)
         tumblelog, post_id = m.group(1), m.group(2)
@@ -336,7 +354,7 @@ def arg_parsing():
     # prog 1st-command 2nd-command という形を取る
     parser = ArgumentParser()
 
-    choice_fetch = ['drafts', 'logs', 'relike', 'post', 'likes', 'none', 'queue']
+    choice_fetch = ['drafts', 'logs', 'relike', 'following_list','post', 'likes', 'none']
     choice_command = ['publish', 'like', 'show', 'reblog', 'queue', 'none']
 
     parser.add_argument("fetch", choices=choice_fetch, help=u"ポストの読み込みタイプか特殊なコマンド")
@@ -411,6 +429,19 @@ def cmd_relike(args, t):
     # 念の為に再度、一時ファイルのパスを表示します
     print 'Temporary content file', fn
 
+def cmd_following_list(args, t):
+    u = t.followings()
+    total_blogs = t.json['response']['total_blogs']
+
+    for i in xrange(0, total_blogs / 100):
+        users = t.followings(i * 100)
+        for j, user in enumerate(users):
+            num = i * 100 + j
+            strdate = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
+                time.gmtime(user['updated']))
+            print "%d: [%s] %s %s" % (num, strdate, user['name'], user['url'])
+
+
 def ring_list(l):
     while True:
         for i in l:
@@ -466,6 +497,9 @@ def main():
     # 特殊コマンド
     if args.fetch == 'relike':
         cmd_relike(args, t)
+        return
+    elif args.fetch == 'following_list':
+        cmd_following_list(args, t)
         return
 
     # posts を取得する

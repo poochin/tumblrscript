@@ -1022,7 +1022,9 @@ function main() {
 }
 
 if (window.document.body) {
-    main();
+    if (/^https?:\/\/www\.tumblr\.com\//.test(location) /* for Opera */) {
+        main();
+    }
 }
 else {
     window.document.addEventListener('DOMContentLoaded', main, false);
