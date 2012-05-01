@@ -744,6 +744,7 @@ var Tornado = {
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
+        // TODO: .empty_post も削除します
         var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
         var dsbd = posts[0].parentNode;
         var vr = viewRect();
