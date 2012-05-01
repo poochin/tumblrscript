@@ -25,7 +25,6 @@ TODO List:
 
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
-    // reblog success した歳に className から reblog_button を削って reblogged を付ける
 **/
 
 
@@ -290,6 +289,7 @@ function toggleVideoEmbed(post) {
 
 /* */
 function createDummyNode(html) {
+    // TODO* document.createRange を用いる
     var node = document.createElement('div');
     node.innerHTML = html;
     return node;
@@ -729,6 +729,7 @@ var Tornado = {
         }   
     },
     cleanPosts: function(/* post */) {
+        // TODO: .notification の clean を実装する
         var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
         var dsbd = posts[0].parentNode;
         var vr = viewRect();
@@ -744,7 +745,7 @@ var Tornado = {
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
-        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"]), #posts > .empty_post');
+        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"]), #posts > .notification, #posts > .empty_post');
         var dsbd = posts[0].parentNode;
         var vr = viewRect();
         var i, del_count = 0;
