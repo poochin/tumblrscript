@@ -743,6 +743,24 @@ var Tornado = {
         }
         new PinNotification(i + '件のポストを空にしました。');
     },
+    removePosts: function(/* posts */) {
+        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
+        var dsbd = posts[0].parentNode;
+        var vr = viewRect();
+        var i, del_count = 0;
+
+        window.scrollTo(0, posts[0].offsetTop - 7);
+
+        for (i = 0; i < posts.length && (posts[i].offsetTop - 7) < vr.y; ++i) {
+        }
+        del_count = i;
+        for (i = i - 1; i >= 0; --i) {
+            dsbd.removeChild(posts[i]);
+        }
+
+        posts[del_count].className = posts[del_count].className.replace('same_user_as_last', '');
+        new PinNotification(del_count + '件のポストを削除しました。');
+    },
     rootInfo: function(post) {
         // FIXME: "rebloged you:" に対応していません
         // FIXME: private ポストの情報の取得に対応していません
@@ -939,6 +957,8 @@ Tornado.shortcuts = [
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
+    customkey('c', 'removePosts', {shift: true, useHelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
+
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
