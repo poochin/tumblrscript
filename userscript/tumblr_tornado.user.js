@@ -248,7 +248,7 @@ left_click.initEvent("click", false, true);
 var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
 /* Reblog 時 Content Type を指定する用の配列です */
-var ContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
+var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
 
 /**
  * Type Extention
@@ -445,6 +445,7 @@ function Ajax(method, url, params, callback, failback) {
 
 function Ajax(url, options) {
     var xhr = this.xhr = new XMLHttpRequest();
+    var async = (options.asynchronous == undefined) || options.asynchronous;
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
@@ -465,7 +466,7 @@ function Ajax(url, options) {
         }
     }
 
-    xhr.open(options.method, url, options.asynchronous);
+    xhr.open(options.method, url, async);
     for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i+=2) {
         xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i+1]);
     }
@@ -626,6 +627,7 @@ var Tornado = {
         if (!default_postdata) {
             default_postdata = {};
         }
+
         var url_reblog = post.querySelector('.reblog_button').href;
         new Ajax(url_reblog, {
             method: 'GET',
@@ -654,6 +656,7 @@ var Tornado = {
                 new Ajax(form.action, {
                     method: form.method,
                     parameters: buildQueryString(postdata),
+                    requestHeaders: HeaderContentType,
                     onSuccess: function(_xhr) {
                         var dummy_div = createDummyNode(_xhr.responseText);
 
@@ -854,6 +857,7 @@ var Tornado = {
         new Ajax('/delete', {
             method: 'post',
             parameters: buildQueryString({id: id, form_key: form_key}),
+            requestHeaders: HeaderContentType,
             onSuccess: function(_xhr) {
                 delete_button.innerHTML = 'Deleted!';
                 new PinNotification('Post [' + id + '] deleted.');
@@ -871,6 +875,7 @@ var Tornado = {
         new Ajax('/publish', {
             method: 'post',
             parameters: buildQueryString({id: id, form_key: form_key}),
+            requestHeaders: HeaderContentType,
             onSuccess: function(_xhr) {
                 delete_button.innerHTML = 'Published!';
                 new PinNotification('Post [' + id + '] Published.');
@@ -888,6 +893,7 @@ var Tornado = {
         new Ajax('/publish', {
             method: 'post',
             parameters: buildQueryString({id: id, form_key: form_key, queue: 'queue'}),
+            requestHeaders: HeaderContentType,
             onSuccess: function(_xhr) {
                 delete_button.innerHTML = 'Enqueued!';
                 new PinNotification('Post [' + id + '] enqueue.');
