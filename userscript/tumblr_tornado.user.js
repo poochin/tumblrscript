@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.8
+// @version     1.0.9
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -12,20 +12,21 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-04-30
+// @updated     2012-05-02
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
 
 /**
 TODO List:
-    Ajax を prototype 風にする
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
 
     // show/videos などのオートロードに対応する
 
     // pub, que, del 中の css 変化を考える
     // pub, que, del したものに className += 各付けます
+    
+    // s-N で show more notes をクリックする
 **/
 
 
@@ -413,35 +414,6 @@ function buildElementFromHTML(html) {
 /**
  * Classes
 **/
-
-/* Ajax 通信を行います */
-/*
-function Ajax(method, url, params, callback, failback) {
-    var xhr = this.xhr = new XMLHttpRequest();
-
-    xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
-                if (typeof callback != 'undefined') {
-                    callback(xhr);
-                }
-            }
-            else {
-                if (typeof failback != 'undefined') {
-                    failback(xhr);
-                }
-                else if (typeof callback != 'undefined') {
-                    // failback がなくとも callback があれば呼び出します
-                    callback(xhr);
-                }
-            }
-        }
-    };
-
-    xhr.open(method, url, true);
-    xhr.send(buildQueryString(params));
-}
-*/
 
 function Ajax(url, options) {
     var xhr = this.xhr = new XMLHttpRequest();
@@ -1159,6 +1131,9 @@ else {
 **/
 /*
 2012-04-30
+ver 1.0.9
+    * Ajax クラスを prototype.js 風の引数を持つようにしました *
+
 ver 1.0.8
     * Pin Notification の表示方法を変えました *
 
