@@ -848,7 +848,7 @@ var Tornado = {
             parameters: buildQueryString({id: id, form_key: form_key}),
             requestHeaders: HeaderContentType,
             onSuccess: function(_xhr) {
-                delete_button.innerHTML = 'Published!';
+                publish_button.innerHTML = 'Published!';
                 new PinNotification('Post [' + id + '] Published.');
             },
             onFailure: function(_xhr) {
@@ -869,7 +869,7 @@ var Tornado = {
             parameters: buildQueryString({id: id, form_key: form_key, queue: 'queue'}),
             requestHeaders: HeaderContentType,
             onSuccess: function(_xhr) {
-                delete_button.innerHTML = 'Enqueued!';
+                queue_button.innerHTML = 'Enqueued!';
                 new PinNotification('Post [' + id + '] enqueue.');
             },
             onFailure: function(_xhr) {
