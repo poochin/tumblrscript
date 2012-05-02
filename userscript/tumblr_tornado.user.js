@@ -689,6 +689,7 @@ var Tornado = {
         dialog_body.querySelector('input[type="button"]').focus();
     },
     fast_reblog: function(post) {
+        // FIXME: failed message "Internal Server Error."
         var reblog_button = post.querySelector('a.reblog_button');
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
