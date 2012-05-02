@@ -53,8 +53,6 @@ var embed_css = [
     "    -moz-animation: pin_notification_animation 3s forwards;",
     "    -o-animation: pin_notification_animation 3s forwards;",
     "    padding: 5px;",
-    "    min-width: 100px;",
-    "    max-width: 400px;",
     "    border-left: 2px solid #888;",
     "    border-right: 2px solid #888;",
     "    border-bottom: 1px dashed #696;",
@@ -689,7 +687,6 @@ var Tornado = {
         dialog_body.querySelector('input[type="button"]').focus();
     },
     fast_reblog: function(post) {
-        // FIXME: failed message "Internal Server Error."
         var reblog_button = post.querySelector('a.reblog_button');
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
@@ -697,14 +694,12 @@ var Tornado = {
         new Ajax(url_fast_reblog, {
             method: 'GET',
             onSuccess: function(_xhr) {
-                if (_xhr.responseText == 'OK') {
-                    reblog_button.outerHTML = '<span>OK</span>';
-                    new PinNotification('Reblogged');
-                }
-                else {
-                    alert('Error: Fast reblog fails');
-                    reblog_button.className = reblog_button.className.replace('reblogging', '');
-                }
+                reblog_button.outerHTML = '<span>OK</span>';
+                new PinNotification('Reblogged');
+            },
+            onFailure: function(_xhr) {
+                alert('Error: ' + _xhr.responseText);
+                reblog_button.className = reblog_button.className.replace('reblogging', '');
             },
         });
     },
