@@ -19,6 +19,7 @@
 
 /**
 TODO List:
+    Ajax を prototype 風にする
     /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
 
     // show/videos などのオートロードに対応する
@@ -246,6 +247,8 @@ left_click.initEvent("click", false, true);
 /* root info を取得するのに使います */
 var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
+/* Reblog 時 Content Type を指定する用の配列です */
+var ContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
 
 /**
  * Type Extention
@@ -400,13 +403,19 @@ function buildQueryString(dict) {
     return queries.join('&');
 }
 
+/* ... */
+function buildElementFromHTML(html) {
+    // TODO* document.createRange を用いる
+    
+}
+
 
 /**
  * Classes
 **/
 
 /* Ajax 通信を行います */
-// Opera で prototype.js の Ajax.Request を潰してしまうので避難させました
+/*
 function Ajax(method, url, params, callback, failback) {
     var xhr = this.xhr = new XMLHttpRequest();
 
@@ -430,9 +439,39 @@ function Ajax(method, url, params, callback, failback) {
     };
 
     xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
     xhr.send(buildQueryString(params));
 }
+*/
+
+function Ajax(url, options) {
+    var xhr = this.xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+                if (options.onSuccess) {
+                    options.onSuccess(xhr);
+                }
+            }
+            else {
+                // FIXME: エラーを具体的に分ける
+                if (options.onFailure) {
+                    options.onFailure(xhr);
+                }
+            }
+            if (options.onComplete) {
+                options.onComplete(xhr);
+            }
+        }
+    }
+
+    xhr.open(options.method, url, options.asynchronous);
+    for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i+=2) {
+        xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i+1]);
+    }
+    xhr.send(options.parameters);
+}
+
 
 /* クライアントエリアの右下にピンバルーンとメッセージを表示します */
 function PinNotification (message) {
@@ -588,52 +627,59 @@ var Tornado = {
             default_postdata = {};
         }
         var url_reblog = post.querySelector('.reblog_button').href;
-        new Ajax('GET', url_reblog, {}, preapply(window, function(_xhr) {
-            var dummy_elm = createDummyNode(_xhr.responseText);
-
-            /* forms のうち有効なデータを集めます */
-            var postdata = {};
-            var form = dummy_elm.querySelector('#content > form');
-            var form_items = form.querySelectorAll('input, textarea, select');
-            Array.prototype.slice.call(form_items).map(function(elm) {
-                if (elm.type == 'checkbox' || elm.type == 'radio') {
-                    if (elm.checked) {
+        new Ajax(url_reblog, {
+            method: 'GET',
+            onSuccess: preapply(window, function(_xhr) {
+                var dummy_elm = createDummyNode(_xhr.responseText);
+    
+                /* forms のうち有効なデータを集めます */
+                var postdata = {};
+                var form = dummy_elm.querySelector('#content > form');
+                var form_items = form.querySelectorAll('input, textarea, select');
+                Array.prototype.slice.call(form_items).map(function(elm) {
+                    if (elm.type == 'checkbox' || elm.type == 'radio') {
+                        if (elm.checked) {
+                            postdata[elm.name] = elm.value;
+                        }
+                    }
+                    else {
                         postdata[elm.name] = elm.value;
                     }
+                });
+                delete postdata['preview_post'];
+                for (var name in default_postdata) {
+                    postdata[name] = default_postdata[name];
                 }
-                else {
-                    postdata[elm.name] = elm.value;
-                }
-            });
-            delete postdata['preview_post'];
-            for (var name in default_postdata) {
-                postdata[name] = default_postdata[name];
-            }
 
-            new Ajax(form.method, form.action, postdata, function(_xhr) {
-                var dummy_div = createDummyNode(_xhr.responseText);
+                new Ajax(form.action, {
+                    method: form.method,
+                    parameters: buildQueryString(postdata),
+                    onSuccess: function(_xhr) {
+                        var dummy_div = createDummyNode(_xhr.responseText);
 
-                if (dummy_div.querySelector('ul#errors')) {
-                    reblog_button.className = reblog_button.className.replace('reblogging', '');
-                    alert(dummy_div.querySelector('ul#errors').textContent.trim());
-                }
-                else {
-                    reblog_button.outerHTML = '<span>OK</span>';
-                    reblog_button.className += 'reblogged';
-
-                    if (default_postdata) {
-                        var state_text = '', channel_text = '';
-                        if (default_postdata['post[state]']) {
-                            state_text = 'as ' + Tornado.state_texts[default_postdata['post[state]']];
+                        if (dummy_div.querySelector('ul#errors')) {
+                            reblog_button.className = reblog_button.className.replace('reblogging', '');
+                            alert(dummy_div.querySelector('ul#errors').textContent.trim());
                         }
-                        if (default_postdata['channel_id'] && default_postdata['channel_id'] != '0') {
-                            channel_text = 'to ' + default_postdata['channel_id'];
+                        else {
+                            reblog_button.outerHTML = '<span>OK</span>';
+                            reblog_button.className += 'reblogged';
+
+                            if (default_postdata) {
+                                var state_text = '', channel_text = '';
+                                if (default_postdata['post[state]']) {
+                                    state_text = 'as ' + Tornado.state_texts[default_postdata['post[state]']];
+                                }
+                                if (default_postdata['channel_id'] && default_postdata['channel_id'] != '0') {
+                                    channel_text = 'to ' + default_postdata['channel_id'];
+                                }
+                                new PinNotification(['Success: Reblogged', state_text, channel_text].join(' '));
+                            }
                         }
-                        new PinNotification(['Success: Reblogged', state_text, channel_text].join(' '));
-                    }
-                }
-            });
-        }));
+                    },
+                });
+            }),
+        });
     },
     reblogToChannelDialog: function(post, postdata) {
         function createChannelButton(channel_id, channel_title, number) {
@@ -672,15 +718,18 @@ var Tornado = {
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
 
-        new Ajax('GET', url_fast_reblog, {}, function(xhr) {
-            if (xhr.responseText == 'OK') {
-                reblog_button.outerHTML = '<span>OK</span>';
-                new PinNotification('Reblogged');
-            }
-            else {
-                alert('Error: Fast reblog fails');
-                reblog_button.className = reblog_button.className.replace('reblogging', '');
-            }
+        new Ajax(url_fast_reblog, {
+            method: 'GET',
+            onSuccess: function(_xhr) {
+                if (_xhr.responseText == 'OK') {
+                    reblog_button.outerHTML = '<span>OK</span>';
+                    new PinNotification('Reblogged');
+                }
+                else {
+                    alert('Error: Fast reblog fails');
+                    reblog_button.className = reblog_button.className.replace('reblogging', '');
+                }
+            },
         });
     },
     reblogToChannel: function(post) {
@@ -802,10 +851,15 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=delete] input[name=form_key]').value;
 
-        new Ajax('post', '/delete', {id: id, form_key: form_key}, function(_xhr) {
-            delete_button.innerHTML = 'Deleted!';
-            new PinNotification('Post [' + id + '] deleted.');
-        }, function(_xhr) {alert('fail to delete');});
+        new Ajax('/delete', {
+            method: 'post',
+            parameters: buildQueryString({id: id, form_key: form_key}),
+            onSuccess: function(_xhr) {
+                delete_button.innerHTML = 'Deleted!';
+                new PinNotification('Post [' + id + '] deleted.');
+            },
+            onFailure: function(_xhr) {alert('fail to delete');},
+        });
     },
     publish: function(post) {
         var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
@@ -814,10 +868,15 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=publish] input[name=form_key]').value;
 
-        new Ajax('post', '/publish', {id: id, form_key: form_key}, function(_xhr) {
-            publish_button.innerHTML = 'Published!';
-            new PinNotification('Post [' + id + '] published.');
-        }, function(_xhr) {alert('fail to publish');});
+        new Ajax('/publish', {
+            method: 'post',
+            parameters: buildQueryString({id: id, form_key: form_key}),
+            onSuccess: function(_xhr) {
+                delete_button.innerHTML = 'Published!';
+                new PinNotification('Post [' + id + '] Published.');
+            },
+            onFailure: function(_xhr) {alert('fail to publish');},
+        });
     },
     enqueue: function(post) {
         var queue_button = post.querySelector('a[onclick^="if (confirm(\'Q"]');
@@ -826,10 +885,15 @@ var Tornado = {
         var id = post.id.match(/\d+/)[0];
         var form_key = post.querySelector('form[id^=queue] input[name=form_key]').value;
 
-        new Ajax('post', '/publish', {id: id, form_key: form_key, queue: 'queue'}, function(_xhr) {
-            queue_button.innerHTML = 'Enqueued!';
-            new PinNotification('Post [' + id + '] enqueued.');
-        }, function(_xhr) {alert('fail to enqueue');});
+        new Ajax('/publish', {
+            method: 'post',
+            parameters: buildQueryString({id: id, form_key: form_key, queue: 'queue'}),
+            onSuccess: function(_xhr) {
+                delete_button.innerHTML = 'Enqueued!';
+                new PinNotification('Post [' + id + '] enqueue.');
+            },
+            onFailure: function(_xhr) {alert('fail to enqueue');},
+        });
     },
     default: function() {
         return true;  /* threw up event */
@@ -958,7 +1022,7 @@ Tornado.shortcuts = [
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
-    customkey('c', 'removePosts', {shift: true, useHelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
+    customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
 
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
