@@ -830,7 +830,10 @@ var Tornado = {
                 delete_button.innerHTML = 'Deleted!';
                 new PinNotification('Post [' + id + '] deleted.');
             },
-            onFailure: function(_xhr) {alert('fail to delete');},
+            onFailure: function(_xhr) {
+                delete_button.innerHTML = 'delete';
+                alert('fail to delete');
+            },
         });
     },
     publish: function(post) {
@@ -848,7 +851,10 @@ var Tornado = {
                 delete_button.innerHTML = 'Published!';
                 new PinNotification('Post [' + id + '] Published.');
             },
-            onFailure: function(_xhr) {alert('fail to publish');},
+            onFailure: function(_xhr) {
+                publish_button.innerHTML = 'publish';
+                alert('fail to publish');
+            },
         });
     },
     enqueue: function(post) {
@@ -866,7 +872,10 @@ var Tornado = {
                 delete_button.innerHTML = 'Enqueued!';
                 new PinNotification('Post [' + id + '] enqueue.');
             },
-            onFailure: function(_xhr) {alert('fail to enqueue');},
+            onFailure: function(_xhr) {
+                queue_button.innerHTML = 'queue';
+                alert('fail to enqueue');
+            },
         });
     },
     default: function() {
