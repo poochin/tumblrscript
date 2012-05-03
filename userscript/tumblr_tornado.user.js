@@ -27,6 +27,8 @@ TODO List:
     // pub, que, del したものに className += 各付けます
     
     // s-N で show more notes をクリックする
+
+    // removePosts で full_answer_container_wrapper が削除されない不具合があります
 **/
 
 
@@ -425,7 +427,6 @@ function Ajax(url, options) {
                 }
             }
             else {
-                // FIXME: エラーを具体的に分ける
                 if (options.onFailure) {
                     options.onFailure(xhr);
                 }
