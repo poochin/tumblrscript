@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.9
+// @version     1.0.10
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -1153,6 +1153,9 @@ else {
  * History
 **/
 /*
+2012-05-04
+    * ポストが自分からのリブログだった際に .reblogged_you クラスを付けるようにしました。 *
+
 2012-04-30
 ver 1.0.9
     * Ajax クラスを prototype.js 風の引数を持つようにしました *
