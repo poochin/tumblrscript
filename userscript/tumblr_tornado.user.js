@@ -1047,6 +1047,15 @@ function embedRootInfo() {
     execClient(jsonpRootInfo.toString(), 300);
 }
 
+/* 自分からリブログされた場合に reblogged_you クラスを付けます。 関数名の便宜上スネークケースです。 */
+function add_reblogged_you() {
+    $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
+        if (post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
+            post.className += ' reblogged_you';
+        }
+    });
+}
+
 /* オートロードするたびにURLを現在のページに置き換える処理をページに埋め込みます */
 function enhistory() {
     // /show/text,
@@ -1056,8 +1065,8 @@ function enhistory() {
             history.pushState('', '', window.next_page);
             papr(transport);
             $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
-                if (post.querySelector('.post_info').querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
-                    post.className += ' reblogged_you');
+                if (post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
+                    post.className += ' reblogged_you';
                 }
             });
         }
@@ -1116,6 +1125,7 @@ function main() {
 
     showShortcutHelp();
     enhistory();
+    add_reblogged_you();
     embedRootInfo();
 
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
