@@ -1055,6 +1055,11 @@ function enhistory() {
         window._process_auto_paginator_response = function(transport) {
             history.pushState('', '', window.next_page);
             papr(transport);
+            $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
+                if (post.querySelector('.post_info').querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
+                    post.className += ' reblogged_you');
+                }
+            });
         }
     }).toString();
     execClient('(' + inner_code + ')()', 0);
