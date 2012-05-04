@@ -299,10 +299,10 @@ function createDummyNode(html) {
     return node;
 }
 
-/* document.querySelectorAll */
+/* document.querySelectorAll into Array */
 function $$(selector)
 {
-    return document.querySelectorAll(selector);
+    return Array.prototype.slice.call(document.querySelectorAll(selector));
 }
 
 
