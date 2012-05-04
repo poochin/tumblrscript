@@ -29,6 +29,8 @@ TODO List:
     // s-N で show more notes をクリックする
 
     // removePosts で full_answer_container_wrapper が削除されない不具合があります
+
+    // 自分からのポストに対しては reblogged_you を付ける
 **/
 
 
@@ -908,7 +910,7 @@ var Tornado = {
         }
 
         var vr = viewRect();
-        post = Array.prototype.slice.call($$('.post')).filter(function(elm) {
+        post = $$('.post').filter(function(elm) {
             return vr.y == (nodeRect(elm).y - margin_top);
         })[0];
         if (!post) {
