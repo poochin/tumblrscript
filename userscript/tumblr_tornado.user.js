@@ -1108,7 +1108,11 @@ function showShortcutHelp() {
         dd.innerHTML = buildShortcutLineHelp(shortcut);
         help.appendChild(dd);
     }
-    document.querySelector('#right_column').appendChild(help);
+
+    var right_column = document.querySelector('#right_column');
+    if (right_column) {
+        right_column.appendChild(help);
+    }
 }
 
 /**
@@ -1154,6 +1158,7 @@ else {
 **/
 /*
 2012-05-04
+ver 1.0.10
     * ポストが自分からのリブログだった際に .reblogged_you クラスを付けるようにしました。 *
 
 2012-04-30
