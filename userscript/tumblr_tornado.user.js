@@ -1124,6 +1124,7 @@ function main() {
     document.addEventListener('keydown', keyevent, false);
 
     var style_element = document.createElement('style');
+    style_element.className = 'tumblr_userscript';
     style_element.appendChild(document.createTextNode(embed_css));
     document.head.appendChild(style_element);
 
