@@ -12,6 +12,8 @@
 
 // TODO: ランダム機能を付けます
 
+// FIXME: font タグの除去方法
+
 
 var PATH_PARSER = /\/blog\/(?:([^\/]+)\/?)(?:([a-z\-_]+)\/?)?(?:(\d+)\/?)?$/;
 
@@ -52,6 +54,16 @@ function buildElement(tag_name, propaties, innerHTML)
     return elm;
 }
 
+function cloneChildren(node) {
+    var frag = document.createDocumentFragment();
+
+    for (var i = 0; i < node.childNodes.length; ++i) {
+        frag.appendChild(node.childNodes[i].cloneNode(true));
+    }
+
+    return frag;
+}
+
 function buildElementBySource(html) {
     var range = document.createRange();
     range.selectNodeContents(document.body);
@@ -64,18 +76,18 @@ function Ajax(url, options) {
     var async = (options.asynchronous == undefined) || options.asynchronous;
 
     xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4) { 
-            if (xhr.status == 200) {
+        if (xhr.readyState == 4) {
+            var status = parseInt(xhr.status);
+            if ((status / 100) == 2) {
                 if (options.onSuccess) {
                     options.onSuccess(xhr);
                 }    
-            }    
-            else {
-                /* FIXME: エラーを具体的に分ける */
+            }
+            else if ((status / 100) == 4 || (status / 100) == 5) {
                 if (options.onFailure) {
                     options.onFailure(xhr);
-                }    
-            }    
+                }
+            }
             if (options.onComplete) {
                 options.onComplete(xhr);
             }    
@@ -116,11 +128,19 @@ function trimNodeEvent(node) {
 
 /* style などを取り除きます */
 function trimNodeStyle(node) {
-    node.removeAttribute('style');
     if (node.childNodes) {
         for (var i = 0; i < node.children.length; ++i) {
             trimNodeStyle(node.children.item(i));
         }
+    }
+
+    if (node.tagName == 'FONT') {
+        if (node.parentNode) {
+            node.parentNode.replaceChild(cloneChildren(node), node);
+        }
+    }
+    else {
+        node.removeAttribute('style');
     }
 }
 
@@ -129,7 +149,7 @@ function trimNodeClass(node) {
     node.className = '';
     if (node.childNodes) {
         for (var i = 0; i < node.children.length; ++i) {
-            trimNodeStyle(node.children.item(0));
+            trimNodeClass(node.children.item(0));
         }
     }
 }
@@ -137,15 +157,16 @@ function trimNodeClass(node) {
 function buildPostControls(json) {
     var post_controls = buildElement('div', {class: 'post_controls'});
 
-    /* FIXME: notes をクリックするとレイアウトが壊れます */
     /* post_controls > notes */
+    /*
     var notes_onclick = [
         'display_post_notes(',
         json.id,
         ', \'',
-        json.reblog_key, /* FIXME: 実は reblog_key ではない!! */
+        json.reblog_key,
         '\'); return false;'].join('');
-    notes_onclick = 'void alert("このコマンドは実装できませんでした！！");';
+    */
+    var notes_onclick = 'void alert("このコマンドは実装できませんでした！！");';
     var notes = buildElement('a', {
             href: '#',
             id: 'show_notes_link_' + json.id,
@@ -823,7 +844,8 @@ function buildNecromancyURL(tumblelog, type, offset) {
     return url.join('/');
 }
 
-/* TODO: jsonp が html を返してくるのでオブザーブ形式にします */
+
+/* tumblr が api に失敗して html を返してくる事があるのでオブザーブ形式にしています */
 function necromancy_observer(pe) {
     if (window.prev_json != window.new_json) {
         necromancy_callback(new_json);
@@ -875,7 +897,8 @@ function necromancy_paginator(pe) {
     }
 
     var posts;
-    if ((posts = $$('#posts > li')) && (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < 5000) {
+    if ((posts = $$('#posts > li')) &&
+        (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < 5000) {
         window.loading_next_page = true;
 
         var next_page_parsed = window.next_page.match(PATH_PARSER);
@@ -887,11 +910,18 @@ function necromancy_paginator(pe) {
             tumblelog += '.tumblr.com';
         }
 
+        var querystring = buildQueryString({
+            limit: 10,
+            api_key: API_KEY,
+            reblog_info: 'true',
+            offset: offset,
+            jsonp: 'window.new_json = '});
+
         var url = [
             'http://api.tumblr.com/v2/blog',
             tumblelog,
             'posts',
-             type +  '?' + buildQueryString({limit: 10, api_key: API_KEY, reblog_info: 'true', offset: offset, jsonp: 'window.new_json = '})].join('/');
+             type +  '?' + querystring].join('/');
 
         var script = buildElement('script', {
             src: url,
@@ -912,9 +942,12 @@ function buildMainPage() {
             var head = xhr.responseText.match(/<head>([\s\S]*)<\/head>/)[1];
             var body = xhr.responseText.match(/<body[^>]+>([\s\S]*)<\/body>/)[1];
 
-            var lang_script = buildElement('script', {src: 'http://assets.tumblr.com/languages/strings/en_US.js?838'});
-            var dsbd_script = buildElement('script', {src: 'http://assets.tumblr.com/javascript/prototype_effects_application_tumblelog.js?838'});
-            var apikey_script = buildElement('script', {}, 'var API_KEY = "lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV";');
+            var lang_script = buildElement('script', {
+                    src: 'http://assets.tumblr.com/languages/strings/en_US.js?838'});
+            var dsbd_script = buildElement('script', {
+                    src: 'http://assets.tumblr.com/javascript/prototype_effects_application_tumblelog.js?838'});
+            var apikey_script = buildElement('script', {},
+                'var API_KEY = "lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV";');
             var origin_script = buildElement('script', {});
             var next_page_script = buildElement('script', {}, '');
 
@@ -940,12 +973,13 @@ function buildMainPage() {
             elm_head.appendChild(apikey_script);
 
             execClient([
-                'start_observing_key_commands(1);',
+                // 'start_observing_key_commands(1);',
                 'initialize_tabs();',
-                'window.next_page = location.href;',
+                'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
                 'window.LIKE_KEY = "', like_key, '";',
                 'window.PATH_PARSER = ', PATH_PARSER, ';',
+                cloneChildren.toString(),
                 escapeHtmlScript.toString(),
                 trimNodeEvent.toString(),
                 trimNodeStyle.toString(),
