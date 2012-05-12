@@ -13,6 +13,11 @@
 // TODO: ランダム機能を付けます
 // TODO: 分類ごとにオブジェクトにします
 
+((function NecromancyTumblelog() {
+
+var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
+var PATH_PARSER = /\/blog\/(?:([^\/]+)\/?)(?:([a-z\-_]+)\/?)?(?:(\d+)\/?)?$/;
+
 // FIXME: font タグの除去方法
 
 /* ここからコピペコード */
@@ -70,11 +75,9 @@ function serialize(_obj)
 /* コピペコードここまで */
 
 
-var PATH_PARSER = /\/blog\/(?:([^\/]+)\/?)(?:([a-z\-_]+)\/?)?(?:(\d+)\/?)?$/;
 
 /* 一度の処理で一度の javascript コードを location に指定できない為、遅延させて実行させます */
-function execClient(code, lazy)
-{
+function execClient(code, lazy) {
     lazy = (typeof lazy == 'undefined' ? 0 : lazy);
     setTimeout(function() {location.assign('javascript:' + code)}, lazy)
 }
@@ -93,36 +96,35 @@ function buildQueryString(dict) {
 }
 
 /* document.querySelectorAll into Array */
-function $$(selector)
-{
+function $$(selector) {
     return Array.prototype.slice.call(document.querySelectorAll(selector));
 }
 
 /* buildElement */
-function buildElement(tag_name, propaties, innerHTML)
-{
+function buildElement(tag_name, propaties, innerHTML) {
     var elm = document.createElement(tag_name);
+
+    propaties = propaties || {};
     for (var key in propaties) {
         elm.setAttribute(key, propaties[key]);
     }
+
     elm.innerHTML = innerHTML || '';
     return elm;
 }
 
 function cloneChildren(node) {
     var frag = document.createDocumentFragment();
-
-    for (var i = 0; i < node.childNodes.length; ++i) {
-        frag.appendChild(node.childNodes[i].cloneNode(true));
-    }
-
+    Array.prototype.slice.call(node.childNodes).map(function(elm) {
+        frag.appendChild(elm.cloneNode(true));
+    });
     return frag;
 }
 
 function buildElementBySource(html) {
     var range = document.createRange();
     range.selectNodeContents(document.body);
-    return range.createContextualFragment(html).childNodes[0];
+    return range.createContextualFragment(html);
 }
 
 /* prototype.js 風 Ajax */
@@ -138,7 +140,7 @@ function Ajax(url, options) {
                     options.onSuccess(xhr);
                 }    
             }
-            else if ((status / 100) == 4 || (status / 100) == 5) {
+            else if ((status / 100) >= 4) {
                 if (options.onFailure) {
                     options.onFailure(xhr);
                 }
@@ -152,13 +154,21 @@ function Ajax(url, options) {
     xhr.open(options.method, url, async);
     for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i+=2) {
         xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i+1]);
-    }    
+    }
+    /* FIXME: GET の際は parameters を URL の後ろに付ける */
     xhr.send(options.parameters);
 }
 
 
+/* TODO: rename escapeHtmlScript to escapeScriptTag */
 function escapeHtmlScript(html) {
     return html.replace(/<(?=\/?script)/g, '&lt;');
+}
+
+function trimNodeEtc(node) {
+    trimNodeEvent(node);
+    trimNodeClass(node);
+    trimNodeStyle(node);
 }
 
 function trimNodeEvent(node) {
@@ -174,52 +184,29 @@ function trimNodeEvent(node) {
         }
     }
 
-    if (node.children.length) {
-        for (var i = 0; i < node.children.length; ++i) {
-            trimNodeEvent(node.children.item(i));
-        }
-    }
+    Array.prototype.slice.call(node.children).map(arguments.callee);
 }
 
 /* style などを取り除きます */
 function trimNodeStyle(node) {
-    if (node.childNodes) {
-        for (var i = 0; i < node.children.length; ++i) {
-            trimNodeStyle(node.children.item(i));
-        }
-    }
+    node.removeAttribute('style');
+    Array.prototype.slice.call(node.children).map(arguments.callee);
 
     if (node.tagName == 'FONT') {
         if (node.parentNode) {
             node.parentNode.replaceChild(cloneChildren(node), node);
         }
     }
-    else {
-        node.removeAttribute('style');
-    }
 }
 
 /* 下降しながら className を除去します */
 function trimNodeClass(node) {
     node.className = '';
-    if (node.childNodes) {
-        for (var i = 0; i < node.children.length; ++i) {
-            trimNodeClass(node.children.item(0));
-        }
-    }
+    Array.prototype.slice.call(node.children).map(arguments.callee);
 }
 
 var PostBuilder = {
-    notes: function(json) {
-    },
-    like_button: function(json) {
-    },
-    reblog_button: function(json) {
-    },
-    controls: function(json) {
-        var post_controls = buildElement('div', {class: 'post_controls'});
-    
-        /* post_controls > notes */
+    note_count: function(json) {
         /*
         var notes_onclick = [
             'display_post_notes(',
@@ -250,45 +237,52 @@ var PostBuilder = {
                 style: 'display:none;',
                 title: (note_count + 1)+ ' notes'},
             note_count + 1));
-        post_controls.appendChild(notes);
-    
-        /* post_controles > reblog */
+
+        return notes;
+    },
+    reblog_button: function(json) {
         var url_reblog = ['/reblog', json.id, json.reblog_key].join('/');
         var url_fast_reblog = ['/fast_reblog', json.id, json.reblog_key].join('/');
-        var reblog_button = buildElement('a', {
+        return buildElement('a', {
                 href: url_reblog,
                 class: 'reblog_button',
                 title: 'Reblog',
                 'data-fast-reblog-url': url_fast_reblog});
-    
-        post_controls.appendChild(reblog_button);
-    
-        /* post_controles > like */
-        var like_form = buildElement('form', {
-                method: 'post',
-                action: ['/like', json.reblog_key].join('/'),
-                id: 'like_form_' + json.id,
-                style: 'display: none'});
+    },
+    like_button: function(json) {
+        var frag = document.createDocumentFragment();
+
+        var like_form = frag.appendChild(buildElement('form', {
+                    method: 'post',
+                    action: ['/like', json.reblog_key].join('/'),
+                    id: 'like_form_' + json.id,
+                    style: 'display: none'}));
         like_form.appendChild(buildElement('input', {
                 type: 'hidden', name: 'id', value: json.id}));
         like_form.appendChild(buildElement('input', {
                 type: 'hidden', id: 'form_key', name: 'form_key', value: LIKE_KEY}));
     
-        post_controls.appendChild(like_form);
-    
         var root_id;
         with ({url: json.reblogged_root_url}) {
             root_id = (url ? url.match(/(?:post\/(\d+)|private_\d+?(\d+))/)[1] : '');
         }
-        var like_button = buildElement('a', {
-                class: 'like_button like_root_' + root_id,
-                href: '#',
-                title: 'like',
-                id: 'like_button_' + json.id,
-                'data-root-post-id': root_id,
-                onclick: 'submit_like(\'' + (json.id) + '\'); return false;'});
+        var like_button = frag.appendChild(buildElement('a', {
+                    class: 'like_button like_root_' + root_id,
+                    href: '#',
+                    title: 'like',
+                    id: 'like_button_' + json.id,
+                    'data-root-post-id': root_id,
+                    onclick: 'submit_like(\'' + (json.id) + '\'); return false;'}));
+
+        return frag;
+    },
+    controls: function(json) {
+        var post_controls = buildElement('div', {class: 'post_controls'});
+
+        post_controls.appendChild(PostBuilder.note_count(json));
+        post_controls.appendChild(PostBuilder.reblog_button(json));
+        post_controls.appendChild(PostBuilder.like_button(json));
     
-        post_controls.appendChild(like_button);
         return post_controls;
     },
     postInfo: function(json) {
@@ -392,33 +386,27 @@ var PostBuilder = {
                     onload: onload});
         
             frag.appendChild(post_image);
-            frag.appendChild(document.createTextNode(' '));
         
             if (json.link_url && /^https?:\/\/[^\/]+/.test(json.link_url)) {
                 var link_domain = json.link_url.match(/^https?:\/\/([^\/]+)/)[1];
-                var post_info = buildElement('div', {
-                        id: 'photo_info_' + (json.id),
-                        style: [
-                            'display:none;',
-                            'margin-top: 2px;',
-                            'font-size:10px;',
-                            'line-height:20px;',
-                            'clear:both; height:27px;'].join('')});
+                var post_info = frag.appendChild(buildElement('div', {
+                            id: 'photo_info_' + (json.id),
+                            style: [
+                                'display:none;',
+                                'margin-top: 2px;',
+                                'font-size:10px;',
+                                'line-height:20px;',
+                                'clear:both; height:27px;'].join('')}));
                 post_info.appendChild(buildElement('a', {href: escape(json.link_url)}, escape(link_domain)));
                 post_info.appendChild(document.createTextNode(' → '));
-            
-                frag.appendChild(post_info);
             }
         
             if (json.caption) {
-                var post_caption = buildElement('div', {
-                        class: 'caption',
-                        style: 'margin-top:0px;'},
-                    escapeHtmlScript(json.caption));
-                trimNodeEvent(post_caption);
-                trimNodeStyle(post_caption);
-                trimNodeClass(post_caption);
-                frag.appendChild(post_caption);
+                var post_caption = frag.appendChild(buildElement('div', {
+                            class: 'caption',
+                            style: 'margin-top:0px;'},
+                        escapeHtmlScript(json.caption)));
+                trimNodeEtc(post_caption);
             }
         
             return frag;
@@ -427,23 +415,16 @@ var PostBuilder = {
             var frag = document.createDocumentFragment();
         
             if (json.title) {
-                var post_title = buildElement('div', {class: 'post_title'}, escapeHtmlScript(json.title));
-                trimNodeEvent(post_title);
-                trimNodeStyle(post_title);
-                trimNodeClass(post_title);
-                frag.appendChild(post_title);
+                var post_title = frag.appendChild(buildElement('div',
+                        {class: 'post_title'},
+                        escapeHtmlScript(json.title)));
+                trimNodeEtc(post_title);
             }
         
             if (json.body) {
-                var post_body_outer = buildElement('div', {}, escapeHtmlScript(json.body));
-                trimNodeStyle(post_body_outer);
-                trimNodeEvent(post_body_outer);
-                trimNodeClass(post_body_outer);
-        
-                while (post_body_outer.children.length) {
-                    frag.appendChild(post_body_outer.children.item(0));
-                }
-        
+                var post_body = frag.appendChild(buildElementBySource(
+                        escapeHtmlScript(json.body)));
+                Array.prototype.slice.call(post_body).map(trimNodeEtc);
             }
             return frag;
         },
@@ -453,18 +434,15 @@ var PostBuilder = {
             if (json.text) {
                 frag.appendChild(document.createTextNode('“'));
         
-                var quote = buildElement('span', {}, escapeHtmlScript(json.text));
-                trimNodeEvent(quote);
-                trimNodeStyle(quote);
-                trimNodeClass(quote);
+                var quote = frag.appendChild(buildElement('span', {}, escapeHtmlScript(json.text)));
+                trimNodeEtc(quote);
                 quote.className = 'quote';
-                frag.appendChild(quote);
         
                 frag.appendChild(document.createTextNode('”'));
             }
         
             if (json.source) {
-                var table = buildElementBySource([
+                var table_html = [
                     '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top:10px;">',
                     '    <tbody>',
                     '        <tr>',
@@ -472,14 +450,13 @@ var PostBuilder = {
                     '            <td valign="top" class="quote_source"></td>',
                     '        </tr>',
                     '    </tbody>',
-                    '</table>'].join(''));
-        
+                    '</table>'].join('');
+                var table = buildElementBySource(table_html);
                 var quote_source = table.querySelector('.quote_source');
                 quote_source.innerHTML = escapeHtmlScript(json.source);
-                trimNodeStyle(quote_source);
-                trimNodeEvent(quote_source);
-                trimNodeClass(quote_source);
-        
+                trimNodeEtc(quote_source);
+                quote_source.className = 'quote_source';
+                
                 frag.appendChild(table);
             }
         
@@ -489,22 +466,15 @@ var PostBuilder = {
             var frag = document.createDocumentFragment();
         
             if (json.title) {
-                var post_title = buildElement('div', {class: 'post_title'});
-                var link_title = buildElement('a', {href: json.url}, escapeHtmlScript(json.title));
-                trimNodeEvent(link_title);
-                trimNodeStyle(link_title);
-                trimNodeClass(link_title);
-                post_title.appendChild(link_title);
-                frag.appendChild(post_title);
-        
+                var post_title = frag.appendChild(buildElement('div', {class: 'post_title'}));
+                var link_title = post_title.appendChild(buildElement('a', {href: json.url}, escapeHtmlScript(json.title)));
+                trimNodeEtc(link_title);
             }
         
             if (json.description) {
-                var link_description = buildElement('div', {style: 'margin-top: 10px;'}, escapeHtmlScript(json.description));
-                trimNodeEvent(link_description);
-                trimNodeStyle(link_description);
-                trimNodeClass(link_description);
-                frag.appendChild(link_description);
+                var link_description = frag.appendChild(buildElement('div',
+                        {style: 'margin-top: 10px;'}, escapeHtmlScript(json.description)));
+                trimNodeEtc(link_description);
             }
         
             return frag;
@@ -534,10 +504,10 @@ var PostBuilder = {
             frag.appendChild(thumbnail);
         
             if (json.player.length) {
-                var watch_video = buildElement('div', {
-                        id: 'watch_video_' + json.id,
-                        class: 'video',
-                        style: 'display:none;'});
+                var watch_video = frag.appendChild(buildElement('div', {
+                            id: 'watch_video_' + json.id,
+                            class: 'video',
+                            style: 'display:none;'}));
             
                 var outer_click = buildElement('div', {
                         style: 'font-size:10px; line-height:20px; clear:both; height:27px;'});
@@ -554,17 +524,11 @@ var PostBuilder = {
                 watch_video.appendChild(buildElement('div', {id: 'video_embed_' + json.id, class: 'video_embed'}));
                 watch_video.appendChild(outer_click);
                 watch_video.appendChild(video_code);
-            
-                frag.appendChild(watch_video);
             }
         
             if (json.caption) {
-                var caption = buildElement('div', {class: 'caption'}, escapeHtmlScript(json.caption));
-                trimNodeEvent(caption);
-                trimNodeStyle(caption);
-                trimNodeClass(caption);
-        
-                frag.appendChild(caption);
+                var caption = frag.appendChild(buildElement('div', {class: 'caption'}, escapeHtmlScript(json.caption)));
+                trimNodeEtc(caption);
             }
         
             return frag;
@@ -573,42 +537,33 @@ var PostBuilder = {
             var frag = document.createDocumentFragment();
         
             if (json.album_art) {
-                var album_art = buildElement('img', {
-                        class: 'album_art',
-                        alt: '',
-                        onclick: "$(this).toggleClassName('album_art'); return false;",
-                        title: escape(json.track_name), /* TODO: escape? */
-                        src: encodeURI(json.album_art) /* TODO: escape? */});
-        
-                frag.appendChild(album_art);
+                frag.appendChild(buildElement('img', {
+                            class: 'album_art',
+                            alt: '',
+                            onclick: "$(this).toggleClassName('album_art'); return false;",
+                            title: escape(json.track_name), /* TODO: escape? */
+                            src: encodeURI(json.album_art) /* TODO: escape? */}));
             }
         
             if (json.audio_url) {
                 /* non-Flash info */
-                var noflash = buildElement('span', {
-                        id: 'audio_node_' + json.id},
-                    '[<a href="http://www.adobe.com/shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash" target="_blank">Flash 9</a>is required to listen to audio.]');
-        
-                frag.appendChild(noflash);
+                frag.appendChild(buildElement('span', {
+                            id: 'audio_node_' + json.id},
+                        '[<a href="http://www.adobe.com/shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash" target="_blank">Flash 9</a>is required to listen to audio.]'));
         
                 /* Audio script */
                 var inner = [
                     "replaceIfFlash(9, 'audio_node_", json.id, "', ",
                     "'<div>", json.player.replace('player.swf', 'player_black.swf'), "</div>');"].join('');
-                var audio_script = buildElement('script', {type: 'text/javascript'}, inner);
-        
-                frag.appendChild(audio_script);
+                frag.appendChild(buildElement('script', {type: 'text/javascript'}, inner));
             }
         
             if (json.caption) {
-                var post_body = buildElement('div', {
-                        style: 'margin: 10px;',
-                        class: 'post_body'},
-                    escapeHtmlScript(json.caption));
-                trimNodeStyle(post_body);
-                trimNodeEvent(post_body);
-                trimNodeClass(post_body);
-                frag.appendChild(post_body);
+                var post_body = frag.appendChild(buildElement('div', {
+                            style: 'margin: 10px;',
+                            class: 'post_body'},
+                        escapeHtmlScript(json.caption)));
+                trimNodeEtc(post_body);
             }
         
             return frag;
@@ -617,18 +572,14 @@ var PostBuilder = {
             var frag = document.createDocumentFragment();
         
             if (json.title) {
-                var post_title = buildElement('div', {
-                        class: 'post_title'},
-                    escapeHtmlScript(json.title));
-                trimNodeEvent(post_title);
-                trimNodeStyle(post_title);
-                trimNodeClass(post_title);
-        
-                frag.appendChild(post_title);
+                var post_title = frag.appendChild(buildElement('div', {
+                            class: 'post_title'},
+                        escapeHtmlScript(json.title)));
+                trimNodeEtc(post_title);
             }
         
             if (json.body) {
-                var conversation_lines = buildElement('ul', {class: 'conversation_lines'});
+                var conversation_lines = frag.appendChild(buildElement('ul', {class: 'conversation_lines'}));
         
                 json.body.split('\n').map(function(line) {
                     if (line.trim() == '') {
@@ -638,6 +589,7 @@ var PostBuilder = {
                     line = line.replace('<', '&lt;');
         
                     var li = buildElement('li', {class: 'chat_line'});
+
                     if (line.search(':') == -1) {
                         li.innerText = line;
                     }
@@ -649,11 +601,8 @@ var PostBuilder = {
                             '</strong>',
                             m[2]].join('');
                     }
-        
                     conversation_lines.appendChild(li);
                 });
-        
-                frag.appendChild(conversation_lines);
             }
         
             return frag;
@@ -663,35 +612,32 @@ var PostBuilder = {
         var footer_links = buildElement('div', {
                 class: 'footer_links'});
         if (json.source_url) {
-            var source_url = buildElement('span', {
-                    id: 'source_url_' + json.id,
-                    class: 'source_url'});
+            var source_url = footer_links.appendChild(buildElement('span', {
+                        id: 'source_url_' + json.id,
+                        class: 'source_url'}));
             source_url.appendChild(buildElement('a', {
                         href: encodeURI(json.source_url)},
                     'Source: ' + escape(json.source_title)));
             source_url.appendChild(buildElement('div', {
                         class: 'source_url_gradient'}));
     
-            footer_links.appendChild(source_url);
             footer_links.className += ' with_source_url';
         }
     
         if (json.tags.length) {
-            var tags_wrapper = buildElement('span', {
-                    id: 'post_tags_wrapper_' + json.id});
-            var tags_node = buildElement('span', {
-                id: 'post_tags_' + json.id,
-                class: 'tags'});
-            for (var i = 0; i < json.tags.length; ++i) {
-                var tag = json.tags[i];
+            var tags_wrapper = footer_links.appendChild(buildElement('span', {
+                            id: 'post_tags_wrapper_' + json.id}));
+            var tags_node = tags_wrapper.appendChild(buildElement('span', {
+                            id: 'post_tags_' + json.id,
+                            class: 'tags'}));
+
+            json.tags.map(function(tag) {
                 tags_node.appendChild(buildElement('a', {
                             class: 'tag',
                             href: '/tagged/' + encodeURI(tag)},
                         '#' + escape(tag)));
-            }
-            tags_wrapper.appendChild(tags_node);
-    
-            footer_links.appendChild(tags_wrapper);
+            });
+
             footer_links.className += ' with_tags';
         }
         return footer_links;
@@ -721,7 +667,7 @@ var PostBuilder = {
                 onclick: 'Effect.SlideUp(\'notes_outer_container_' + (json.id) + '\'); return false;',
                 style: 'color:#79A0BE;'},
             'Hide notes');
-    
+
         notes_outer_container.appendChild(notes_outer_container_inner);
         notes_outer_container_inner.appendChild(notes_container);
         notes_outer_container_inner.appendChild(notes_control);
@@ -736,14 +682,13 @@ var PostBuilder = {
         var avatar_and_i = buildElement('div', {
                 class: 'avatar_and_i'});
         var url_icon = 'background-image:url(\'http://api.tumblr.com/v2/blog/'+(json.blog_name)+'.tumblr.com/avatar/64\');';
-        var post_avatar = buildElement('a', {
-                href: 'http://' + json.blog_name + '.tumblr.com/',
-                title: '???', /* FIXME */
-                class: 'post_avatar',
-                id: 'post_avatar_' + json.id,
-                style: url_icon});
-    
-        avatar_and_i.appendChild(post_avatar);
+        var post_avatar = avatar_and_i.appendChild(buildElement('a', {
+                    href: 'http://' + json.blog_name + '.tumblr.com/',
+                    title: '???', /* FIXME */
+                    class: 'post_avatar',
+                    id: 'post_avatar_' + json.id,
+                    style: url_icon}));
+
         return avatar_and_i;
     },
     postPermalink: function(json) {
@@ -764,45 +709,21 @@ var PostBuilder = {
         }
         else if (false /* 一週間以内か */) {
             var day_of_week = (new Date(json.timestamp)).getUTCDay();
-    
-            switch(day_of_week) {
-                case 0: permalink_title += 'Sunday';    break;
-                case 1: permalink_title += 'Monday';    break;
-                case 2: permalink_title += 'Tuesday';   break;
-                case 3: permalink_title += 'Wednesday'; break;
-                case 4: permalink_title += 'Thursday';  break;
-                case 5: permalink_title += 'Friday';    break;
-                case 6: permalink_title += 'Saturday';  break;
-            }
-            permalink_title += ', ';
+            permalink_title += [
+                'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day_of_week];
         }
         else if (false /* その他 */) {
             var month = (new Date(json.timestamp)).getMonth();
-    
-            switch(month) {
-                case  0: permalink_title += 'January'; break;
-                case  1: permalink_title += 'February'; break;
-                case  2: permalink_title += 'March'; break;
-                case  3: permalink_title += 'April'; break;
-                case  4: permalink_title += 'May'; break;
-                case  5: permalink_title += 'June'; break;
-                case  6: permalink_title += 'July'; break;
-                case  7: permalink_title += 'August'; break;
-                case  8: permalink_title += 'September'; break;
-                case  9: permalink_title += 'October'; break;
-                case 10: permalink_title += 'November'; break;
-                case 11: permalink_title += 'December'; break;
-            }
+            permalink_title += [
+                'January', 'February', 'March', 'April',
+                'May', 'June', 'July', 'August',
+                'September', 'October', 'November', 'December'][month];
+
+            permalink_title += ' ';
     
             var day = (new Date(json.timestamp)).getDate();
-            if (day == 1) {
-                permalink_title += ' 1st';
-            }
-            if (day == 2) {
-                permalink_title += ' 2nd';
-            }
-            if (day == 3) {
-                permalink_title += ' 3rd';
+            if (day <= 3) {
+                permalink_title += ['1st', '2nd', '3rd'][day];
             }
             else {
                 permalink_title += (day) + 'th';
@@ -810,15 +731,11 @@ var PostBuilder = {
     
             permalink_title += ', ';
         }
+
+        permalink_title += [
+            post_date.getUTCHours() % 12, post_date.getUTCMinutes()].join(':');
+        permalink_title += ['am', 'pm'][post_date.getUTCHours() / 12];
     
-        /* TODO */
-        if (false /* 午前中か */) {
-        }
-        else {
-            /* 午後です */
-        }
-    
-        var permalink_title = '';
         return buildElement('a', {
                 href: json.post_url,
                 title: permalink_title,
@@ -840,12 +757,10 @@ var PostBuilder = {
         post.appendChild(buildElement('div', {class: 'corner_mask'}));
     
         /* notes, Reblog, Like など */
-        var post_controls = PostBuilder.controls(json);
-        post.appendChild(post_controls);
+        post.appendChild(PostBuilder.controls(json));
     
         /* A reblogged B: */
-        var post_info = PostBuilder.postInfo(json);
-        post.appendChild(post_info);
+        post.appendChild(PostBuilder.postInfo(json));
     
         /* 謎要素です */
         post.appendChild(buildElement('div', {
@@ -853,25 +768,19 @@ var PostBuilder = {
                     style: 'clear:both; display:none;'}));
     
         /* 各 type のポストコンテンツです */
-        var post_content = PostBuilder.content(json);
-        post.appendChild(post_content);
+        post.appendChild(PostBuilder.content(json));
     
         /* 多分 clearfix です*/ 
         post.appendChild(buildElement('div', {class: 'clear'}));
     
         /* <div class="footer_links  with_source_url"> */
-        var footer_links = PostBuilder.footerLinks(json);
-        if (footer_links) {
-            post.appendChild(footer_links);
-        }
+        post.appendChild(PostBuilder.footerLinks(json));
     
         /* Notes 一覧 */
-        var notes_outer_container = PostBuilder.notesOuterContainer(json);
-        post.appendChild(notes_outer_container);
+        post.appendChild(PostBuilder.notesOuterContainer(json));
     
         /* avatar アイコン */
-        var avatar_and_i = PostBuilder.avatarAndI(json);
-        post.appendChild(avatar_and_i);
+        post.appendChild(PostBuilder.avatarAndI(json));
     
         /* arrow */
         post.appendChild(buildElement('span', {class: 'arrow'}));
@@ -895,30 +804,30 @@ function buildNecromancyURL(tumblelog, type, offset) {
 
 
 /* tumblr が api に失敗して html を返してくる事があるのでオブザーブ形式にしています */
-function necromancy_observer(pe) {
+function necromancyObserver(pe) {
     if (window.prev_json != window.new_json) {
-        necromancy_callback(new_json);
+        window.prev_json = window.new_json;
+        necromancyCallback(new_json);
     }
-    window.prev_json = window.new_json;
 
-    var next_page_parsed = window.location.href.match(PATH_PARSER);
-    if (window.new_json && next_page_parsed[3] >= window.new_json.response.total_posts) {
+    var parsed_page_path = window.location.href.match(PATH_PARSER);
+    if (window.new_json && parsed_page_path[3] >= window.new_json.response.total_posts) {
         pe.stop();
         $('auto_pagination_loader').hide();
     }
 }
 
-function necromancy_callback(json) {
+function necromancyCallback(json) {
     console.log(json.response);
+
     var posts_node = document.querySelector('#posts');
     var posts = json.response.posts.map(function(json_post) {
-        /* console.log(json_post); */
         var post = PostBuilder.similarPost(json_post);
         post.className += ' same_user_as_last';
         return posts_node.appendChild(post);
     });
     if (posts.length) {
-        posts[0].className = posts[0].className.replace(' same_user_as_last');
+        posts[0].className = posts[0].className.replace('\bsame_user_as_last\b', '');
     }
 
     var next_page_parsed = window.next_page.match(PATH_PARSER);
@@ -926,17 +835,17 @@ function necromancy_callback(json) {
     var type = next_page_parsed[2] || '';
     var offset = parseInt(next_page_parsed[3]);
 
-    var cur_url = buildNecromancyURL(tumblelog, type, offset || 0);
-    history.pushState('', '', cur_url);
+    var cur_path = buildNecromancyURL(tumblelog, type, offset || 0);
+    history.pushState('', '', cur_path);
 
     var script = document.querySelector('body > script.necromancy_paginator');
     script.parentNode.removeChild(script);
 
     window.next_page = buildNecromancyURL(tumblelog, type, (offset || 0) + 10);
-    window.loading_next_page = false;;
+    window.loading_next_page = false;
 }
 
-function necromancy_paginator(pe) {
+function necromancyPaginator(pe) {
     if (!window.next_page) {
         pe.stop();
         return;
@@ -981,7 +890,7 @@ function necromancy_paginator(pe) {
 }
 
 
-function buildMainPage() {
+function necromancyInitialize() {
     new Ajax('/dashboard', {
         method: 'GET',
         onSuccess: function(xhr) {
@@ -995,10 +904,6 @@ function buildMainPage() {
                     src: 'http://assets.tumblr.com/languages/strings/en_US.js?838'});
             var dsbd_script = buildElement('script', {
                     src: 'http://assets.tumblr.com/javascript/prototype_effects_application_tumblelog.js?838'});
-            var apikey_script = buildElement('script', {},
-                'var API_KEY = "lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV";');
-            var origin_script = buildElement('script', {});
-            var next_page_script = buildElement('script', {}, '');
 
             var elm_head = document.createElement('head');
             var elm_body = document.createElement('body');
@@ -1019,30 +924,31 @@ function buildMainPage() {
             });
             elm_head.appendChild(lang_script);
             elm_head.appendChild(dsbd_script);
-            elm_head.appendChild(apikey_script);
 
             var cmd = [
                 'start_observing_key_commands(1);',
                 'initialize_tabs();',
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
+                'window.API_KEY = "', API_KEY, '";',
                 'window.LIKE_KEY = "', like_key, '";',
                 'window.PATH_PARSER = ', PATH_PARSER, ';',
                 'window.PostBuilder = ', serialize(PostBuilder), ';',
-                cloneChildren.toString(),
-                escapeHtmlScript.toString(),
-                trimNodeEvent.toString(),
-                trimNodeStyle.toString(),
-                trimNodeClass.toString(),
-                necromancy_paginator.toString(),
-                necromancy_observer.toString(),
-                necromancy_callback.toString(),
-                buildQueryString.toString(),
-                buildElement.toString(),
-                buildElementBySource.toString(),
-                buildNecromancyURL.toString(),
-                'new PeriodicalExecuter(necromancy_paginator, 0.2);',
-                'new PeriodicalExecuter(necromancy_observer, 0.02);',
+                cloneChildren,
+                escapeHtmlScript,
+                trimNodeEtc,
+                trimNodeEvent,
+                trimNodeStyle,
+                trimNodeClass,
+                necromancyPaginator,
+                necromancyObserver,
+                necromancyCallback,
+                buildQueryString,
+                buildElement,
+                buildElementBySource,
+                buildNecromancyURL,
+                'new PeriodicalExecuter(necromancyPaginator, 0.2);',
+                'new PeriodicalExecuter(necromancyObserver, 0.02);',
                 'void 0;'].join('');
 
             execClient(cmd, 400);
@@ -1051,7 +957,7 @@ function buildMainPage() {
 }
 
 function main() {
-    buildMainPage();
+    necromancyInitialize();
 }
 
 function isExecPage() {
@@ -1075,3 +981,4 @@ else {
     window.document.addEventListener('DOMContentLoaded', main, false);
 }
 
+})())
