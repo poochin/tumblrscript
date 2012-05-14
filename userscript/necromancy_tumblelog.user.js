@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     0.0.1
+// @version     1.0.0
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-05-08
-// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/.*
+// @updated     2012-05-15
+// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
 
 // TODO: ランダム機能を付けます
@@ -17,6 +17,7 @@
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
 var PATH_PARSER = /\/blog\/(?:([^\/]+)\/?)(?:([a-z\-_]+)\/?)?(?:(\d+)\/?)?$/;
+var LOAD_SCROLL_OFFSET = 5000;
 
 // FIXME: font タグの除去方法
 
@@ -341,7 +342,7 @@ var PostBuilder = {
         
             var highres = json.photos[0].alt_sizes[0];
             var minres = json.photos[0].alt_sizes.slice(-2)[0];
-            var midres = json.photos[0].alt_sizes[1];
+            var midres = json.photos[0].alt_sizes.slice(0, 2).reverse()[0];
             var width150 = '150px';
             var height150 = parseInt((150 * parseFloat(highres.height) / parseFloat(highres.width))) + 'px';
             var width500 = midres.width;
@@ -572,10 +573,10 @@ var PostBuilder = {
             var frag = document.createDocumentFragment();
         
             if (json.title) {
-                var post_title = frag.appendChild(buildElement('div', {
-                            class: 'post_title'},
+                var post_title = frag.appendChild(buildElement('div', {},
                         escapeHtmlScript(json.title)));
                 trimNodeEtc(post_title);
+                post_title.className = 'post_title';
             }
         
             if (json.body) {
@@ -589,18 +590,11 @@ var PostBuilder = {
                     line = line.replace('<', '&lt;');
         
                     var li = buildElement('li', {class: 'chat_line'});
-
-                    if (line.search(':') == -1) {
-                        li.innerText = line;
-                    }
-                    else {
-                        var m = line.match(/^([^:]+:)(.+)$/);
-                        li.innerHTML = [
-                            '<strong>',
-                            m[1],
-                            '</strong>',
-                            m[2]].join('');
-                    }
+                    li.innerHTML = [
+                        '<strong>',
+                        line.slice(0, line.search(':')),
+                        '</strong>',
+                        line.slice(line.search(':'))].join('');
                     conversation_lines.appendChild(li);
                 });
             }
@@ -856,7 +850,7 @@ function necromancyPaginator(pe) {
 
     var posts;
     if ((posts = $$('#posts > li')) &&
-        (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < 8000) {
+        (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < window.LOAD_SCROLL_OFFSET) {
         window.loading_next_page = true;
 
         var next_page_parsed = window.next_page.match(PATH_PARSER);
@@ -933,6 +927,7 @@ function necromancyInitialize() {
                 'window.API_KEY = "', API_KEY, '";',
                 'window.LIKE_KEY = "', like_key, '";',
                 'window.PATH_PARSER = ', PATH_PARSER, ';',
+                'window.LOAD_SCROLL_OFFSET = ', LOAD_SCROLL_OFFSET, ';',
                 'window.PostBuilder = ', serialize(PostBuilder), ';',
                 cloneChildren,
                 escapeHtmlScript,
