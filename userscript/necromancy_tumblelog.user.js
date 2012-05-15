@@ -83,12 +83,18 @@ function serialize(_obj)
 
 /**
  * クライアントページでコードを実行します。
+ * Google chrome と Opera では遅延実行が可能です。
  * @param {String} code 実行したいコード(// 行コメントは含めないでください).
  * @param {Number} lazy ミリ秒単位での遅延実行する時間。 デフォルトは 0 です.
  */
 function execClient(code, lazy) {
     lazy = (typeof lazy == 'undefined' ? 0 : lazy);
-    setTimeout(function() {location.assign('javascript:' + code)}, lazy);
+    if (/Firefox/.test(navigator.userAgent)) {
+        location.assign('javascript:' + code);
+    }
+    else {
+        setTimeout(function() {location.assign('javascript:' + code)}, lazy);
+    }
 }
 
 
@@ -446,11 +452,14 @@ var PostBuilder = {
             var height150 = parseInt((150 * parseFloat(highres.height) / parseFloat(highres.width))) + 'px';
             var width500 = midres.width;
             var height500 = midres.height;
-            var onload = [
-                "if (this.src.indexOf('_100') != -1) {",
-                "    this.style.backgroundColor = 'transparent';",
-                "    this.src = '" + (midres.url) + "';",
-                "}"].join('');
+            var onload = '';
+            if (midres.url.indexOf('_100') == -1) {
+                onload = [
+                    "if (this.src.indexOf('_100') != -1) {",
+                    "    this.style.backgroundColor = 'transparent';",
+                    "    this.src = '" + (midres.url) + "';",
+                    "}"].join('');
+            }
             var onclick = [
                 onload,
                 "if ($(this).hasClassName('enlarged')) {",
