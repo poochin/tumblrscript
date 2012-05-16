@@ -11,20 +11,17 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
 
-// TODO: ランダム機能を付けます
-// TODO: 分類ごとにオブジェクトにします
-// TODO: quote body の h2 などを取り除きます
-
 /**
  * @namespace NecromancyTumblelog
+ * @TODO ランダム機能を付けます
+ * @TODO quote_body の h2 などを取り除くようにします
+ * @TODO font タグを除去します
  */
 ((function NecromancyTumblelog() {
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
 var PATH_PARSER = /\/blog\/(?:([a-z1-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
 var LOAD_SCROLL_OFFSET = 5000;
-
-// FIXME: font タグの除去方法
 
 /**
  * オブジェクトをシリアライズします
@@ -196,11 +193,15 @@ function Ajax(url, options) {
         }
     }
 
+    if (options.method != 'POST') {
+        url = [url, '?', options.parameters].join('');
+        options.parameters = null;
+    }
+
     xhr.open(options.method, url, async);
     for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i += 2) {
         xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i + 1]);
     }
-    /* FIXME: GET の際は parameters を URL の後ろに付ける */
     xhr.send(options.parameters);
 }
 
@@ -615,6 +616,8 @@ var PostBuilder = {
         },
         /**
          * post 内の content 要素を作成します (video専用)
+         * @TODO thumbnail を埋め込むようにします
+         * @TODO onmouseover, js: cycle_video_thumbnail() を作成する
          * @param {Object} json API が返すうちポスト単位の JSON.
          * @return {Node} 作成した Node オブジェクト.
          */
@@ -631,10 +634,8 @@ var PostBuilder = {
                     src: json.thumbnail_url,
                     width: 150,
                     height: 113,
-                    thumbnails: ''})); /* FIXME */
+                    thumbnails: ''}));
 
-            /* TODO: div[onmouseover] */
-            /* javascript: cycle_video_thumbnail */
             frag.appendChild(thumbnail);
 
             if (json.player.length) {
@@ -680,8 +681,8 @@ var PostBuilder = {
                             class: 'album_art',
                             alt: '',
                             onclick: "$(this).toggleClassName('album_art'); return false;",
-                            title: escape(json.track_name), /* TODO: escape? */
-                            src: encodeURI(json.album_art) /* TODO: escape? */}));
+                            title: escape(json.track_name),
+                            src: encodeURI(json.album_art)}));
             }
 
             if (json.audio_url) {
@@ -826,6 +827,8 @@ var PostBuilder = {
     },
     /**
      * post 内の avatar_and_i 要素を作成します
+     * @TODO post_avatar.title
+     * @TODO node follow 等の node を追加する
      * @param {Object} json API が返すうちポスト単位の JSON.
      * @return {Node} 作成した Node オブジェクト.
      */
@@ -836,7 +839,7 @@ var PostBuilder = {
         var url_icon = 'background-image:url(\'http://api.tumblr.com/v2/blog/' + (json.blog_name) + '.tumblr.com/avatar/64\');';
         var post_avatar = avatar_and_i.appendChild(buildElement('a', {
                     href: 'http://' + json.blog_name + '.tumblr.com/',
-                    title: '???', /* FIXME */
+                    title: '???',
                     class: 'post_avatar',
                     id: 'post_avatar_' + json.id,
                     style: url_icon}));
@@ -900,20 +903,18 @@ var PostBuilder = {
                 id: 'permalink_' + json.id});
     },
     /**
-     * 擬似的に post 要素を作成します
+     * API で取得したデータを元に擬似的に post 要素を作成します
+     * @TODO liked かどうか判別できるように出来ないか
      * @param {Object} json API が返すうちポスト単位の JSON.
      * @return {Node} 作成した Node オブジェクト.
      */
     similarPost: function(json) {
-        /* APIv2で取得したJSONデータのうち post の部分で .post を作成します */
-        /* FIXME: liked かどうか分からないものだろうか */
-
         var post = buildElement('li', {id: 'post_' + json.id});
         post.className = [
             'post',
             json.type,
             (json.reblogged_from_name ? 'is_reblog' : ''),
-            'not_mine'].join(' ');  /* FIXME: is_mine 付けられるようなら付ける */
+            'not_mine'].join(' ');
 
         /* 謎要素です */
         post.appendChild(buildElement('div', {class: 'corner_mask'}));
