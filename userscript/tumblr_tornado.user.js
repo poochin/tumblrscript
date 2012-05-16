@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.0.10
+// @version     1.1.0
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -16,26 +16,12 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-
 /**
-TODO List:
-    /reblog, /edit, /new の部分で channel_id や state の選択をボタンで選べるように、とか
-
-    // show/videos などのオートロードに対応する
-
-    // pub, que, del 中の css 変化を考える
-    // pub, que, del したものに className += 各付けます
-    
-    // s-N で show more notes をクリックする
-
-    // removePosts で full_answer_container_wrapper が削除されない不具合があります
-
-    // 自分からのポストに対しては reblogged_you を付ける
-**/
-
-
-/* escaping global scope poisoning */
-(function () {
+ * @namespace TumblrTornado
+ * @TODO /show/videos の次 URL をバグらないように修正する
+ * @TODO pub, que, del の CSS
+ */
+(function TumblrTornado() {
 
 /**
  * Variables
@@ -253,10 +239,12 @@ var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 /* Reblog 時 Content Type を指定する用の配列です */
 var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
 
-/**
- * Type Extention
-**/
 
+/**
+ * 配列同士を比較します 
+ * @param {Array} another this と比較する配列
+ * @returns {Bool} 同一なら true を、値が一つでも違えば false を返します
+ */
 Array.prototype.cmp = function(another) {
     if (this.length != another.length) {
         return false;
@@ -272,10 +260,9 @@ Array.prototype.cmp = function(another) {
 
 
 /**
- * Library
-**/
-
-/* Tumblr/script を元に UserScript から動かせるように取り込みました */
+ * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
+ * @param {Node} post 対象のビデオポスト要素
+ */
 function toggleVideoEmbed(post) {
     var post_id = post.id.match(/\d+/)[0];
     var toggle = post.querySelector('.video_thumbnail');
@@ -293,7 +280,11 @@ function toggleVideoEmbed(post) {
     }
 }
 
-/* */
+/**
+ * HTML から node を作成します
+ * @param {String} html HTML テキスト
+ * @returns {Node} 作成した Node を子要素に持つ div 要素
+ */
 function createDummyNode(html) {
     // TODO* document.createRange を用いる
     var node = document.createElement('div');
@@ -301,53 +292,77 @@ function createDummyNode(html) {
     return node;
 }
 
-/* document.querySelectorAll into Array */
+/**
+ * HTML 文字列から Node 群を返します
+ * @param {String} html 作成した HTML 文字列.
+ * @return {Object} HTML を元に作成した要素を持つ DocumentFragment.
+ */
+function buildElementBySource(html) {
+    var range = document.createRange();
+    range.selectNodeContents(document.body);
+    return range.createContextualFragment(html);
+}
+
+/**
+ * document.querySelectorAll へのショートハンド
+ * @param {String} selector CSS Selector
+ * @return {Array} NodeList の Array に変換したもの
+ */
 function $$(selector)
 {
     return Array.prototype.slice.call(document.querySelectorAll(selector));
 }
 
-
-/* 一度の処理で一度の javascript コードを location に指定できない為、遅延させて実行させます */
-function execClient(code, lazy)
-{
+/**
+ * クライアントページでコードを実行します。
+ * Google chrome と Opera では遅延実行が可能です。
+ * @param {String} code 実行したいコード(// 行コメントは含めないでください).
+ * @param {Number} lazy ミリ秒単位での遅延実行する時間。 デフォルトは 0 です.
+ */
+function execClient(code, lazy) {
     lazy = (typeof lazy == 'undefined' ? 0 : lazy);
-    setTimeout(function() {location.assign('javascript:' + code)}, lazy)
+    if (/Firefox/.test(navigator.userAgent)) {
+        location.assign('javascript:' + code);
+    }
+    else {
+        setTimeout(function() {location.assign('javascript:' + code)}, lazy);
+    }
 }
 
-/* クライントエリアの位置・サイズを返します */
-function viewRect()
+/**
+ * クライアントエリアのスクロール位置、画面サイズを取得します
+ * @return {Object} left, top, width, height を備えた辞書を返します
+ */
+function viewportRect()
 {
     return {
-        x: document.documentElement.scrollLeft || document.body.scrollLeft,
-        y: document.documentElement.scrollTop || document.body.scrollTop,
-        cx: document.documentElement.clientWidth,
-        cy: document.documentElement.clientHeight};
+        left: document.documentElement.scrollLeft || document.body.scrollLeft,
+        top: document.documentElement.scrollTop || document.body.scrollTop,
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight};
 }
 
-/* 要素の位置・サイズを返します */
-// FIXME: absolute, fixed などは static, relative 親要素になるまで再帰的に取る必要があります
+/**
+ * 要素の位置、サイズを取得します
+ * @TODO absolute, fixed な要素の子要素などは再帰的に親へ辿る必要があります
+ * @return {Object} 要素の left, top, width, height を備えた辞書を返します
+ */
 function nodeRect (elm)
 {
     return {
-        'x': elm.offsetLeft,
-        'y': elm.offsetTop,
-        'cx': elm.offsetWidth,
-        'cy': elm.offsetHeight};
+        left: elm.offsetLeft,
+        top: elm.offsetTop,
+        width: elm.offsetWidth,
+        height: elm.offsetHeight};
 };
 
-/* キーイベント用のオブジェクトを生成して返します */
 /**
- * match
- * func
- * follows
- * has_selector
- * url
- * shift
- * ctrl
- * alt
- * usehelp
- * desc
+ * キーイベント用の辞書を生成して返します
+ * @param {String} match 最後に発火させる時のキー文字
+ * @param {String}   func Tornado.commands の関数名
+ * @param {Function} func 実行させたい関数
+ * @param {Object} options 各種オプション
+ * @returns {Object} キーイベント用の辞書型を返します
  */
 function customkey(match, func, options)
 {
@@ -367,33 +382,48 @@ function customkey(match, func, options)
         desc: options.desc || ''};
 }
 
-/* keyCode と customkey が返すオブジェクトを元に一行ヘルプのテキストを作成します */
+/**
+ * ショートカットの一行ヘルプを作成して返します
+ * @param {Object} shortcut customkey で作成したオブジェクト
+ * @returns HTML 文字列を返します
+ */
 function buildShortcutLineHelp(shortcut) {
     var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
-    var code = [
+    var key = [
         (shortcut.follows && shortcut.follows.join(' ')) || '',
         (shortcut.shift && 's-') || '',
         shortcut.match.toUpperCase()].join('');
-    code = pre_spacing.slice(code.length).join('') + code;
+    key = pre_spacing.slice(key.length).join('') + key;
 
-    // FIXME: 読みづらい
     return [
         '<code>',
-        code,
+        key,
         '</code>',
         ((typeof shortcut == 'string')
             ? (shortcut)
             : (shortcut.desc || shortcut.func))].join('');
 }
 
-/* self が func を呼び出した事にします */
+/**
+ * 特定の関数は this があるオブジェクトを指している事を想定しています。
+ * そのような関数を呼び出す際に self を指定すると func の this が self になったまま呼び出されます。
+ * 使用目的として EventListener や setTimeout を想定しています。
+ * @param {Object}   self func を呼び出した際 this にしたい変数
+ * @param {Function} func 実行したい関数
+ * @param {args}     デフォルトの引数
+ * @returns 上記の目的を満たすクロージャ
+ */
 function preapply(self, func, args) {
     return function() {
         func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
     };
 }
 
-/* {}オブジェクトから HTTP 送信クエリストリングを作成します */
+/**
+ * 辞書型オブジェクトをクエリ文字列に変換します
+ * @param {Object} dict 辞書型オブジェクト
+ * @return {String} クエリ文字列
+ */
 function buildQueryString(dict) {
     if (typeof dict == 'undefined') {
         return '';
@@ -406,29 +436,24 @@ function buildQueryString(dict) {
     return queries.join('&');
 }
 
-/* ... */
-function buildElementFromHTML(html) {
-    // TODO* document.createRange を用いる
-    
-}
-
-
 /**
- * Classes
-**/
-
+ * prototype.js 風な Ajax 関数
+ * @param {String} url URL.
+ * @param {Object} options 各オプションを持った辞書型オブジェクト.
+ */
 function Ajax(url, options) {
     var xhr = this.xhr = new XMLHttpRequest();
     var async = (options.asynchronous == undefined) || options.asynchronous;
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
+            var status = parseInt(xhr.status);
+            if ((status / 100) == 2) {
                 if (options.onSuccess) {
                     options.onSuccess(xhr);
                 }
             }
-            else {
+            else if ((status / 100) >= 4) {
                 if (options.onFailure) {
                     options.onFailure(xhr);
                 }
@@ -439,15 +464,21 @@ function Ajax(url, options) {
         }
     }
 
+    if ('post' != options.method.toLowerCase()) {
+        url = [url, '?', options.parameters].join('');
+        options.parameters = null;
+    }
+
     xhr.open(options.method, url, async);
-    for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i+=2) {
-        xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i+1]);
+    for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i += 2) {
+        xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i + 1]);
     }
     xhr.send(options.parameters);
 }
 
-
-/* クライアントエリアの右下にピンバルーンとメッセージを表示します */
+/**
+ * クライアントエリアの右下にピンバルーンメッセージを表示します
+ */
 function PinNotification (message) {
     var board = document.querySelector('#pin_notification_board');
     if (!board) {
@@ -462,13 +493,22 @@ function PinNotification (message) {
 
     board.appendChild(elm);
 
+    /*
+    setTimeout(function() {
+        board.removeChild(elm);
+    }, 3000);
+    */
     setTimeout(preapply(this, function() {
         this.elm.parentNode.removeChild(this.elm);
     }), 3000);
 }
 
 
-/* 軽量 Dialog ボックスを作成します */
+/**
+ * 軽量なダイアログボックスを表示します
+ * @class
+ * @param {String} title タイトル
+ */
 function LiteDialog(title) {
     this.origin_offsetX = this.origin_offsetY = null;
 
@@ -490,7 +530,13 @@ function LiteDialog(title) {
     document.addEventListener('keydown', LiteDialog.prototype.keyevent, true);
 }
 
+/**
+ */
 LiteDialog.prototype = {
+    /**
+     * lite_dialog のベース HTML
+     * @TODO skelton
+     */
     base_lite_dialog: [
         '<div class="lite_dialog_sysbar">',
         '  <div class="lite_dialog_sysmenus">',
@@ -502,6 +548,10 @@ LiteDialog.prototype = {
         '<div classdiv class="lite_dialog_body">',
         '</div>'].join('')
     ,
+    /**
+     * LiteDialog のタイトルが掴まれた時の処理
+     * @param {Object} e event
+     */
     mousedown: function(e) {
         this.mousemove = preapply(this, this.mousemove);
         this.mouseup = preapply(this, this.mouseup);
@@ -512,19 +562,36 @@ LiteDialog.prototype = {
         this.origin_offsetX = e.clientX - this.dialog.offsetLeft;
         this.origin_offsetY = e.clientY - this.dialog.offsetTop;
     },
+    /**
+     * LiteDialog を移動している最中の処理
+     * @param {Object} e event
+     */
     mousemove: function(e) {
         this.dialog.style.top = (e.clientY - this.origin_offsetY) + 'px';
         this.dialog.style.left = (e.clientX - this.origin_offsetX) + 'px';
         window.getSelection().removeAllRanges();
     },
+    /**
+     * LiteDialog の移動終了の処理
+     * @param {Object} e event
+     */
     mouseup: function(e) {
         document.removeEventListener('mousemove', this.mousemove);
         document.removeEventListener('mousemove', this.mouseup);
     },
+    /**
+     * LiteDialog を閉じる処理
+     * @param {Object} e event
+     */
     close: function(e) {
         this.dialog.parentNode.removeChild(this.dialog);
         this.dialog = undefined;
     },
+    /**
+     * LiteDialog 用のキーイベント
+     * 同じイベントは何度登録しても重複(何度も)処理されません
+     * @param {Object} e event
+     */
     keyevent: function (e) {
         /* 数字キーが入力された際に対応したチャンネルのボタンをクリックします */
         if (document.querySelector('.lite_dialog')) {
@@ -538,19 +605,20 @@ LiteDialog.prototype = {
             }
         }
     },
+    /**
+     * LiteDialog を画面中央に置きます
+     */
     centering: function() {
         var elm = this.dialog;
-        var vr = viewRect();
-        elm.style.top = (vr.y + (vr.cy / 2) - (elm.offsetHeight / 2)) + 'px';
-        elm.style.left = (vr.x + (vr.cx / 2) - (elm.offsetWidth / 2)) + 'px';
+        var vr = viewportRect();
+        elm.style.top = (vr.top + (vr.height / 2) - (elm.offsetHeight / 2)) + 'px';
+        elm.style.left = (vr.left + (vr.width / 2) - (elm.offsetWidth / 2)) + 'px';
     },
 };
 
-
 /**
- * Tornado main object
-**/
-
+ * Tornado のメイン機能
+ */
 var Tornado = {
     /* const */
     KEY_MAX_FOLLOWS: 2,
@@ -563,36 +631,6 @@ var Tornado = {
     key_follows: [],
 
     /* shortcuts */
-    downPost: undefined,
-    halfdown: function() {
-        var view_height = window.innerHeight;
-        window.scrollBy(0, +view_height / 2);
-    },
-    upPost: undefined,
-    halfup: function() {
-        var view_height = window.innerHeight;
-        window.scrollBy(0, -view_height / 2);
-    },
-    goTop: function(post) {
-        Tornado.prev_cursor = post;
-        window.scroll(0, 0);
-    },
-    goBottom: function(post) {
-        Tornado.prev_cursor = post;
-        window.scroll(0, document.height || document.body.clientHeight);
-    },
-    jumpToLastCursor: function() {
-        var y = Tornado.prev_cursor.offsetTop;
-        Tornado.prev_cursor = null;
-        window.scroll(0, y - 7);
-    },
-    like: undefined,
-    reblog_success: function(post, postdata) {
-        // 使用しないかも知れない
-    },
-    reblog_fail: function() {
-        // 使用しないかも知れない
-    },
     reblog: function(post, default_postdata) {
         var reblog_button = post.querySelector('a.reblog_button');
         reblog_button.className += ' reblogging';
@@ -689,7 +727,115 @@ var Tornado = {
 
         dialog_body.querySelector('input[type="button"]').focus();
     },
+
+    /* Event Listener */
+    keyevent: function (e) {
+        var post, posts;
+        var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
+
+        var key_char = String.fromCharCode(e.keyCode);
+        key_char = (e.shiftKey ? key_char.toUpperCase() : key_char.toLowerCase());
+
+        if (112 <= e.keyCode && e.keyCode <= 123) {
+            /* Function keys */
+            return;
+        }
+
+        if (65 <= e.keyCode && e.keyCode <= 90) {
+            // 65 == 'A', 90 == 'Z'
+            var time = (new Date()) * 1;
+            if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < time) {
+                Tornado.key_follows = [];
+            }
+            Tornado.key_input_time = time;
+
+            Tornado.key_follows = Tornado.key_follows.concat(key_char).slice(-Tornado.KEY_MAX_FOLLOWS);
+        }
+
+        var vr = viewportRect();
+        post = $$('.post').filter(function(elm) {
+            return vr.top == (nodeRect(elm).top - margin_top);
+        })[0];
+        if (!post) {
+            console.log('Post not found');
+        }
+
+        var shortcuts = Tornado.shortcuts.slice(0);
+        shortcuts.sort(function(a, b) {
+            return (b.follows.length - a.follows.length) ||
+                   (b.has_selector.length - a.has_selector.length);
+        });
+
+        for (var i = 0; i < shortcuts.length; ++i) {
+            var shortcut = shortcuts[i];
+            if (shortcut.url.test(location) &&
+                key_char.toLowerCase() == shortcut.match &&
+                e.shiftKey == shortcut.shift &&
+                e.ctrlKey == shortcut.ctrl &&
+                e.altKey == shortcut.alt) {
+
+                if (shortcut.has_selector &&
+                    !post.querySelector(shortcut.has_selector)) {
+                    continue;
+                }
+
+                if (shortcut.follows &&
+                    shortcut.follows.length &&
+                    !Tornado.key_follows.cmp(shortcut.follows.concat(shortcut.match))) {
+                    continue;
+                    // FIXME: shortcut.match.toUpperCase, toLowerCase()
+                }
+                else {
+                    if (typeof shortcut.func == 'string') {
+                        Tornado.commands[shortcut.func](post);
+                    }
+                    else {
+                        shortcut.func(post);
+                    }
+                    Tornado.key_follows = [];
+                    break;
+                }
+            }
+        }
+    },
+};
+
+/**
+ * Tornado コマンド
+ */
+Tornado.commands = {
+    downPost: undefined,
+    halfdown: function() {
+        var view_height = window.innerHeight;
+        window.scrollBy(0, +view_height / 2);
+    },
+    upPost: undefined,
+    halfup: function() {
+        var view_height = window.innerHeight;
+        window.scrollBy(0, -view_height / 2);
+    },
+    goTop: function(post) {
+        Tornado.prev_cursor = post;
+        window.scroll(0, 0);
+    },
+    goBottom: function(post) {
+        Tornado.prev_cursor = post;
+        window.scroll(0, document.height || document.body.clientHeight);
+    },
+    jumpToLastCursor: function() {
+        var y = Tornado.prev_cursor.offsetTop;
+        Tornado.prev_cursor = null;
+        window.scroll(0, y - 7);
+    },
+    like: undefined,
+    reblog_success: function(post, postdata) {
+        // 使用しないかも知れない
+    },
+    reblog_fail: function() {
+        // 使用しないかも知れない
+    },
     fast_reblog: function(post) {
+
         var reblog_button = post.querySelector('a.reblog_button');
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
         reblog_button.className += ' reblogging';
@@ -705,6 +851,9 @@ var Tornado = {
                 reblog_button.className = reblog_button.className.replace('reblogging', '');
             },
         });
+    },
+    reblog: function(post) {
+        Tornado.reblog(post, {});
     },
     reblogToChannel: function(post) {
         Tornado.reblogToChannelDialog(post, {});
@@ -755,9 +904,9 @@ var Tornado = {
         // TODO: .notification の clean を実装する
         var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
         var dsbd = posts[0].parentNode;
-        var vr = viewRect();
+        var vr = viewportRect();
         var i;
-        for (i = 0; posts[i].offsetTop < vr.y && i < posts.length; ++i) {
+        for (i = 0; posts[i].offsetTop < vr.top && i < posts.length; ++i) {
             var post = document.createElement('li');
             post.className = ['empty_post', posts[i].className.match(/\bsame_user_as_last\b/)].join(' ');
             post.style.cssText = [
@@ -770,12 +919,12 @@ var Tornado = {
     removePosts: function(/* posts */) {
         var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"]), #posts > .notification, #posts > .empty_post');
         var dsbd = posts[0].parentNode;
-        var vr = viewRect();
+        var vr = viewportRect();
         var i, del_count = 0;
 
         window.scrollTo(0, posts[0].offsetTop - 7);
 
-        for (i = 0; i < posts.length && (posts[i].offsetTop - 7) < vr.y; ++i) {
+        for (i = 0; i < posts.length && (posts[i].offsetTop - 7) < vr.top; ++i) {
         }
         del_count = i;
         for (i = i - 1; i >= 0; --i) {
@@ -885,102 +1034,11 @@ var Tornado = {
         return true;  /* threw up event */
     },
 
-    /* Event Listener */
-    keyevent: function (e) {
-        var post, posts;
-        var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
-
-        var key_char = String.fromCharCode(e.keyCode);
-        key_char = (e.shiftKey ? key_char.toUpperCase() : key_char.toLowerCase());
-
-        if (112 <= e.keyCode && e.keyCode <= 123) {
-            /* Function keys */
-            return;
-        }
-
-        if (65 <= e.keyCode && e.keyCode <= 90) {
-            // 65 == 'A', 90 == 'Z'
-            var time = (new Date()) * 1;
-            if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < time) {
-                Tornado.key_follows = [];
-            }
-            Tornado.key_input_time = time;
-
-            Tornado.key_follows = Tornado.key_follows.concat(key_char).slice(-Tornado.KEY_MAX_FOLLOWS);
-        }
-
-        var vr = viewRect();
-        post = $$('.post').filter(function(elm) {
-            return vr.y == (nodeRect(elm).y - margin_top);
-        })[0];
-        if (!post) {
-            console.log('Post not found');
-        }
-
-        var shortcuts = Tornado.shortcuts.slice(0);
-        shortcuts.sort(function(a, b) {
-            return (b.follows.length - a.follows.length) ||
-                   (b.has_selector.length - a.has_selector.length);
-        });
-
-        for (var i = 0; i < shortcuts.length; ++i) {
-            var shortcut = shortcuts[i];
-            if (shortcut.url.test(location) &&
-                key_char.toLowerCase() == shortcut.match &&
-                e.shiftKey == shortcut.shift &&
-                e.ctrlKey == shortcut.ctrl &&
-                e.altKey == shortcut.alt) {
-
-                if (shortcut.has_selector &&
-                    !post.querySelector(shortcut.has_selector)) {
-                    continue;
-                }
-
-                if (shortcut.follows &&
-                    shortcut.follows.length &&
-                    !Tornado.key_follows.cmp(shortcut.follows.concat(shortcut.match))) {
-                    continue;
-                    // FIXME: shortcut.match.toUpperCase, toLowerCase()
-                }
-                else {
-                    if (typeof shortcut.func == 'string') {
-                        this[shortcut.func](post);
-                    }
-                    else {
-                        shortcut.func(post);
-                    }
-                    Tornado.key_follows = [];
-                    break;
-                }
-            }
-        }
-    },
 };
 
-
 /**
- * shortcuts info *
-
- * h: fastReblog
- * t: ReblogNormally
- * j: Down
- * J: halfDown
- * k: Up
- * K: halfUp
- * l: Like
- * d: Drafts, (delete?)
- * q: Queue
- * p: Private, (publish?)
- * i: scaleImage
- * c: cleanPosts(by SuperTumblr)
- * n: Notes
- * m?: Poster Info(with APIv2?)
- * g: got top
- * G: goto bottom
- * r?: Reload
- * O: Jump to prev post(ability passed g, G)
+ * ショートカットを登録する部分です
  */
-
 Tornado.shortcuts = [
     customkey('j', 'default', {desc: '次ポストへ移動'}),
     customkey('j', 'halfdown', {shift: true, usehelp: 'hide', desc: '下へ半スクロール'}),
@@ -1020,34 +1078,32 @@ Tornado.shortcuts = [
 ];
 
 
+var EmbedFunctions = {
+    jsonpRootInfo: function() {},
+    add_reblogged_you: function() {},
+};
+
 /**
- * main execution functions
-**/
+ * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
+ * @param {Object} json Tumblr API が返す JSON オブジェクト
+ */
+function jsonpRootInfo(json) {
+    var post = json.response.posts[0];
+    var root_name = post.reblogged_root_name;
+    var root_url = post.reblogged_root_url;
+    var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
 
-/* 無効になっているデフォルトのショートカットキーを有効にします */
-function wakeupDefaultShortcut() {
-    execClient('start_observing_key_commands(1);', 1000);
+    var node_post = document.querySelector('#post_' + post.id);
+    var root_info = node_post.querySelector('.root_info');
+    root_info.innerHTML = ' [' + text_root_link + ']';
+
+    var script = document.querySelector('#showroot_' + post.id);
+    script.parentNode.removeChild(script);
 }
 
-/* rootInfo の jsonp を処理する関数をページに埋め込みます */
-function embedRootInfo() {
-    function jsonpRootInfo(json) {
-        var post = json.response.posts[0];
-        var root_name = post.reblogged_root_name;
-        var root_url = post.reblogged_root_url;
-        var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
-
-        var node_post = document.querySelector('#post_' + post.id);
-        var root_info = node_post.querySelector('.root_info');
-        root_info.innerHTML = ' [' + text_root_link + ']';
-
-        var script = document.querySelector('#showroot_' + post.id);
-        script.parentNode.removeChild(script);
-    }
-    execClient(jsonpRootInfo.toString(), 300);
-}
-
-/* 自分からリブログされた場合に reblogged_you クラスを付けます。 関数名の便宜上スネークケースです。 */
+/**
+ * 自分からのリブログに対して .reblogged_you クラスを付けます。
+ */
 function add_reblogged_you() {
     $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
         if (post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
@@ -1056,25 +1112,26 @@ function add_reblogged_you() {
     });
 }
 
-/* オートロードするたびにURLを現在のページに置き換える処理をページに埋め込みます */
+/**
+ * ロードの度にロケーションバーを書き換えるようにします
+ */
 function enhistory() {
-    // /show/text,
-    var inner_code = (function() {
-        var papr = window._process_auto_paginator_response;
-        window._process_auto_paginator_response = function(transport) {
-            history.pushState('', '', window.next_page);
-            papr(transport);
-            $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
-                if (post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
-                    post.className += ' reblogged_you';
-                }
-            });
-        }
-    }).toString();
-    execClient('(' + inner_code + ')()', 0);
+    return [
+        '(',
+        function() {
+            var papr = window._process_auto_paginator_response;
+            window._process_auto_paginator_response = function(transport) {
+                history.pushState('', '', window.next_page);
+                papr(transport);
+                add_reblogged_you();
+            }
+        },
+        ')();'].join('');
 }
 
-/* right column に各ショートカットのヘルプを表示します */
+/**
+ * 右カラムにヘルプを表示します
+ */
 function showShortcutHelp() {
     var help = document.createElement('dl');
     help.id = 'tornado_shortcuts_help';
@@ -1116,28 +1173,29 @@ function showShortcutHelp() {
 }
 
 /**
- * main
-**/
-
+ * ページロード時に一度だけ呼び出されます
+ */
 function main() {
     var keyevent = preapply(Tornado, Tornado.keyevent);
     document.addEventListener('keydown', keyevent, false);
 
     var style_element = document.createElement('style');
+    style_element.Tornado = Tornado;
     style_element.className = 'tumblr_userscript';
     style_element.appendChild(document.createTextNode(embed_css));
     document.head.appendChild(style_element);
 
     showShortcutHelp();
-    enhistory();
     add_reblogged_you();
-    embedRootInfo();
 
+    var code = '';
+    code += enhistory();
+    code += add_reblogged_you;
+    code += jsonpRootInfo;
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
-        wakeupDefaultShortcut();
+        code += 'start_observing_key_commands(1);';
     }
-
-    style_element.Tornado = Tornado;
+    execClient(code, 1000);
 }
 
 if (window.document.body) {
@@ -1150,7 +1208,6 @@ else {
 }
 
 })();
-/* escaping global scope poisoning */
 
 
 
@@ -1158,6 +1215,12 @@ else {
  * History
 **/
 /*
+2012-05-18
+ver 1.1.0
+    * コマンドを Tornado 直下から切り離すようにしました *
+
+    jsdoc 向けのコメントを書きました
+
 2012-05-04
 ver 1.0.10
     * ポストが自分からのリブログだった際に .reblogged_you クラスを付けるようにしました。 *
