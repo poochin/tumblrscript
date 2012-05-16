@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.0
+// @version     1.0.1
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -21,7 +21,7 @@
 ((function NecromancyTumblelog() {
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
-var PATH_PARSER = /\/blog\/(?:([a-z\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
+var PATH_PARSER = /\/blog\/(?:([a-z1-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
 var LOAD_SCROLL_OFFSET = 5000;
 
 // FIXME: font タグの除去方法
