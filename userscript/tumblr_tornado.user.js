@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.0
-// @description Tumblr にショートカットを追加するユーザスクリプト
+// @version     1.11.0
+// @description Tumblr にショートカットを追加するユーザスクリプトの骨組み
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
 // @match       http://www.tumblr.com/likes
@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-05-02
+// @updated     2012-05-18
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -91,11 +91,10 @@ var embed_css = [
     "    100% { opacity: 0; }",
     "}",
     /* Reblog Button */
-    ".reblog_button.reblogging {",
-    "    background-position: -530px -270px !important;",
-    "    -webkit-animation: reblogging 1s infinite;",
-    "    -moz-animation: reblogging 1s infinite;",
-    "    -o-animation: reblogging 1s infinite;",
+    ".reblog_button.loading {",
+    // "    background-position: -530px -270px !important;",
+    // "    -webkit-animation: reblogging 1s infinite;",
+    // "    -moz-animation: reblogging 1s infinite;",
     "}",
     "@-webkit-keyframes reblogging {",
     "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
@@ -112,14 +111,6 @@ var embed_css = [
     "  50% { -moz-transform: rotate(360deg) scale(1.1, 1.1); }",
     "  55% { -moz-transform: rotate(360deg) scale(1, 1); }",
     "  100% { -moz-transform: rotate(360deg) scale(1, 1); }",
-    "}",
-    "@keyframes reblogging {",
-    "  0% { -o-transform: rotate(0deg) scale(1.5, 1.5); }",
-    "  25% { -o-transform: rotate(360deg) scale(1, 1); }",
-    "  40% { -o-transform: rotate(360deg) scale(1, 1); }",
-    "  50% { -o-transform: rotate(360deg) scale(1.1, 1.1); }",
-    "  55% { -o-transform: rotate(360deg) scale(1, 1); }",
-    "  100% { -o-transform: rotate(360deg) scale(1, 1); }",
     "}",
     /* Lite Dialog */
     ".lite_dialog {",
@@ -633,7 +624,7 @@ var Tornado = {
     /* shortcuts */
     reblog: function(post, default_postdata) {
         var reblog_button = post.querySelector('a.reblog_button');
-        reblog_button.className += ' reblogging';
+        reblog_button.className += ' loading';
 
         if (!default_postdata) {
             default_postdata = {};
@@ -672,12 +663,11 @@ var Tornado = {
                         var dummy_div = createDummyNode(_xhr.responseText);
 
                         if (dummy_div.querySelector('ul#errors')) {
-                            reblog_button.className = reblog_button.className.replace('reblogging', '');
+                            reblog_button.className = reblog_button.className.replace('loading', '');
                             alert(dummy_div.querySelector('ul#errors').textContent.trim());
                         }
                         else {
-                            reblog_button.outerHTML = '<span>OK</span>';
-                            reblog_button.className += 'reblogged';
+                            reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
 
                             if (default_postdata) {
                                 var state_text = '', channel_text = '';
@@ -838,17 +828,17 @@ Tornado.commands = {
 
         var reblog_button = post.querySelector('a.reblog_button');
         var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
-        reblog_button.className += ' reblogging';
+        reblog_button.className += ' loading';
 
         new Ajax(url_fast_reblog, {
             method: 'GET',
             onSuccess: function(_xhr) {
-                reblog_button.outerHTML = '<span>OK</span>';
+                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
                 new PinNotification('Reblogged');
             },
             onFailure: function(_xhr) {
                 alert('Error: ' + _xhr.responseText);
-                reblog_button.className = reblog_button.className.replace('reblogging', '');
+                reblog_button.className = reblog_button.className.replace('loading', '')
             },
         });
     },
