@@ -733,7 +733,7 @@ var Tornado = {
             return; /* Function keys */
         }
         else if (!(65 <= e.keyCode && e.keyCode <= 90)) {
-            break; /* Not Alphabet */
+            return; /* Not Alphabet */
         }
 
         /* 連続キーバインド用 */
