@@ -1,7 +1,11 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
+<<<<<<< Updated upstream
+// @version     1.0.2
+=======
 // @version     1.0.1
+>>>>>>> Stashed changes
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -20,7 +24,11 @@
 ((function NecromancyTumblelog() {
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
+<<<<<<< Updated upstream
+var PATH_PARSER = /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
+=======
 var PATH_PARSER = /\/blog\/(?:([a-z1-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
+>>>>>>> Stashed changes
 var LOAD_SCROLL_OFFSET = 5000;
 
 /**
