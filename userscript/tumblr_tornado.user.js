@@ -941,8 +941,8 @@ Tornado.commands = {
             },
             function(_xhr) {
                 alert('fail to delete');
-            },
-        });
+            }
+        );
     },
     publish: function(post) {
         var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
@@ -1153,6 +1153,11 @@ function main() {
         code += 'start_observing_key_commands(1);';
     }
     execClient(code, 1000);
+
+    Tornado.shortcuts.sort(function(a, b) {
+        return (b.follows.length - a.follows.length) ||
+               (b.has_selector.length - a.has_selector.length);
+    });
 }
 
 if (window.document.body) {
