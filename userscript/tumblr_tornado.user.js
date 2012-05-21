@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.11.0
+// @version     1.1.1
 // @description Tumblr にショートカットを追加するユーザスクリプトの骨組み
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -455,6 +455,9 @@ function Ajax(url, options) {
         }
     }
 
+    if (options.method == undefined) {
+        options.method = 'GET';
+    }
     if ('post' != options.method.toLowerCase()) {
         url = [url, '?', options.parameters].join('');
         options.parameters = null;
@@ -473,27 +476,34 @@ function Ajax(url, options) {
 function PinNotification (message) {
     var board = document.querySelector('#pin_notification_board');
     if (!board) {
-        board = document.createElement('div');
+        board = document.body.appendChild(document.createElement('div'));
         board.id = 'pin_notification_board';
-        document.body.appendChild(board);
     }
 
-    var elm = this.elm = document.createElement('div');
+    var elm = board.appendChild(document.createElement('div'));
     elm.className = 'pin_notification';
     elm.appendChild(document.createTextNode(message));
 
-    board.appendChild(elm);
-
-    /*
-    setTimeout(function() {
-        board.removeChild(elm);
-    }, 3000);
-    */
-    setTimeout(preapply(this, function() {
-        this.elm.parentNode.removeChild(this.elm);
-    }), 3000);
+    setTimeout(function() { board.removeChild(elm); }, 3000);
 }
 
+/**
+ * form の有効な値を集めます
+ */
+function gatherFormValues(form) {
+    var values = {};
+    Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).map(function(elm) {
+        if (elm.type == 'checkbox' || elm.type == 'radio') {
+            if (elm.checked) {
+                values[elm.name] = elm.value;
+            }
+        }
+        else {
+            values[elm.name] = elm.value;
+        }
+    });
+    return values;
+}
 
 /**
  * 軽量なダイアログボックスを表示します
@@ -620,38 +630,25 @@ var Tornado = {
     state_texts: {'0': '', '1': 'drafts', '2': 'queue', 'private': 'private'},
     key_input_time: 0,  // 前回入力した時刻
     key_follows: [],
-
-    /* shortcuts */
+    /**
+     * reblog を実行します。
+     * @param {Node} post 対象の li.post
+     * @param {Object} default_postdata 送信するポストデータ
+     */
     reblog: function(post, default_postdata) {
         var reblog_button = post.querySelector('a.reblog_button');
         reblog_button.className += ' loading';
 
-        if (!default_postdata) {
-            default_postdata = {};
-        }
-
-        var url_reblog = post.querySelector('.reblog_button').href;
-        new Ajax(url_reblog, {
+        new Ajax(reblog_button.href, {
             method: 'GET',
-            onSuccess: preapply(window, function(_xhr) {
-                var dummy_elm = createDummyNode(_xhr.responseText);
+            onSuccess: function(_xhr) {
+                var dummy_elm = buildElementBySource(_xhr.responseText);
     
-                /* forms のうち有効なデータを集めます */
-                var postdata = {};
+                /* 有効な form データを集めます */
                 var form = dummy_elm.querySelector('#content > form');
-                var form_items = form.querySelectorAll('input, textarea, select');
-                Array.prototype.slice.call(form_items).map(function(elm) {
-                    if (elm.type == 'checkbox' || elm.type == 'radio') {
-                        if (elm.checked) {
-                            postdata[elm.name] = elm.value;
-                        }
-                    }
-                    else {
-                        postdata[elm.name] = elm.value;
-                    }
-                });
+                var postdata = gatherFormValues(form);
                 delete postdata['preview_post'];
-                for (var name in default_postdata) {
+                for (var name in (default_postdata || {})) {
                     postdata[name] = default_postdata[name];
                 }
 
@@ -660,29 +657,24 @@ var Tornado = {
                     parameters: buildQueryString(postdata),
                     requestHeaders: HeaderContentType,
                     onSuccess: function(_xhr) {
-                        var dummy_div = createDummyNode(_xhr.responseText);
+                        var response_elm = buildElementBySource(_xhr.responseText);
 
-                        if (dummy_div.querySelector('ul#errors')) {
+                        if (response_elm.querySelector('ul#errors')) {
                             reblog_button.className = reblog_button.className.replace('loading', '');
-                            alert(dummy_div.querySelector('ul#errors').textContent.trim());
+                            alert(response_elm.querySelector('ul#errors').textContent.trim());
                         }
                         else {
                             reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
 
-                            if (default_postdata) {
-                                var state_text = '', channel_text = '';
-                                if (default_postdata['post[state]']) {
-                                    state_text = 'as ' + Tornado.state_texts[default_postdata['post[state]']];
-                                }
-                                if (default_postdata['channel_id'] && default_postdata['channel_id'] != '0') {
-                                    channel_text = 'to ' + default_postdata['channel_id'];
-                                }
-                                new PinNotification(['Success: Reblogged', state_text, channel_text].join(' '));
-                            }
+                            var dp = default_postdata;
+                            new PinNotification([
+                                'Success: Reblogged',
+                                dp['post[state]'] && Tornado.state_texts[dp['post[state]']],
+                                dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']].join(' '));
                         }
                     },
                 });
-            }),
+            },
         });
     },
     reblogToChannelDialog: function(post, postdata) {
@@ -717,76 +709,71 @@ var Tornado = {
 
         dialog_body.querySelector('input[type="button"]').focus();
     },
+    submitPublish: function(form, onSuccess, onFailure) {
+        new Ajax(form.action, {
+            method: form.method,
+            requestHeaders: HeaderContentType,
+            parameters: buildQueryString(gatherFormValues(form)),
+            onSuccess: onSuccess});
+    },
 
-    /* Event Listener */
+    /**
+     * 入力されたキーによってコマンドを実行します
+     * @param {Object} e Eventオブジェクト
+     */
     keyevent: function (e) {
-        var post, posts;
-        var current_top, margin_top = 7;  /* J/K でpost上部に7pxのmarginが作られます */
+        var post,
+            margin_top = 7,  /* post 上部に 7px の余白が設けられます */
+            vr = viewportRect(),
+            ch = String.fromCharCode(e.keyCode);
 
-        var key_char = String.fromCharCode(e.keyCode);
-        key_char = (e.shiftKey ? key_char.toUpperCase() : key_char.toLowerCase());
+        ch = (e.shiftKey ? char.toUpperCase() : ch.toLowerCase());
 
         if (112 <= e.keyCode && e.keyCode <= 123) {
-            /* Function keys */
-            return;
+            return; /* Function keys */
+        }
+        else if (!(65 <= e.keyCode && e.keyCode <= 90)) {
+            break; /* Not Alphabet */
         }
 
-        if (65 <= e.keyCode && e.keyCode <= 90) {
-            // 65 == 'A', 90 == 'Z'
-            var time = (new Date()) * 1;
-            if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < time) {
-                Tornado.key_follows = [];
-            }
-            Tornado.key_input_time = time;
-
-            Tornado.key_follows = Tornado.key_follows.concat(key_char).slice(-Tornado.KEY_MAX_FOLLOWS);
+        /* 連続キーバインド用 */
+        if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < new Date()) {
+            Tornado.key_follows = [];
         }
+        Tornado.key_input_time = new Date() * 1;
+        Tornado.key_follows = Tornado.key_follows.concat(ch).slice(-Tornado.KEY_MAX_FOLLOWS);
 
-        var vr = viewportRect();
-        post = $$('.post').filter(function(elm) {
-            return vr.top == (nodeRect(elm).top - margin_top);
+        post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
+            return vr.top == (elm.offsetTop - margin_top);
         })[0];
         if (!post) {
             console.log('Post not found');
         }
 
-        var shortcuts = Tornado.shortcuts.slice(0);
-        shortcuts.sort(function(a, b) {
-            return (b.follows.length - a.follows.length) ||
-                   (b.has_selector.length - a.has_selector.length);
-        });
-
-        for (var i = 0; i < shortcuts.length; ++i) {
-            var shortcut = shortcuts[i];
-            if (shortcut.url.test(location) &&
-                key_char.toLowerCase() == shortcut.match &&
-                e.shiftKey == shortcut.shift &&
-                e.ctrlKey == shortcut.ctrl &&
-                e.altKey == shortcut.alt) {
-
-                if (shortcut.has_selector &&
-                    !post.querySelector(shortcut.has_selector)) {
-                    continue;
-                }
-
-                if (shortcut.follows &&
-                    shortcut.follows.length &&
-                    !Tornado.key_follows.cmp(shortcut.follows.concat(shortcut.match))) {
-                    continue;
-                    // FIXME: shortcut.match.toUpperCase, toLowerCase()
-                }
-                else {
-                    if (typeof shortcut.func == 'string') {
-                        Tornado.commands[shortcut.func](post);
-                    }
-                    else {
-                        shortcut.func(post);
-                    }
-                    Tornado.key_follows = [];
-                    break;
-                }
+        Tornado.shortcuts.every(function(shortcut) {
+            if (!shortcut.url.test(location) || 
+                e.shiftKey != shortcut.shift ||
+                e.ctrlKey != shortcut.ctrl ||
+                e.altKey != shortcut.alt) {
+                return true;
             }
-        }
+            else if (shortcut.has_selector &&
+                !post.querySelector(shortcut.has_selector)) {
+                return true;
+            }
+            else if (!shortcut.follows.concat(shortcut.match).cmp(Tornado.key_follows)) {
+                return true;
+            }
+
+            if (typeof shortcut.func == 'string') {
+                Tornado.commands[shortcut.func](post);
+            }
+            else {
+                shortcut.func(post);
+            }
+            Tornado.key_follows = [];
+            return false;
+        });
     },
 };
 
@@ -907,21 +894,22 @@ Tornado.commands = {
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
-        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"]), #posts > .notification, #posts > .empty_post');
-        var dsbd = posts[0].parentNode;
+        var dsbd = document.querySelector('#posts');
         var vr = viewportRect();
-        var i, del_count = 0;
+        var del_count = 0;
 
-        window.scrollTo(0, posts[0].offsetTop - 7);
+        window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
 
-        for (i = 0; i < posts.length && (posts[i].offsetTop - 7) < vr.top; ++i) {
-        }
-        del_count = i;
-        for (i = i - 1; i >= 0; --i) {
-            dsbd.removeChild(posts[i]);
-        }
+        $$('#posts > li:not(.new_post)').filter(function(post) {
+            return (post.offsetTop - 7) < vr.top;
+        }).map(function(post) {
+            del_count++;
+            dsbd.removeChild(post);
+        });
 
-        posts[del_count].className = posts[del_count].className.replace('same_user_as_last', '');
+        var firstpost = document.querySelector('#posts > li:not(.new_post)');
+        firstpost.className = firstpost.className.replace('same_user_as_last', '');
+
         new PinNotification(del_count + '件のポストを削除しました。');
     },
     rootInfo: function(post) {
@@ -958,22 +946,14 @@ Tornado.commands = {
         location.assign(url);
     },
     delete: function(post) {
-        var delete_button = post.querySelector('a[onclick^="if (confirm(\'D"]');
-        delete_button.innerHTML = 'Deleting...';
+        new PinNotification('Deleting... ' + post.id);
 
-        var id = post.id.match(/\d+/)[0];
-        var form_key = post.querySelector('form[id^=delete] input[name=form_key]').value;
-
-        new Ajax('/delete', {
-            method: 'post',
-            parameters: buildQueryString({id: id, form_key: form_key}),
-            requestHeaders: HeaderContentType,
-            onSuccess: function(_xhr) {
-                delete_button.innerHTML = 'Deleted!';
-                new PinNotification('Post [' + id + '] deleted.');
+        Tornado.submitPublish(
+            post.querySelector('#delete_' + post.id),
+            function(_xhr) {
+                new PinNotification('Deleted ' + post.id);
             },
-            onFailure: function(_xhr) {
-                delete_button.innerHTML = 'delete';
+            function(_xhr) {
                 alert('fail to delete');
             },
         });
@@ -1095,8 +1075,9 @@ function jsonpRootInfo(json) {
  * 自分からのリブログに対して .reblogged_you クラスを付けます。
  */
 function add_reblogged_you() {
-    $$('ol#posts>.post:not(.new_post)').slice(-10).map(function(post) {
-        if (post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
+    $$('#posts>.post:not(.new_post)').slice(-10).map(function(post) {
+        if (post.querySelector('.post_info') &&
+            post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
             post.className += ' reblogged_you';
         }
     });
@@ -1205,6 +1186,10 @@ else {
  * History
 **/
 /*
+2012-05-21
+ver 1.1.1
+    * リファクタリングを行いました *
+
 2012-05-18
 ver 1.1.0
     * コマンドを Tornado 直下から切り離すようにしました *
