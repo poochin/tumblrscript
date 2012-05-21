@@ -355,11 +355,15 @@ var Tornado = {
             return node.id.replace(/^tab-/, '');
         });
 
-        var message = channels.forEach(function(str, key) {
+        var message = channels.map(function(str, key) {
             return [key + 1, ': ', str].join('');
         }).join('\n');
 
         var channel = prompt(message, 1);
+        if (channel == null) {
+            return;
+        }
+
         postdata['channel_id'] = channels[parseInt(channel) - 1];
         Tornado.reblog(post, postdata);
     },
@@ -381,7 +385,7 @@ var Tornado = {
             vr = viewportRect(),
             ch = String.fromCharCode(e.keyCode);
 
-        ch = (e.shiftKey ? char.toUpperCase() : ch.toLowerCase());
+        ch = (e.shiftKey ? ch.toUpperCase() : ch.toLowerCase());
 
         if (112 <= e.keyCode && e.keyCode <= 123) {
             return; /* Function keys */
@@ -402,6 +406,10 @@ var Tornado = {
         })[0];
 
         Tornado.shortcuts.every(function(shortcut) {
+            var match = shortcut.follows.concat(shortcut.shift
+                ? shortcut.match.toUpperCase()
+                : shortcut.match.toLowerCase());
+
             if (!shortcut.url.test(location) || 
                 e.shiftKey != shortcut.shift ||
                 e.ctrlKey != shortcut.ctrl ||
@@ -412,7 +420,7 @@ var Tornado = {
                 !post.querySelector(shortcut.has_selector)) {
                 return true;
             }
-            else if (!shortcut.follows.concat(shortcut.match).cmp(Tornado.key_follows)) {
+            else if (!match.cmp(Tornado.key_follows.slice(-(match.length)))) {
                 return true;
             }
 

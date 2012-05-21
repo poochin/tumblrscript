@@ -22,12 +22,9 @@
  * @TODO pub, que, del の CSS
  */
 (function TumblrTornado() {
-
-/**
- * Variables
-**/
-
-/* ページに埋め込むスタイルシート */
+/*+
+ * ページに埋め込むスタイルシート
+ */
 var embed_css = [
     /* Pin Notification */
     "#pin_notification_board {",
@@ -220,16 +217,20 @@ var embed_css = [
     "}",
 ].join('\n');
 
-/* dispatch 用の左クリックイベント */
+/**
+ * クリックイベントです。
+ * Node.dispatch(left_click) として使います。
+ */
 var left_click = document.createEvent("MouseEvent"); 
 left_click.initEvent("click", false, true);
 
 /* root info を取得するのに使います */
 var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
-/* Reblog 時 Content Type を指定する用の配列です */
+/**
+ * Reblog 時 Content Type を指定する用の配列です
+ */
 var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
-
 
 /**
  * 配列同士を比較します 
@@ -237,16 +238,11 @@ var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; cha
  * @returns {Bool} 同一なら true を、値が一つでも違えば false を返します
  */
 Array.prototype.cmp = function(another) {
-    if (this.length != another.length) {
-        return false;
-    }
-
-    for (var i = 0; i < this.length; ++i) {
-        if (this[i] != another[i]) {
-            return false;
-        }
-    }
-    return true;
+    return (this.length != another.length)
+        ? false
+        : this.every(
+            function(v, k) { return v == another[k]; }
+          );
 };
 
 
@@ -272,18 +268,6 @@ function toggleVideoEmbed(post) {
 }
 
 /**
- * HTML から node を作成します
- * @param {String} html HTML テキスト
- * @returns {Node} 作成した Node を子要素に持つ div 要素
- */
-function createDummyNode(html) {
-    // TODO* document.createRange を用いる
-    var node = document.createElement('div');
-    node.innerHTML = html;
-    return node;
-}
-
-/**
  * HTML 文字列から Node 群を返します
  * @param {String} html 作成した HTML 文字列.
  * @return {Object} HTML を元に作成した要素を持つ DocumentFragment.
@@ -299,8 +283,7 @@ function buildElementBySource(html) {
  * @param {String} selector CSS Selector
  * @return {Array} NodeList の Array に変換したもの
  */
-function $$(selector)
-{
+function $$(selector) {
     return Array.prototype.slice.call(document.querySelectorAll(selector));
 }
 
@@ -324,8 +307,7 @@ function execClient(code, lazy) {
  * クライアントエリアのスクロール位置、画面サイズを取得します
  * @return {Object} left, top, width, height を備えた辞書を返します
  */
-function viewportRect()
-{
+function viewportRect() {
     return {
         left: document.documentElement.scrollLeft || document.body.scrollLeft,
         top: document.documentElement.scrollTop || document.body.scrollTop,
@@ -349,14 +331,14 @@ function nodeRect (elm)
 
 /**
  * キーイベント用の辞書を生成して返します
+ * @TODO needpost オプションを設定
  * @param {String} match 最後に発火させる時のキー文字
  * @param {String}   func Tornado.commands の関数名
  * @param {Function} func 実行させたい関数
  * @param {Object} options 各種オプション
  * @returns {Object} キーイベント用の辞書型を返します
  */
-function customkey(match, func, options)
-{
+function customkey(match, func, options) {
     if (typeof options == 'undefined') {
         options = {};
     }
@@ -727,7 +709,7 @@ var Tornado = {
             vr = viewportRect(),
             ch = String.fromCharCode(e.keyCode);
 
-        ch = (e.shiftKey ? char.toUpperCase() : ch.toLowerCase());
+        ch = (e.shiftKey ? ch.toUpperCase() : ch.toLowerCase());
 
         if (112 <= e.keyCode && e.keyCode <= 123) {
             return; /* Function keys */
@@ -751,6 +733,10 @@ var Tornado = {
         }
 
         Tornado.shortcuts.every(function(shortcut) {
+            var match = shortcut.follows.concat(shortcut.shift
+                ? shortcut.match.toUpperCase()
+                : shortcut.match.toLowerCase());
+
             if (!shortcut.url.test(location) || 
                 e.shiftKey != shortcut.shift ||
                 e.ctrlKey != shortcut.ctrl ||
@@ -761,7 +747,7 @@ var Tornado = {
                 !post.querySelector(shortcut.has_selector)) {
                 return true;
             }
-            else if (!shortcut.follows.concat(shortcut.match).cmp(Tornado.key_follows)) {
+            else if (!match.cmp(Tornado.key_follows.slice(-(match.length)))) {
                 return true;
             }
 
