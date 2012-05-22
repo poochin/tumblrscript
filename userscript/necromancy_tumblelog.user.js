@@ -1,11 +1,7 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-<<<<<<< Updated upstream
 // @version     1.0.2
-=======
-// @version     1.0.1
->>>>>>> Stashed changes
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -24,12 +20,19 @@
 ((function NecromancyTumblelog() {
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
-<<<<<<< Updated upstream
-var PATH_PARSER = /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
-=======
-var PATH_PARSER = /\/blog\/(?:([a-z1-9\-_.]+)\/?)(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+)\/?)?$/;
->>>>>>> Stashed changes
 var LOAD_SCROLL_OFFSET = 5000;
+
+/**
+ *  /blog/
+ *    blog_name
+ *      tag
+ *        type
+ *          random
+ *          offset
+ */
+var PATH_PARSER =
+    /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/;
+
 
 /**
  * オブジェクトをシリアライズします
@@ -970,10 +973,11 @@ var PostBuilder = {
  * @param {String} offset post の取得位置オフセット.
  * @return {String} 上記をまとめた URL.
  */
-function buildNecromancyURL(tumblelog, type, offset) {
+function buildNecromancyURL(tumblelog, tag, type, offset) {
     var url = ['http://www.tumblr.com/blog'];
 
     if (tumblelog)           url.push(tumblelog);
+    if (tag)                 url = url.concat(['tag', tag]);
     if (type)                url.push(type);
     if (offset != undefined) url.push(offset);
 
@@ -991,7 +995,7 @@ function necromancyObserver(pe) {
     }
 
     var parsed_page_path = window.location.href.match(PATH_PARSER);
-    if (window.new_json && parsed_page_path[3] >= window.new_json.response.total_posts) {
+    if (window.new_json && parsed_page_path[4] >= window.new_json.response.total_posts) {
         pe.stop();
         $('auto_pagination_loader').hide();
     }
@@ -1017,16 +1021,17 @@ function necromancyCallback(json) {
 
     var next_page_parsed = window.next_page.match(PATH_PARSER);
     var tumblelog = next_page_parsed[1];
-    var type = next_page_parsed[2] || '';
-    var offset = parseInt(next_page_parsed[3]);
+    var tag = next_page_parsed[2] || '';
+    var type = next_page_parsed[3] || '';
+    var offset = parseInt(next_page_parsed[4]);
 
-    var cur_path = buildNecromancyURL(tumblelog, type, offset || 0);
+    var cur_path = buildNecromancyURL(tumblelog, tag, type, offset || 0);
     history.pushState('', '', cur_path);
 
     var script = document.querySelector('body > script.necromancy_paginator');
     script.parentNode.removeChild(script);
 
-    window.next_page = buildNecromancyURL(tumblelog, type, (offset || 0) + 10);
+    window.next_page = buildNecromancyURL(tumblelog, tag, type, (offset || 0) + 10);
     window.loading_next_page = false;
 }
 
@@ -1050,10 +1055,11 @@ function necromancyPaginator(pe) {
         window.loading_next_page = true;
 
         var next_page_parsed = window.next_page.match(PATH_PARSER);
+        console.log(next_page_parsed);
         var tumblelog = next_page_parsed[1];
-        var type = next_page_parsed[2] || '';
-        var offset = parseInt(next_page_parsed[3] || 0);
-
+        var tag = next_page_parsed[2] || '';
+        var type = next_page_parsed[3] || '';
+        var offset = parseInt(next_page_parsed[4] || 0);
 
         if (tumblelog.search('\\.') == -1) {
             tumblelog += '.tumblr.com';
@@ -1063,6 +1069,7 @@ function necromancyPaginator(pe) {
             limit: 10,
             api_key: API_KEY,
             reblog_info: 'true',
+            tag: decodeURI(tag),
             offset: offset,
             jsonp: 'window.new_json = '});
 
