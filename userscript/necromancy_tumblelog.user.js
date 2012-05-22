@@ -995,7 +995,7 @@ function necromancyObserver(pe) {
     }
 
     var parsed_page_path = window.location.href.match(PATH_PARSER);
-    if (window.new_json && parsed_page_path[4] >= window.new_json.response.total_posts) {
+    if (window.new_json && parsed_page_path != 'random' && parsed_page_path[4] >= window.new_json.response.total_posts) {
         pe.stop();
         $('auto_pagination_loader').hide();
     }
@@ -1023,15 +1023,17 @@ function necromancyCallback(json) {
     var tumblelog = next_page_parsed[1];
     var tag = next_page_parsed[2] || '';
     var type = next_page_parsed[3] || '';
-    var offset = parseInt(next_page_parsed[4]);
-
-    var cur_path = buildNecromancyURL(tumblelog, tag, type, offset || 0);
-    history.pushState('', '', cur_path);
+    var offset = next_page_parsed[4];
 
     var script = document.querySelector('body > script.necromancy_paginator');
     script.parentNode.removeChild(script);
 
-    window.next_page = buildNecromancyURL(tumblelog, tag, type, (offset || 0) + 10);
+    if (offset != 'random') {
+        offset = parseInt(offset);
+        var cur_path = buildNecromancyURL(tumblelog, tag, type, offset || 0);
+        history.pushState('', '', cur_path);
+        window.next_page = buildNecromancyURL(tumblelog, tag, type, (offset || 0) + 10);
+    }
     window.loading_next_page = false;
 }
 
@@ -1055,14 +1057,24 @@ function necromancyPaginator(pe) {
         window.loading_next_page = true;
 
         var next_page_parsed = window.next_page.match(PATH_PARSER);
-        console.log(next_page_parsed);
         var tumblelog = next_page_parsed[1];
         var tag = next_page_parsed[2] || '';
         var type = next_page_parsed[3] || '';
-        var offset = parseInt(next_page_parsed[4] || 0);
+        var offset = next_page_parsed[4] || 0;
 
         if (tumblelog.search('\\.') == -1) {
             tumblelog += '.tumblr.com';
+        }
+
+        if (offset == 'random' && TOTAL_POST == null) {
+            window.loading_next_page = false;
+            return;
+        }
+        else if (offset == 'random') {
+            offset = Math.floor(Math.random() * TOTAL_POST);
+        }
+        else {
+            offset = parseInt(offset);
         }
 
         var querystring = buildQueryString({
@@ -1085,6 +1097,38 @@ function necromancyPaginator(pe) {
             onload: 'if (window.prev_json == window.new_json) {window.loading_next_page = false;;}'});
         document.body.appendChild(script);
     }
+}
+
+function getTotalPost() {
+    var next_page_parsed = window.next_page.match(PATH_PARSER);
+    var tumblelog = next_page_parsed[1];
+    var tag = next_page_parsed[2] || '';
+    var type = next_page_parsed[3] || '';
+    var offset = parseInt(next_page_parsed[4] || 0);
+
+    if (tumblelog.search('\\.') == -1) {
+        tumblelog += '.tumblr.com';
+    }
+
+    var querystring = buildQueryString({
+        limit: 10,
+        api_key: API_KEY,
+        reblog_info: 'true',
+        tag: decodeURI(tag),
+        offset: offset,
+        jsonp: 'void function(json){window.TOTAL_POST = json.response.total_posts;}'});
+
+    var url = [
+        'http://api.tumblr.com/v2/blog',
+        tumblelog,
+        'posts',
+         type + '?' + querystring].join('/');
+
+    var script = buildElement('script', {
+        src: url,
+        class: 'necromancy_paginator',
+        onload: 'if (window.prev_json == window.new_json) {window.loading_next_page = false;;}'});
+    document.body.appendChild(script);
 }
 
 /**
@@ -1130,6 +1174,7 @@ function necromancyInitialize() {
                 'initialize_tabs();',
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
+                'window.TOTAL_POST = null;',
                 'window.API_KEY = "', API_KEY, '";',
                 'window.LIKE_KEY = "', like_key, '";',
                 'window.PATH_PARSER = ', PATH_PARSER, ';',
@@ -1148,6 +1193,7 @@ function necromancyInitialize() {
                 buildElement,
                 buildElementBySource,
                 buildNecromancyURL,
+                '(', getTotalPost, ')();',
                 'new PeriodicalExecuter(necromancyPaginator, 0.2);',
                 'new PeriodicalExecuter(necromancyObserver, 0.02);',
                 'void 0;'].join('');
