@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.2
+// @version     1.1.0
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
