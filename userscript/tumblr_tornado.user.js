@@ -718,6 +718,12 @@ var Tornado = {
             return; /* Not Alphabet */
         }
 
+        if (e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.className === 'mceContentBody') {
+            return;
+        }
+
         /* 連続キーバインド用 */
         if (Tornado.key_input_time + Tornado.KEY_CONTINUAL_TIME < new Date()) {
             Tornado.key_follows = [];
@@ -1158,7 +1164,7 @@ function showShortcutHelp() {
  */
 function main() {
     var keyevent = preapply(Tornado, Tornado.keyevent);
-    document.addEventListener('keydown', keyevent, false);
+    document.addEventListener('keydown', keyevent, true);
 
     var style_element = document.createElement('style');
     style_element.Tornado = Tornado;
