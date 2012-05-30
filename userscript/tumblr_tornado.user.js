@@ -296,10 +296,10 @@ function $$(selector) {
 function execClient(code, lazy) {
     lazy = (typeof lazy == 'undefined' ? 0 : lazy);
     if (/Firefox/.test(navigator.userAgent)) {
-        location.assign('javascript:' + code);
+        location.assign('javascript:' + code + '; void 0;');
     }
     else {
-        setTimeout(function() {location.assign('javascript:' + code)}, lazy);
+        setTimeout(function() {location.assign('javascript:' + code + '; void 0;')}, lazy);
     }
 }
 
@@ -744,6 +744,7 @@ var Tornado = {
                 return true;
             }
             else if (shortcut.has_selector &&
+                post &&
                 !post.querySelector(shortcut.has_selector)) {
                 return true;
             }
@@ -864,19 +865,23 @@ Tornado.commands = {
         }   
     },
     cleanPosts: function(/* post */) {
+        console.log(true);
         // TODO: .notification の clean を実装する
         var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
         var dsbd = posts[0].parentNode;
         var vr = viewportRect();
         var i;
-        for (i = 0; posts[i].offsetTop < vr.top && i < posts.length; ++i) {
-            var post = document.createElement('li');
+
+        $$('#posts > li:not(.new_post)').filter(function(post) {
+            return (post.offsetTop - 7) < vr.top;
+        }).map(function(post) {
             post.className = ['empty_post', posts[i].className.match(/\bsame_user_as_last\b/)].join(' ');
             post.style.cssText = [
                 'width:', posts[i].offsetWidth, 'px;',
                 'height:', posts[i].offsetHeight, 'px;'].join('');
             dsbd.replaceChild(post, posts[i]);
-        }
+        });
+        
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
@@ -897,6 +902,23 @@ Tornado.commands = {
         firstpost.className = firstpost.className.replace('same_user_as_last', '');
 
         new PinNotification(del_count + '件のポストを削除しました。');
+    },
+    removeBottomPosts: function(/* post */) {
+        var dsbd = document.querySelector('#posts'),
+            vr = viewportRect(),
+            del_count = 0;
+
+        execClient('next_page = null; loading_next_page = true;');
+        document.body.style.marginBottom = '500px';
+
+        $$('#posts > li:not(.new_post)').filter(function(post) {
+            return (post.offsetTop - 7) > vr.top;
+        }).map(function(post) {
+            del_count++;
+            dsbd.removeChild(post);
+        });
+
+        new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
     },
     rootInfo: function(post) {
         // FIXME: "rebloged you:" に対応していません
@@ -989,7 +1011,6 @@ Tornado.commands = {
     default: function() {
         return true;  /* threw up event */
     },
-
 };
 
 /**
@@ -1021,8 +1042,11 @@ Tornado.shortcuts = [
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
 
+    customkey('r', 'reversePosts', {usehelp: 'hide', desc: 'ポストの並び順を逆順にします。'}),
+
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
+    customkey('c', 'removeBottomPosts', {shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
 
     customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
