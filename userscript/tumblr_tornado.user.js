@@ -1046,8 +1046,6 @@ Tornado.shortcuts = [
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
 
-    customkey('r', 'reversePosts', {usehelp: 'hide', desc: 'ポストの並び順を逆順にします。'}),
-
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
     customkey('c', 'removeBottomPosts', {shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
