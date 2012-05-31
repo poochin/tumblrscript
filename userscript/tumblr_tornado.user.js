@@ -871,23 +871,21 @@ Tornado.commands = {
         }   
     },
     cleanPosts: function(/* post */) {
-        console.log(true);
-        // TODO: .notification の clean を実装する
-        var posts = document.querySelectorAll('#posts > .post:not([class~="new_post"])');
-        var dsbd = posts[0].parentNode;
-        var vr = viewportRect();
-        var i;
+        var vr = viewportRect(),
+            i = 0;
 
         $$('#posts > li:not(.new_post)').filter(function(post) {
             return (post.offsetTop - 7) < vr.top;
-        }).map(function(post) {
-            post.className = ['empty_post', posts[i].className.match(/\bsame_user_as_last\b/)].join(' ');
+        }).map(function(src_post) {
+            var post = document.createElement('li');
+            post.className = ['empty_post', src_post.className.match(/\bsame_user_as_last\b/)].join(' ');
             post.style.cssText = [
-                'width:', posts[i].offsetWidth, 'px;',
-                'height:', posts[i].offsetHeight, 'px;'].join('');
-            dsbd.replaceChild(post, posts[i]);
+                'width:', src_post.offsetWidth, 'px;',
+                'height:', src_post.offsetHeight, 'px;'].join('');
+            src_post.parentNode.replaceChild(post, src_post);
+            i++;
         });
-        
+
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
