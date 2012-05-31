@@ -90,8 +90,8 @@ var embed_css = [
     /* Reblog Button */
     ".reblog_button.loading {",
     // "    background-position: -530px -270px !important;",
-    // "    -webkit-animation: reblogging 1s infinite;",
-    // "    -moz-animation: reblogging 1s infinite;",
+    "    -webkit-animation: reblogging 1s infinite;",
+    "    -moz-animation: reblogging 1s infinite;",
     "}",
     "@-webkit-keyframes reblogging {",
     "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
