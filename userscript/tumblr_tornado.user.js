@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.1
+// @version     1.1.2
 // @description Tumblr にショートカットを追加するユーザスクリプトの骨組み
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -247,14 +247,15 @@ Array.prototype.cmp = function(another) {
 
 
 /**
+ * ビデオの開閉トグル関数です。
  * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
  * @param {Node} post 対象のビデオポスト要素
  */
 function toggleVideoEmbed(post) {
-    var post_id = post.id.match(/\d+/)[0];
-    var toggle = post.querySelector('.video_thumbnail');
-    var embed = post.querySelector('.video_embed');
-    var watch = post.querySelector('.video');
+    var post_id = post.id.match(/\d+/)[0],
+        toggle = post.querySelector('.video_thumbnail'),
+        embed = post.querySelector('.video_embed'),
+        watch = post.querySelector('.video');
     if (watch.style.display == 'none') {
         embed.innerHTML = post.querySelector('input[id^="video_"]').value;
         toggle.style.display = 'none';
@@ -276,6 +277,25 @@ function buildElementBySource(html) {
     var range = document.createRange();
     range.selectNodeContents(document.body);
     return range.createContextualFragment(html);
+}
+
+/**
+ * Node を作成し各種データを同時にセットします
+ * @param {String} tag_name タグ名.
+ * @param {Object} propaties 辞書型のデータ.
+ * @param {String} HTML 文字列.
+ * @return {Object} 作成した Node を返します.
+ */
+/* buildElement */
+function buildElement(tag_name, propaties, innerHTML) {
+    var elm = document.createElement(tag_name);
+
+    for (var key in (propaties || {})) {
+        elm.setAttribute(key, propaties[key]);
+    }
+
+    elm.innerHTML = innerHTML || '';
+    return elm;
 }
 
 /**
@@ -320,8 +340,7 @@ function viewportRect() {
  * @TODO absolute, fixed な要素の子要素などは再帰的に親へ辿る必要があります
  * @return {Object} 要素の left, top, width, height を備えた辞書を返します
  */
-function nodeRect (elm)
-{
+function nodeRect (elm) {
     return {
         left: elm.offsetLeft,
         top: elm.offsetTop,
@@ -361,11 +380,14 @@ function customkey(match, func, options) {
  * @returns HTML 文字列を返します
  */
 function buildShortcutLineHelp(shortcut) {
-    var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'];
-    var key = [
-        (shortcut.follows && shortcut.follows.join(' ')) || '',
-        (shortcut.shift && 's-') || '',
-        shortcut.match.toUpperCase()].join('');
+    var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'],
+        key = [];
+
+    key.push((shortcut.follows && shortcut.follows.join(' ')) || '');
+    key.push((shortcut.shift && 's-') || '');
+    key.push(shortcut.match.toUpperCase());
+
+    key = key.join('');
     key = pre_spacing.slice(key.length).join('') + key;
 
     return [
@@ -413,10 +435,11 @@ function buildQueryString(dict) {
  * prototype.js 風な Ajax 関数
  * @param {String} url URL.
  * @param {Object} options 各オプションを持った辞書型オブジェクト.
+ * @todo Ajax.Request では parameters は文字列ではなく辞書型オブジェクトで入ってくるかどうか
  */
 function Ajax(url, options) {
-    var xhr = this.xhr = new XMLHttpRequest();
-    var async = (options.asynchronous == undefined) || options.asynchronous;
+    var xhr = this.xhr = new XMLHttpRequest(),
+        async = (options.asynchronous == undefined) || options.asynchronous;
 
     xhr.onreadystatechange = function() {
         if (xhr.readyState == 4) {
@@ -440,7 +463,7 @@ function Ajax(url, options) {
     if (options.method == undefined) {
         options.method = 'GET';
     }
-    if ('post' != options.method.toLowerCase()) {
+    if ('POST' != options.method.toUpperCase()) {
         url = [url, '?', options.parameters].join('');
         options.parameters = null;
     }
@@ -473,16 +496,14 @@ function PinNotification (message) {
  * form の有効な値を集めます
  */
 function gatherFormValues(form) {
-    var values = {};
-    Array.prototype.slice.call(form.querySelectorAll('input, textarea, select')).map(function(elm) {
-        if (elm.type == 'checkbox' || elm.type == 'radio') {
-            if (elm.checked) {
-                values[elm.name] = elm.value;
-            }
-        }
-        else {
-            values[elm.name] = elm.value;
-        }
+    var values = {},
+        items = form.querySelectorAll('input, textarea, select');
+    Array.prototype.slice.call(items).filter(function(elm) {
+        return (['checkbox', 'radio'].indexOf(elm.type) >= 0)
+            ? elm.checked
+            : !elm.disabled;
+    }).map(function(elm){
+        values[elm.name] = elm.value;
     });
     return values;
 }
@@ -490,6 +511,7 @@ function gatherFormValues(form) {
 /**
  * 軽量なダイアログボックスを表示します
  * @class
+ * @name LiteDialog
  * @param {String} title タイトル
  */
 function LiteDialog(title) {
@@ -513,9 +535,7 @@ function LiteDialog(title) {
     document.addEventListener('keydown', LiteDialog.prototype.keyevent, true);
 }
 
-/**
- */
-LiteDialog.prototype = {
+LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
     /**
      * lite_dialog のベース HTML
      * @TODO skelton
@@ -592,15 +612,16 @@ LiteDialog.prototype = {
      * LiteDialog を画面中央に置きます
      */
     centering: function() {
-        var elm = this.dialog;
-        var vr = viewportRect();
+        var elm = this.dialog,
+            vr = viewportRect();
         elm.style.top = (vr.top + (vr.height / 2) - (elm.offsetHeight / 2)) + 'px';
         elm.style.left = (vr.left + (vr.width / 2) - (elm.offsetWidth / 2)) + 'px';
     },
 };
 
 /**
- * Tornado のメイン機能
+ * Tornado のメイン機
+ * @namespace
  */
 var Tornado = {
     /* const */
@@ -616,6 +637,7 @@ var Tornado = {
      * reblog を実行します。
      * @param {Node} post 対象の li.post
      * @param {Object} default_postdata 送信するポストデータ
+     * @todo classList.add, remove を使ってみる
      */
     reblog: function(post, default_postdata) {
         var reblog_button = post.querySelector('a.reblog_button');
@@ -659,38 +681,44 @@ var Tornado = {
             },
         });
     },
+    /**
+     * reblog 用のチャンネルダイアログを表示します。
+     * @param {Node} post 対象の li.post
+     * @param {Object} postdata 投稿タイプ等を保持した postdata
+     */
     reblogToChannelDialog: function(post, postdata) {
-        function createChannelButton(channel_id, channel_title, number) {
-            var button = document.createElement('input');
-            button.type = 'button';
-            button.className = 'button' + number;
-            button.name = channel_id;
-            button.value = '[' + number + ']: ' + channel_title;
-            return button;
-        }
-
         var state_text = Tornado.state_texts[postdata["post[state]"]] || '';
-        var dialog = new LiteDialog(['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' '));
-        var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
-        var channel_elms = document.querySelectorAll('#all_blogs_menu .item[id] a');
+        var title = ['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' ');
 
-        for (var i = 0; i < channel_elms.length; ++i) {
-            var elm = channel_elms[i];
-            var button = createChannelButton(elm.href.match(/[^\/]+$/)[0], elm.textContent.trim(), i + 1);
+        var dialog = new LiteDialog(title);
+        var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
+
+        $$('#all_blogs_menu .item[id]').map(function(elm, i) {
+            var channel_id = elm.id.slice(9);
+            var button = buildElement('input', {
+                    type: 'button',
+                    className: 'button' + (i + 1),
+                    name: channel_id,
+                    value: ['[', i + 1, ']: ', elm.textContent.trim()].join('')});
             button.addEventListener('click', function(e) {
-                postdata.channel_id = this.name;
+                postdata['channel_id'] = this.name;
                 Tornado.reblog(post, postdata);
                 dialog.close();
             });
-
             dialog_body.appendChild(button);
-        }
+        });
 
         dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
         dialog.dialog.style.left = (post.offsetLeft + 20) + 'px';
 
         dialog_body.querySelector('input[type="button"]').focus();
     },
+    /**
+     * delete, publish, queue フォームを Ajax を用いて実行します
+     * @param {Node} form delete, publish, queue フォーム要素
+     * @param {Function} onSuccess 成功時に呼び出される関数
+     * @param {Function} onFailure 失敗時に呼び出される関数
+     */
     submitPublish: function(form, onSuccess, onFailure) {
         new Ajax(form.action, {
             method: form.method,
@@ -698,7 +726,6 @@ var Tornado = {
             parameters: buildQueryString(gatherFormValues(form)),
             onSuccess: onSuccess});
     },
-
     /**
      * 入力されたキーによってコマンドを実行します
      * @param {Object} e Eventオブジェクト
@@ -718,6 +745,7 @@ var Tornado = {
             return; /* Not Alphabet */
         }
 
+        /* 入力エリア、またはリッチテキストでは無効にします */
         if (e.target.tagName === 'INPUT' ||
             e.target.tagName === 'TEXTAREA' ||
             e.target.className === 'mceContentBody') {
@@ -735,7 +763,7 @@ var Tornado = {
             return vr.top == (elm.offsetTop - margin_top);
         })[0];
         if (!post) {
-            console.log('Post not found');
+            console.info('Post not found');
         }
 
         Tornado.shortcuts.every(function(shortcut) {
@@ -771,57 +799,12 @@ var Tornado = {
 };
 
 /**
- * Tornado コマンド
+ * @namespace
  */
 Tornado.commands = {
-    downPost: undefined,
-    halfdown: function() {
-        var view_height = window.innerHeight;
-        window.scrollBy(0, +view_height / 2);
-    },
-    upPost: undefined,
-    halfup: function() {
-        var view_height = window.innerHeight;
-        window.scrollBy(0, -view_height / 2);
-    },
-    goTop: function(post) {
-        Tornado.prev_cursor = post;
-        window.scroll(0, 0);
-    },
-    goBottom: function(post) {
-        Tornado.prev_cursor = post;
-        window.scroll(0, document.height || document.body.clientHeight);
-    },
-    jumpToLastCursor: function() {
-        var y = Tornado.prev_cursor.offsetTop;
-        Tornado.prev_cursor = null;
-        window.scroll(0, y - 7);
-    },
-    like: undefined,
-    reblog_success: function(post, postdata) {
-        // 使用しないかも知れない
-    },
-    reblog_fail: function() {
-        // 使用しないかも知れない
-    },
-    fast_reblog: function(post) {
-
-        var reblog_button = post.querySelector('a.reblog_button');
-        var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
-        reblog_button.className += ' loading';
-
-        new Ajax(url_fast_reblog, {
-            method: 'GET',
-            onSuccess: function(_xhr) {
-                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-                new PinNotification('Reblogged');
-            },
-            onFailure: function(_xhr) {
-                alert('Error: ' + _xhr.responseText);
-                reblog_button.className = reblog_button.className.replace('loading', '')
-            },
-        });
-    },
+    /**
+     * reblog
+     */
     reblog: function(post) {
         Tornado.reblog(post, {});
     },
@@ -846,9 +829,47 @@ Tornado.commands = {
     privateToChannel: function(post) {
         Tornado.reblogToChannelDialog(post, {'post[state]': 'private'});
     },
+    halfdown: function() {
+        var view_height = window.innerHeight;
+        window.scrollBy(0, +view_height / 2);
+    },
+    halfup: function() {
+        var view_height = window.innerHeight;
+        window.scrollBy(0, -view_height / 2);
+    },
+    goTop: function(post) {
+        Tornado.prev_cursor = post;
+        window.scroll(0, 0);
+    },
+    goBottom: function(post) {
+        Tornado.prev_cursor = post;
+        window.scroll(0, document.height || document.body.clientHeight);
+    },
+    jumpToLastCursor: function() {
+        var y = Tornado.prev_cursor.offsetTop;
+        Tornado.prev_cursor = null;
+        window.scroll(0, y - 7);
+    },
+    fast_reblog: function(post) {
+        var reblog_button = post.querySelector('a.reblog_button');
+        var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
+        reblog_button.className += ' loading';
+
+        new Ajax(url_fast_reblog, {
+            method: 'GET',
+            onSuccess: function(_xhr) {
+                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
+                new PinNotification('Reblogged');
+            },
+            onFailure: function(_xhr) {
+                alert('Error: ' + _xhr.responseText);
+                reblog_button.className = reblog_button.className.replace('loading', '')
+            },
+        });
+    },
     notes: function(post) {
         var notes_link = post.querySelector('.reblog_count');
-        notes_link.dispatchEvent(left_click);  // TODO: Firefox OK?
+        notes_link.dispatchEvent(left_click);
 
         new PinNotification('test');
     },
@@ -889,9 +910,9 @@ Tornado.commands = {
         new PinNotification(i + '件のポストを空にしました。');
     },
     removePosts: function(/* posts */) {
-        var dsbd = document.querySelector('#posts');
-        var vr = viewportRect();
-        var del_count = 0;
+        var dsbd = document.querySelector('#posts'),
+            vr = viewportRect(),
+            del_count = 0;
 
         window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
 
@@ -924,9 +945,12 @@ Tornado.commands = {
 
         new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
     },
-    rootInfo: function(post) {
-        // FIXME: "rebloged you:" に対応していません
-        // FIXME: private ポストの情報の取得に対応していません
+    rootInfo:
+    /**
+     * @fixme "reblogged you:" の際には上手く動きません
+     * @fixme private ポストでの取得には対応していません
+     */
+    function(post) {
         var post_id = post.id.match(/\d+/)[0];
         var post_info = post.querySelector('.post_info');
         if (post_info.querySelector('.root_info')) {
@@ -1017,10 +1041,7 @@ Tornado.commands = {
     },
 };
 
-/**
- * ショートカットを登録する部分です
- */
-Tornado.shortcuts = [
+Tornado.shortcuts = /** @lends Tornado */ [
     customkey('j', 'default', {desc: '次ポストへ移動'}),
     customkey('j', 'halfdown', {shift: true, usehelp: 'hide', desc: '下へ半スクロール'}),
 
@@ -1059,7 +1080,9 @@ Tornado.shortcuts = [
     customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
 
-
+/**
+ * 今の所使っていません
+ */
 var EmbedFunctions = {
     jsonpRootInfo: function() {},
     add_reblogged_you: function() {},
@@ -1180,6 +1203,7 @@ function main() {
     }
     execClient(code, 1000);
 
+    /* URL も重み付けを行う */
     Tornado.shortcuts.sort(function(a, b) {
         return (b.follows.length - a.follows.length) ||
                (b.has_selector.length - a.has_selector.length);
@@ -1198,11 +1222,14 @@ else {
 })();
 
 
-
-/**
- * History
-**/
 /*
+
+* History *
+
+2012-05-19
+ver 1.1.2
+    * removeBottomPosts を追加しました *
+
 2012-05-21
 ver 1.1.1
     * リファクタリングを行いました *
