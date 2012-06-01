@@ -1038,7 +1038,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
 
     customkey('t', 'reblog'),
-    customkey('h', 'fast_reblog'),
+    customkey('h', 'fast_reblog', {usehelp: 'hide'}),
     customkey('d', 'draft', {desc: '下書きへ送る'}),
     customkey('q', 'queue', {desc: 'キューへ送る'}),
     customkey('p', 'private'),
