@@ -673,8 +673,8 @@ var Tornado = {
                             var dp = default_postdata;
                             new PinNotification([
                                 'Success: Reblogged',
-                                dp['post[state]'] && Tornado.state_texts[dp['post[state]']],
-                                dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']].join(' '));
+                                (dp['post[state]'] && Tornado.state_texts[dp['post[state]']]) || '',
+                                (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
                         }
                     },
                 });
@@ -697,7 +697,7 @@ var Tornado = {
             var channel_id = elm.id.slice(9);
             var button = buildElement('input', {
                     type: 'button',
-                    className: 'button' + (i + 1),
+                    class: 'button' + (i + 1),
                     name: channel_id,
                     value: ['[', i + 1, ']: ', elm.textContent.trim()].join('')});
             button.addEventListener('click', function(e) {
@@ -806,10 +806,10 @@ Tornado.commands = {
      * reblog
      */
     reblog: function(post) {
-        Tornado.reblog(post, {});
+        Tornado.reblog(post, {'channel_id': '0'});
     },
     reblogToChannel: function(post) {
-        Tornado.reblogToChannelDialog(post, {});
+        Tornado.reblogToChannelDialog(post, {'channel_id': '0'});
     },
     draft: function(post) {
         Tornado.reblog(post, {'post[state]': '1', 'channel_id': '0'});
@@ -914,8 +914,6 @@ Tornado.commands = {
             vr = viewportRect(),
             del_count = 0;
 
-        window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
-
         $$('#posts > li:not(.new_post)').filter(function(post) {
             return (post.offsetTop - 7) < vr.top;
         }).map(function(post) {
@@ -925,6 +923,8 @@ Tornado.commands = {
 
         var firstpost = document.querySelector('#posts > li:not(.new_post)');
         firstpost.className = firstpost.className.replace('same_user_as_last', '');
+
+        window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
 
         new PinNotification(del_count + '件のポストを削除しました。');
     },
@@ -985,7 +985,7 @@ Tornado.commands = {
         new PinNotification('Deleting... ' + post.id);
 
         Tornado.submitPublish(
-            post.querySelector('#delete_' + post.id),
+            post.querySelector('form#delete_' + post.id),
             function(_xhr) {
                 new PinNotification('Deleted ' + post.id);
             },
@@ -995,46 +995,30 @@ Tornado.commands = {
         );
     },
     publish: function(post) {
-        var publish_button = post.querySelector('a[onclick^="if (confirm(\'P"]');
-        publish_button.innerHTML = 'Publishing...';
+        new PinNotification('Publishing... ' + post.id);
 
-        var id = post.id.match(/\d+/)[0];
-        var form_key = post.querySelector('form[id^=publish] input[name=form_key]').value;
-
-        new Ajax('/publish', {
-            method: 'post',
-            parameters: buildQueryString({id: id, form_key: form_key}),
-            requestHeaders: HeaderContentType,
-            onSuccess: function(_xhr) {
-                publish_button.innerHTML = 'Published!';
-                new PinNotification('Post [' + id + '] Published.');
+        Tornado.submitPublish(
+            post.querySelector('form#publish_' + post.id),
+            function(_xhr) {
+                new PinNotification('Published ' + post.id);
             },
-            onFailure: function(_xhr) {
-                publish_button.innerHTML = 'publish';
+            function(_xhr) {
                 alert('fail to publish');
-            },
-        });
+            }
+        );
     },
     enqueue: function(post) {
-        var queue_button = post.querySelector('a[onclick^="if (confirm(\'Q"]');
-        queue_button.innerHTML = 'Enqueueing...';
+        new PinNotification('Enqueueing... ' + post.id);
 
-        var id = post.id.match(/\d+/)[0];
-        var form_key = post.querySelector('form[id^=queue] input[name=form_key]').value;
-
-        new Ajax('/publish', {
-            method: 'post',
-            parameters: buildQueryString({id: id, form_key: form_key, queue: 'queue'}),
-            requestHeaders: HeaderContentType,
-            onSuccess: function(_xhr) {
-                queue_button.innerHTML = 'Enqueued!';
-                new PinNotification('Post [' + id + '] enqueue.');
+        Tornado.submitPublish(
+            post.querySelector('form#queue_' + post.id),
+            function(_xhr) {
+                new PinNotification('Enqueued ' + post.id);
             },
-            onFailure: function(_xhr) {
-                queue_button.innerHTML = 'queue';
+            function(_xhr) {
                 alert('fail to enqueue');
-            },
-        });
+            }
+        );
     },
     default: function() {
         return true;  /* threw up event */
@@ -1050,8 +1034,8 @@ Tornado.shortcuts = /** @lends Tornado */ [
 
     customkey('l', 'default', {desc: 'Like'}),
 
-    customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
     customkey('g', 'goTop', {follows: ['g'], usehelp: 'hide', desc: '一番上へスクロール'}),
+    customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
 
     customkey('t', 'reblog'),
     customkey('h', 'fast_reblog'),
@@ -1223,7 +1207,6 @@ else {
 
 
 /*
-
 * History *
 
 2012-05-19
