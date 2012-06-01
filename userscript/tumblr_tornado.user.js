@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @version     1.1.2
-// @description Tumblr にショートカットを追加するユーザスクリプトの骨組み
+// @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
 // @match       http://www.tumblr.com/likes
