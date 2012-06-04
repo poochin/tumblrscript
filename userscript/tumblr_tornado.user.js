@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.2
+// @version     1.1.3
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-05-18
+// @updated     2012-06-04
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -86,6 +86,17 @@ var embed_css = [
     "    5%   { opacity: 1; }",
     "    90%  { opacity: 1; }",
     "    100% { opacity: 0; }",
+    "}",
+    /* Reblog Shutter */
+    "#posts > .post.shutter_base {",
+    "    background-color: #F8ABA6;",
+    "}",
+    "#posts > .post.shutter_base.shuttering {",
+    "    -webkit-transition: background-color 0.08s ease;",
+    "    -moz-transition: background-color 0.08s ease;",
+    "    -o-transition: background-color 0.08s ease;",
+    "    transition: background-color 0.08s ease;",
+    "    background-color: #fff;",
     "}",
     /* Reblog Button */
     ".reblog_button.loading {",
@@ -640,6 +651,8 @@ var Tornado = {
      * @todo classList.add, remove を使ってみる
      */
     reblog: function(post, default_postdata) {
+        Tornado.modules.shutterEffect(post);
+
         var reblog_button = post.querySelector('a.reblog_button');
         reblog_button.className += ' loading';
 
@@ -795,6 +808,26 @@ var Tornado = {
             Tornado.key_follows = [];
             return false;
         });
+    },
+};
+
+/**
+ * @namespace
+ */
+Tornado.modules = {
+    shutterEffect: function(post) {
+        post.classList.remove('shuttering');
+        post.classList.add('shutter_base');
+
+        var delay_shutter = 0;
+        if (/Firefox/.test(navigator.userAgent) ||
+            /Opera/.test(navigator.userAgent)) {
+            delay_shutter = 50;
+        }
+
+        setTimeout(
+            function() { post.classList.add('shuttering'); },
+            delay_shutter);
     },
 };
 
@@ -1209,9 +1242,17 @@ else {
 /*
 * History *
 
+2012-06-04
+ver 1.1.3
+    * reblog 時 に post を閃かせる効果を追加しました *
+
+    @tantarotar さんの意見を採用して taberareloo + chormekeyconfig を用いた際の reblog 時の閃きを取り入れました。
+
 2012-05-19
 ver 1.1.2
     * removeBottomPosts を追加しました *
+
+    @charz_red さんのアイディアで removeBottomPosts を組込みました。
 
 2012-05-21
 ver 1.1.1
