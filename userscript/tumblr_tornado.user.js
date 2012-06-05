@@ -737,7 +737,8 @@ var Tornado = {
             method: form.method,
             requestHeaders: HeaderContentType,
             parameters: buildQueryString(gatherFormValues(form)),
-            onSuccess: onSuccess});
+            onSuccess: onSuccess,
+            onFailure: onFailure});
     },
     /**
      * 入力されたキーによってコマンドを実行します
