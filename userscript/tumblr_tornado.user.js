@@ -1016,8 +1016,13 @@ Tornado.commands = {
         location.assign(url);
     },
     delete: function(post) {
-        new PinNotification('Deleting... ' + post.id);
+        Tornado.modules.shutterEffect(post);
+        if (!confirm('Delete this post?')) {
+            post.classList.remove('shutter_base');
+            return;
+        }
 
+        new PinNotification('Deleting... ' + post.id);
         Tornado.submitPublish(
             post.querySelector('form#delete_' + post.id),
             function(_xhr) {
@@ -1029,8 +1034,9 @@ Tornado.commands = {
         );
     },
     publish: function(post) {
-        new PinNotification('Publishing... ' + post.id);
+        Tornado.modules.shutterEffect(post);
 
+        new PinNotification('Publishing... ' + post.id);
         Tornado.submitPublish(
             post.querySelector('form#publish_' + post.id),
             function(_xhr) {
@@ -1042,8 +1048,9 @@ Tornado.commands = {
         );
     },
     enqueue: function(post) {
-        new PinNotification('Enqueueing... ' + post.id);
+        Tornado.modules.shutterEffect(post);
 
+        new PinNotification('Enqueueing... ' + post.id);
         Tornado.submitPublish(
             post.querySelector('form#queue_' + post.id),
             function(_xhr) {
