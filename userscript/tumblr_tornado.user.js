@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.3
+// @version     1.1.4
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -12,14 +12,12 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-06-04
+// @updated     2012-06-08
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
 /**
  * @namespace TumblrTornado
- * @TODO /show/videos の次 URL をバグらないように修正する
- * @TODO pub, que, del の CSS
  */
 (function TumblrTornado() {
 /*+
@@ -1155,10 +1153,33 @@ function enhistory() {
                 history.pushState('', '', window.next_page);
                 papr(transport);
                 add_reblogged_you();
+
+                var next_page = next_pageCorrection();
+                if (next_page) {
+                    window.next_page = next_page;
+                }
             }
         },
         ')();'].join('');
 }
+
+/**
+ * 次ページパスを訂正すべき場合は正常な次ページパスを返します
+ * @return 次ページパスか null
+ */
+function next_pageCorrection() {
+    var m_path = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/);
+    if (m_path) {
+        var path = [
+            '/show',
+            m_path[1],
+            (m_path[2] == undefined)
+                ? 2
+                : parseInt(m_path[2]) + 1].join('/');
+        return path;
+    }
+    return null;
+};
 
 /**
  * 右カラムにヘルプを表示します
@@ -1223,9 +1244,15 @@ function main() {
     code += enhistory();
     code += add_reblogged_you;
     code += jsonpRootInfo;
+    code += next_pageCorrection;
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
         code += 'start_observing_key_commands(1);';
     }
+    var next_page = next_pageCorrection();
+    if (next_page) {
+        code += 'window.next_page = "' + next_page + '";';
+    }
+
     execClient(code, 1000);
 
     /* URL も重み付けを行う */
@@ -1249,6 +1276,9 @@ else {
 
 /*
 * History *
+2012-06-08
+ver 1.1.4
+    * /show 系で変な next_page が設定される不具合を取りました *
 
 2012-06-04
 ver 1.1.3
