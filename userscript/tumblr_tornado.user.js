@@ -1013,6 +1013,20 @@ Tornado.commands = {
         var url = location.href.match(reg_top_path)[0];
         location.assign(url);
     },
+    forceDelete: function(post) {
+        Tornado.modules.shutterEffect(post);
+
+        new PinNotification('Deleting... ' + post.id);
+        Tornado.submitPublish(
+            post.querySelector('form#delete_' + post.id),
+            function(_xhr) {
+                new PinNotification('Deleted ' + post.id);
+            },
+            function(_xhr) {
+                alert('fail to delete');
+            }
+        );
+    },
     delete: function(post) {
         Tornado.modules.shutterEffect(post);
         if (!confirm('Delete this post?')) {
@@ -1099,6 +1113,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 
     customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('d', 'forceDelete', {shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide'}),
     customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
     customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
