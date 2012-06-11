@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.4
+// @version     1.1.5
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -883,21 +883,13 @@ Tornado.commands = {
         window.scroll(0, y - 7);
     },
     fast_reblog: function(post) {
-        var reblog_button = post.querySelector('a.reblog_button');
-        var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
-        reblog_button.className += ' loading';
-
-        new Ajax(url_fast_reblog, {
-            method: 'GET',
-            onSuccess: function(_xhr) {
-                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-                new PinNotification('Reblogged');
-            },
-            onFailure: function(_xhr) {
-                alert('Error: ' + _xhr.responseText);
-                reblog_button.className = reblog_button.className.replace('loading', '')
-            },
-        });
+        /**
+         * code Reblogable
+         * https://gist.github.com/1609210
+         */
+        var altClick = document.createEvent('MouseEvent');
+        altClick.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, true, false, false, 0, null);
+        post.querySelector('a.reblog_button').dispatchEvent(altClick);
     },
     notes: function(post) {
         var notes_link = post.querySelector('.reblog_count');
