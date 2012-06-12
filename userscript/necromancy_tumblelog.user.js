@@ -329,6 +329,7 @@ var PostBuilder = {
      * post_control 内の reblog_button 要素を作成します
      * @param {Object} json API が返すうちポスト単位の JSON.
      * @return {Node} 作成した Node オブジェクト.
+     * @todo 
      */
     reblog_button: function(json) {
         var url_reblog = ['/reblog', json.id, json.reblog_key].join('/');
@@ -337,7 +338,9 @@ var PostBuilder = {
                 href: url_reblog,
                 class: 'reblog_button',
                 title: 'Reblog',
-                'data-fast-reblog-url': url_fast_reblog});
+                'data-reblog-key': json.reblog_key,
+                'data-reblog-id': json.id,
+                'data-user-form-key': LIKE_KEY});
     },
     /**
      * post_control 内の like_button 要素を作成します
