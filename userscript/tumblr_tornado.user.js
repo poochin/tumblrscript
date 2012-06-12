@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.5
+// @version     1.1.6
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -469,12 +469,20 @@ function Ajax(url, options) {
         }
     }
 
-    if (options.method == undefined) {
+    if (options.method == undefined && options.parameters) {
+        options.method = 'POST';
+    }
+    else if (options.method == undefined) {
         options.method = 'GET';
     }
+
+    /* FIXME: PUT や DELETE にも対応 */
     if ('POST' != options.method.toUpperCase()) {
         url = [url, '?', options.parameters].join('');
         options.parameters = null;
+    }
+    else {
+        options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
     }
 
     xhr.open(options.method, url, async);
@@ -883,13 +891,25 @@ Tornado.commands = {
         window.scroll(0, y - 7);
     },
     fast_reblog: function(post) {
-        /**
-         * code Reblogable
-         * https://gist.github.com/1609210
-         */
-        var altClick = document.createEvent('MouseEvent');
-        altClick.initMouseEvent('click', true, true, window, 1, 0, 0, 0, 0, false, true, false, false, 0, null);
-        post.querySelector('a.reblog_button').dispatchEvent(altClick);
+        var reblog_button = post.querySelector('a.reblog_button');
+        var reblog_key = reblog_button.getAttribute('data-reblog-key'),
+            reblog_id = reblog_button.getAttribute('data-reblog-id'),
+            form_key = reblog_button.getAttribute('data-user-form-key');
+
+        Tornado.modules.shutterEffect(post);
+        reblog_button.className += ' loading';
+        new Ajax('/fast_reblog', {
+            method: 'POST',
+            parameters: buildQueryString({reblog_key: reblog_key, reblog_post_id: reblog_id, form_key: form_key}),
+            onSuccess: function(_xhr) {
+                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
+                new PinNotification('Success: fast Reblogged');
+            },
+            onFailure: function(_xhr) {
+                alert('Error: ' + _xhr.responseText);
+                reblog_button.className = reblog_button.className.replace('loading', '')
+            },
+        });
     },
     notes: function(post) {
         var notes_link = post.querySelector('.reblog_count');
@@ -1083,7 +1103,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
 
     customkey('t', 'reblog'),
-    customkey('h', 'fast_reblog', {usehelp: 'hide'}),
+    customkey('h', 'fast_reblog'),
     customkey('d', 'draft', {desc: '下書きへ送る'}),
     customkey('q', 'queue', {desc: 'キューへ送る'}),
     customkey('p', 'private'),
