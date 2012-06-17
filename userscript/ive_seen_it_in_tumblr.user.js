@@ -6,9 +6,9 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-06-14
+// @updated     2012-06-17
+// @updateURL   https://github.com/poochin/tumblrscript/blob/master/userscript/ive_seen_it_in_tumblr.user.js
 // ==/UserScript==
-
 
 /**
  * @fixme 自分のポストに対しては動きません
@@ -19,7 +19,7 @@
 
     boot();
     
-    function postappended(post) {
+    function postAppended(post) {
         var reblog_button, reblog_key;
     
         reblog_button = post.querySelector('a.reblog_button');
@@ -40,7 +40,7 @@
             /* pass */
         }
         else if (e.target.nodeType == document.ELEMENT_NODE) {
-            postappended(e.target);
+            postAppended(e.target);
         }
     }
     
@@ -117,19 +117,21 @@
     
         document.querySelector('#posts').addEventListener('DOMNodeInserted', appendToPosts, true);
         if (enable) {
-            Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(postappended);
+            Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(postAppended);
         }
     }
     
     function isExecPage() {
-        return /^https?:\/\/[^\/]+\/.*/.test(location);
+        return /^https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/.test(location);
     }
     
     function boot() {
+        if (isExecPage() === false) {
+            return;
+        }
+
         if (window.document.body) {
-            if (isExecPage() /* for Opera */) {
-                main();
-            }
+            main();
         }
         else {
             window.document.addEventListener('DOMContentLoaded', main, false);
