@@ -995,6 +995,13 @@ Tornado.commands = {
             window.open(permalink.href);
         }
     },
+    viewPostPageInBackground: function(post) {
+        var permalink;
+        if (permalink = post.querySelector('.permalink')) {
+            window.open(permalink.href);
+            window.focus();
+        }
+    },
     rootInfo:
     /**
      * @fixme "reblogged you:" の際には上手く動きません
@@ -1121,7 +1128,8 @@ Tornado.shortcuts = /** @lends Tornado */ [
 
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
-    customkey('v', 'viewPostPage'),
+    customkey('v', 'viewPostPageInBackground', {usehelp: 'hide'}),
+    customkey('v', 'viewPostPage', {shift: true, usehelp: 'hide'}),
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
