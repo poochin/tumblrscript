@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.4
+// @version     1.1.7
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -469,12 +469,20 @@ function Ajax(url, options) {
         }
     }
 
-    if (options.method == undefined) {
+    if (options.method == undefined && options.parameters) {
+        options.method = 'POST';
+    }
+    else if (options.method == undefined) {
         options.method = 'GET';
     }
+
+    /* FIXME: PUT や DELETE にも対応 */
     if ('POST' != options.method.toUpperCase()) {
         url = [url, '?', options.parameters].join('');
         options.parameters = null;
+    }
+    else {
+        options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
     }
 
     xhr.open(options.method, url, async);
@@ -884,14 +892,18 @@ Tornado.commands = {
     },
     fast_reblog: function(post) {
         var reblog_button = post.querySelector('a.reblog_button');
-        var url_fast_reblog = reblog_button.getAttribute('data-fast-reblog-url');
-        reblog_button.className += ' loading';
+        var reblog_key = reblog_button.getAttribute('data-reblog-key'),
+            reblog_id = reblog_button.getAttribute('data-reblog-id'),
+            form_key = reblog_button.getAttribute('data-user-form-key');
 
-        new Ajax(url_fast_reblog, {
-            method: 'GET',
+        Tornado.modules.shutterEffect(post);
+        reblog_button.className += ' loading';
+        new Ajax('/fast_reblog', {
+            method: 'POST',
+            parameters: buildQueryString({reblog_key: reblog_key, reblog_post_id: reblog_id, form_key: form_key}),
             onSuccess: function(_xhr) {
                 reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-                new PinNotification('Reblogged');
+                new PinNotification('Success: fast Reblogged');
             },
             onFailure: function(_xhr) {
                 alert('Error: ' + _xhr.responseText);
@@ -977,6 +989,19 @@ Tornado.commands = {
 
         new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
     },
+    viewPostPage: function(post) {
+        var permalink;
+        if (permalink = post.querySelector('.permalink')) {
+            window.open(permalink.href);
+        }
+    },
+    viewPostPageInBackground: function(post) {
+        var permalink;
+        if (permalink = post.querySelector('.permalink')) {
+            window.open(permalink.href);
+            window.focus();
+        }
+    },
     rootInfo:
     /**
      * @fixme "reblogged you:" の際には上手く動きません
@@ -1012,6 +1037,20 @@ Tornado.commands = {
         var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
         var url = location.href.match(reg_top_path)[0];
         location.assign(url);
+    },
+    forceDelete: function(post) {
+        Tornado.modules.shutterEffect(post);
+
+        new PinNotification('Deleting... ' + post.id);
+        Tornado.submitPublish(
+            post.querySelector('form#delete_' + post.id),
+            function(_xhr) {
+                new PinNotification('Deleted ' + post.id);
+            },
+            function(_xhr) {
+                alert('fail to delete');
+            }
+        );
     },
     delete: function(post) {
         Tornado.modules.shutterEffect(post);
@@ -1077,7 +1116,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
 
     customkey('t', 'reblog'),
-    customkey('h', 'fast_reblog', {usehelp: 'hide'}),
+    customkey('h', 'fast_reblog'),
     customkey('d', 'draft', {desc: '下書きへ送る'}),
     customkey('q', 'queue', {desc: 'キューへ送る'}),
     customkey('p', 'private'),
@@ -1089,6 +1128,8 @@ Tornado.shortcuts = /** @lends Tornado */ [
 
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
+    customkey('v', 'viewPostPageInBackground', {usehelp: 'hide'}),
+    customkey('v', 'viewPostPage', {shift: true, usehelp: 'hide'}),
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
@@ -1099,6 +1140,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 
     customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('d', 'forceDelete', {shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide'}),
     customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
     customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
