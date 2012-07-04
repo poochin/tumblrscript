@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.7
+// @version     1.1.8
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -190,6 +190,10 @@ var embed_css = [
     "  color: #abb;",
     "  font-size: 12px;",
     "  line-height: 1.2em;",
+    "}",
+    "#tornado_shortcuts_help dd {",
+    "  width: 203px;",
+    "  overflow: hidden;",
     "}",
     "#tornado_shortcuts_help .more {",
     "  font-size: 8px;",
