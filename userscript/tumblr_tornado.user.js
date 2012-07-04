@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-06-08
+// @updated     2012-07-04
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -989,12 +989,6 @@ Tornado.commands = {
 
         new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
     },
-    viewPostPage: function(post) {
-        var permalink;
-        if (permalink = post.querySelector('.permalink')) {
-            window.open(permalink.href);
-        }
-    },
     viewPostPageInBackground: function(post) {
         var permalink;
         if (permalink = post.querySelector('.permalink')) {
@@ -1129,7 +1123,6 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
     customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
     customkey('v', 'viewPostPageInBackground', {usehelp: 'hide'}),
-    customkey('v', 'viewPostPage', {shift: true, usehelp: 'hide'}),
 
     customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
@@ -1318,6 +1311,13 @@ else {
 
 /*
 * History *
+2012-07-04
+ver 1.1.7
+    * viewPagePostInBackground を追加しました *
+
+    @charz_red さんのアイディアによりポストを開く機能を付けました。
+    自分のポストを Delete したい際に確認ダイアログを表示しない forceDelete 機能を付けました。
+
 2012-06-08
 ver 1.1.4
     * /show 系で変な next_page が設定される不具合を取りました *
