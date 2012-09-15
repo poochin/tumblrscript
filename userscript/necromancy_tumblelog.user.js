@@ -300,14 +300,18 @@ var PostBuilder = {
             json.reblog_key,
             '\'); return false;'].join('');
         */
+        var note_count = parseInt(json.note_count);
+        if (note_count == 0) {
+            return buildElement('span'); 
+        }
+
         var notes_onclick = 'void alert("このコマンドは実装できませんでした！！");';
         var notes = buildElement('a', {
                 href: '#',
                 id: 'show_notes_link_' + json.id,
-                class: 'reblog_count',
+                class: 'reblog_count post_control',
                 onclick: notes_onclick});
 
-        var note_count = parseInt(json.note_count);
         notes.appendChild(buildElement('span', {
                 id: 'note_link_less_' + json.id,
                 style: 'display:none;',
@@ -336,7 +340,7 @@ var PostBuilder = {
         var url_fast_reblog = ['/fast_reblog', json.id, json.reblog_key].join('/');
         return buildElement('a', {
                 href: url_reblog,
-                class: 'reblog_button',
+                class: 'reblog_button post_control',
                 title: 'Reblog',
                 'data-reblog-key': json.reblog_key,
                 'data-reblog-id': json.id,
@@ -365,7 +369,7 @@ var PostBuilder = {
             root_id = (url ? url.match(/(?:post\/(\d+)|private_\d+?(\d+))/)[1] : '');
         }
         var like_button = frag.appendChild(buildElement('a', {
-                    class: 'like_button like_root_' + root_id,
+                    class: 'like_button post_control like_root_' + root_id,
                     href: '#',
                     title: 'like',
                     id: 'like_button_' + json.id,
@@ -1174,7 +1178,7 @@ function necromancyInitialize() {
 
             var cmd = [
                 'start_observing_key_commands(1);',
-                'initialize_tabs();',
+                // 'initialize_tabs();',
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
                 'window.TOTAL_POST = null;',
