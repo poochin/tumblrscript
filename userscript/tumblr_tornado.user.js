@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.10
+// @version     1.1.11
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -1286,7 +1286,7 @@ function main() {
     code += jsonpRootInfo;
     code += next_pageCorrection;
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
-        code += 'start_observing_key_commands(1);';
+        code += 'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();';
     }
     var next_page = next_pageCorrection();
     if (next_page) {
