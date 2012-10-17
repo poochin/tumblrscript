@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.9
+// @version     1.1.10
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -785,7 +785,7 @@ var Tornado = {
         Tornado.key_follows = Tornado.key_follows.concat(ch).slice(-Tornado.KEY_MAX_FOLLOWS);
 
         post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
-            return vr.top == (elm.offsetTop - margin_top);
+            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
         })[0];
         if (!post) {
             console.info('Post not found');
