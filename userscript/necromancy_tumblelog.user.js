@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     1.1.0
+// @version     1.1.1
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -1142,12 +1142,13 @@ function getTotalPost() {
  * ユーザスクリプトが実行された際に呼び出される関数です
  */
 function necromancyInitialize() {
-    var lang_script = buildElement('script', {
-            src: 'http://assets.tumblr.com/languages/strings/en_US.js?838'});
-    var dsbd_script = buildElement('script', {
-            src: 'http://assets.tumblr.com/javascript/prototype_effects_application_tumblelog.js?838'});
-    document.head.appendChild(lang_script);
-    document.head.appendChild(dsbd_script);
+    var tumblr_scripts  = [
+        'http://assets.tumblr.com/languages/strings/en_US.js?838',
+        'http://assets.tumblr.com/javascript/jquery_with_plugins.js?55d600b2029041781b32956f270dc4a7',
+        'http://assets.tumblr.com/javascript/prototype_and_effects.js?6d9a669b8f64150cfcbe643e4596e1e9',
+        'http://assets.tumblr.com/javascript/application_tumblelog_jquery.js?0ce45b99ef61b02d5a4754c7c5aa36ff',
+    ];
+
 
     new Ajax('/dashboard', {
         method: 'GET',
@@ -1176,9 +1177,57 @@ function necromancyInitialize() {
                 elm_head.appendChild(node);
             });
 
+            var tumblr_script_elements = tumblr_scripts.map(function(script_url) {
+                return buildElement('script', {
+                    src: script_url});
+            });
+
+            var myscript = [
+                'window.Tumblr.enable_dashboard_key_commands = true;',
+                'window.Tumblr.KeyCommands = new window.Tumblr.KeyCommandsConstructor();',
+                'window.next_page = location.pathname;',
+                'window.prev_json = window.new_json = null;',
+                'window.TOTAL_POST = null;',
+                'window.API_KEY = "', API_KEY, '";',
+                'window.LIKE_KEY = "', like_key, '";',
+                'window.PATH_PARSER = ', PATH_PARSER, ';',
+                'window.LOAD_SCROLL_OFFSET = ', LOAD_SCROLL_OFFSET, ';',
+                'window.PostBuilder = ', serialize(PostBuilder), ';',
+                cloneChildren,
+                escapeHtmlScript,
+                trimNodeEtc,
+                trimNodeEvent,
+                trimNodeStyle,
+                trimNodeClass,
+                necromancyPaginator,
+                necromancyObserver,
+                necromancyCallback,
+                buildQueryString,
+                buildElement,
+                buildElementBySource,
+                buildNecromancyURL,
+                '(', getTotalPost, ')();',
+                'new PeriodicalExecuter(necromancyPaginator, 0.2);',
+                'new PeriodicalExecuter(necromancyObserver, 0.02);',
+            ].join('\n');
+
+            var myscript_element = document.createElement('script');
+            myscript_element.innerText = myscript;
+
+            tumblr_script_elements.concat([myscript_element]).map(function(elm, index, array) {
+                elm.addEventListener('load', function() {
+                    if(array[index+1]) {
+                        document.body.appendChild(array[index+1]);
+                    }
+                });
+            });
+
+            document.body.appendChild(tumblr_script_elements[0]);
+/*
             var cmd = [
-                'start_observing_key_commands(1);',
+                // 'start_observing_key_commands(1);',
                 // 'initialize_tabs();',
+                'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();',
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
                 'window.TOTAL_POST = null;',
@@ -1205,7 +1254,8 @@ function necromancyInitialize() {
                 'new PeriodicalExecuter(necromancyObserver, 0.02);',
                 'void 0;'].join('');
 
-            execClient(cmd, 0);
+            execClient(cmd, 100);
+            */
         }
     });
 }
