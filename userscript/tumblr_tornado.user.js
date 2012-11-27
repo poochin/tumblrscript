@@ -241,7 +241,7 @@ left_click.initEvent("click", false, true);
 var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
 
 /**
- * Reblog 時 Content Type を指定する用の配列です
+ * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
  */
 var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
 
@@ -251,11 +251,11 @@ var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; cha
  * @returns {Bool} 同一なら true を、値が一つでも違えば false を返します
  */
 Array.prototype.cmp = function(another) {
-    return (this.length != another.length)
+    return ((this.length != another.length)
         ? false
         : this.every(
             function(v, k) { return v == another[k]; }
-          );
+          ));
 };
 
 
@@ -536,6 +536,7 @@ function gatherFormValues(form) {
  * @param {String} title タイトル
  */
 function LiteDialog(title) {
+    /* ダイアログを移動する際にダイアログ左上からマウスまでの位置の差です */
     this.origin_offsetX = this.origin_offsetY = null;
 
     var dialog = this.dialog = document.createElement('div');
@@ -623,6 +624,7 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
                 document.querySelector('.lite_dialog_close').dispatchEvent(left_click);
             }
             else if (48 <= e.keyCode && e.keyCode <= 57) {
+                /* 48 == '0', 57 == '9' */
                 var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
                 var name = 'button' + number;
                 document.querySelector('.lite_dialog input[type="button"].' + name).click();
@@ -641,7 +643,7 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
 };
 
 /**
- * Tornado のメイン機
+ * Tornado のメイン機能部
  * @namespace
  */
 var Tornado = {
@@ -715,23 +717,23 @@ var Tornado = {
 
         var dialog = new LiteDialog(title);
         var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
-
-	$$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
-        // $$('#all_blogs_menu .item[id]').map(function(elm, i) {
-            var channel_id = elm.id.slice(9);
-            var button = buildElement('input', {
-                    type: 'button',
-                    class: 'button' + (i + 1),
-                    name: channel_id,
-                    value: ['[', i + 1, ']: ', elm.children[1].textContent.trim()].join('')});
-            button.addEventListener('click', function(e) {
-                postdata['channel_id'] = this.name;
-                Tornado.reblog(post, postdata);
-                dialog.close();
-            });
-            dialog_body.appendChild(button);
+    
+        $$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
+            // $$('#all_blogs_menu .item[id]').map(function(elm, i) {
+                var channel_id = elm.id.slice(9);
+                var button = buildElement('input', {
+                        type: 'button',
+                        class: 'button' + (i + 1),
+                        name: channel_id,
+                        value: ['[', i + 1, ']: ', elm.children[1].textContent.trim()].join('')});
+                button.addEventListener('click', function(e) {
+                    postdata['channel_id'] = this.name;
+                    Tornado.reblog(post, postdata);
+                    dialog.close();
+                });
+                dialog_body.appendChild(button);
         });
-
+    
         dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
         dialog.dialog.style.left = (post.offsetLeft + 20) + 'px';
 
