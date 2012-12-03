@@ -1005,6 +1005,7 @@ function necromancyObserver(pe) {
     var parsed_page_path = window.location.href.match(PATH_PARSER);
     if (window.new_json && parsed_page_path != 'random' && parsed_page_path[4] >= window.new_json.response.total_posts) {
         pe.stop();
+        alert('Get last post!');
         $('auto_pagination_loader').hide();
     }
 }
@@ -1310,7 +1311,7 @@ function main() {
     if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
         necromancyInitialize();
     }
-    else if (/^https?:\/\/\w+\.tumblr\.com\/?$/.test(location)) {
+    else if (/^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
         embedNecromancyLink();
     }
 }
@@ -1324,7 +1325,7 @@ function isExecPage() {
         (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
          /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
             document.documentElement.innerHTML)) ||
-        /^https?:\/\/\w+\.tumblr\.com\/?$/.test(location)) {
+        /^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
         return true;
     }
     return false;
