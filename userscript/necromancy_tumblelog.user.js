@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     1.1.1
+// @match       http://*.tumblr.com/
+// @version     1.1.2
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
 // @license     MIT
-// @updated     2012-05-15
+// @updated     2012-12-03
 // @namespace   NecromancyTumblelog
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
@@ -1261,10 +1262,48 @@ function necromancyInitialize() {
 }
 
 /**
+ * Tumblelog に Necromancy 用のリンクを貼り付けます
+ */
+function embedNecromancyLink() {
+    var link = document.createElement('div'),
+        url = 'http://www.tumblr.com/blog/' + (location.hostname),
+        a_style = [
+            "color: white",
+            "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08)",
+            'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif',
+            "font-size: 12px;",
+            "font-weight: 600;",
+            "line-height: 18px;",
+        ].join('');
+
+    link.innerHTML = '<a href="' + (url) + '" style="color: white;">Necromancy</a>';
+    link.style.cssText = [
+        "margin: 3px;",
+        "padding: 0 5px;",
+        "position: absolute;",
+        "top: 18px;",
+        "right: 0;",
+        "border: 1px solid rgba(0, 0, 0, 0.18);",
+        "border-radius: 2px;",
+        "background: rgba(0, 0, 0, 0.38);",
+        "font-size: 12px;",
+        "font-weight: 600;",
+        "line-height: 18px;",
+    ].join('');
+   
+    document.body.appendChild(link);
+}
+
+/**
  * ユーザスクリプトが呼び出されたさいに呼び出されるメイン関数です
  */
 function main() {
-    necromancyInitialize();
+    if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
+        necromancyInitialize();
+    }
+    else if (/^https?:\/\/\w+\.tumblr\.com\/?$/.test(location)) {
+        embedNecromancyLink();
+    }
 }
 
 /**
@@ -1273,9 +1312,10 @@ function main() {
  */
 function isExecPage() {
     if (PATH_PARSER.test(location) &&
-        /^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
-        /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
-            document.documentElement.innerHTML)) {
+        (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
+         /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
+            document.documentElement.innerHTML)) ||
+        /^https?:\/\/\w+\.tumblr\.com\/?$/.test(location)) {
         return true;
     }
     return false;
