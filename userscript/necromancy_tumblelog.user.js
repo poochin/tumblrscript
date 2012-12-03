@@ -1268,15 +1268,16 @@ function embedNecromancyLink() {
     var link = document.createElement('div'),
         url = 'http://www.tumblr.com/blog/' + (location.hostname),
         a_style = [
-            "color: white",
-            "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08)",
-            'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif',
+            "color: white;",
+            "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08);",
+            "text-decoration: none;",
+            'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif;',
             "font-size: 12px;",
             "font-weight: 600;",
             "line-height: 18px;",
         ].join('');
 
-    link.innerHTML = '<a href="' + (url) + '" style="color: white;">Necromancy</a>';
+    link.innerHTML = '<a href="' + (url) + '" style="' + (a_style) + '">Necromancy</a>';
     link.style.cssText = [
         "margin: 3px;",
         "padding: 0 5px;",
