@@ -1281,7 +1281,7 @@ function embedNecromancyLink() {
         "margin: 3px;",
         "padding: 0 5px;",
         "position: absolute;",
-        "top: 18px;",
+        "top: 22px;",
         "right: 0;",
         "border: 1px solid rgba(0, 0, 0, 0.18);",
         "border-radius: 2px;",
