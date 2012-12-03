@@ -16,6 +16,8 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
+// TODO: show notes 機能が本家に取り込まれたので削除します
+
 /**
  * @namespace TumblrTornado
  */
@@ -326,6 +328,7 @@ function $$(selector) {
  * @param {String} code 実行したいコード(// 行コメントは含めないでください).
  * @param {Number} lazy ミリ秒単位での遅延実行する時間。 デフォルトは 0 です.
  */
+// TODO: このやり方をすると chrome では複数のスクリプトを一度に実行できないため script を埋め込む形にする
 function execClient(code, lazy) {
     lazy = (typeof lazy == 'undefined' ? 0 : lazy);
     if (/Firefox/.test(navigator.userAgent)) {
@@ -1144,14 +1147,6 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
     customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
-
-/**
- * 今の所使っていません
- */
-var EmbedFunctions = {
-    jsonpRootInfo: function() {},
-    add_reblogged_you: function() {},
-};
 
 /**
  * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
