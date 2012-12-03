@@ -1147,7 +1147,14 @@ function necromancyInitialize() {
         'http://assets.tumblr.com/languages/strings/en_US.js?838',
         'http://assets.tumblr.com/javascript/jquery_with_plugins.js?55d600b2029041781b32956f270dc4a7',
         'http://assets.tumblr.com/javascript/prototype_and_effects.js?6d9a669b8f64150cfcbe643e4596e1e9',
-        'http://assets.tumblr.com/javascript/application_tumblelog_jquery.js?0ce45b99ef61b02d5a4754c7c5aa36ff',
+        // 'http://assets.tumblr.com/javascript/application_tumblelog_jquery.js?0ce45b99ef61b02d5a4754c7c5aa36ff',
+        'http://assets.tumblr.com/javascript/application.js',
+        'http://assets.tumblr.com/javascript/tumblelog.js',
+        'http://assets.tumblr.com/javascript/spin.js',
+        'http://assets.tumblr.com/javascript/sortable.js',
+        'http://assets.tumblr.com/javascript/shadowybox.js',
+        'http://assets.tumblr.com/javascript/jquery.pano.js',
+        'http://assets.tumblr.com/javascript/jquery.application.js',
     ];
 
 
@@ -1178,6 +1185,7 @@ function necromancyInitialize() {
                 elm_head.appendChild(node);
             });
 
+            /* Tumblr のスクリプトを挿入します */
             var tumblr_script_elements = tumblr_scripts.map(function(script_url) {
                 return buildElement('script', {
                     src: script_url});
@@ -1189,11 +1197,11 @@ function necromancyInitialize() {
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
                 'window.TOTAL_POST = null;',
-                'window.API_KEY = "', API_KEY, '";',
-                'window.LIKE_KEY = "', like_key, '";',
-                'window.PATH_PARSER = ', PATH_PARSER, ';',
-                'window.LOAD_SCROLL_OFFSET = ', LOAD_SCROLL_OFFSET, ';',
-                'window.PostBuilder = ', serialize(PostBuilder), ';',
+                'window.API_KEY = "' + (API_KEY) + '";',
+                'window.LIKE_KEY = "' + (like_key) + '";',
+                'window.PATH_PARSER = ' + (PATH_PARSER) + ';',
+                'window.LOAD_SCROLL_OFFSET = ' + (LOAD_SCROLL_OFFSET) + ';',
+                'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
                 cloneChildren,
                 escapeHtmlScript,
                 trimNodeEtc,
@@ -1213,7 +1221,7 @@ function necromancyInitialize() {
             ].join('\n');
 
             var myscript_element = document.createElement('script');
-            myscript_element.innerText = myscript;
+            myscript_element.innerHTML = myscript;
 
             tumblr_script_elements.concat([myscript_element]).map(function(elm, index, array) {
                 elm.addEventListener('load', function() {
