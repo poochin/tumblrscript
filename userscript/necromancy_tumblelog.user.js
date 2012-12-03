@@ -2,7 +2,7 @@
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
 // @match       http://*.tumblr.com/
-// @version     1.1.2
+// @version     1.1.3
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
