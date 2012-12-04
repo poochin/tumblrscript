@@ -2,12 +2,12 @@
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
 // @match       http://*.tumblr.com/
-// @version     1.1.3
+// @version     1.1.5
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
 // @license     MIT
-// @updated     2012-12-03
+// @updated     2012-12-05
 // @namespace   NecromancyTumblelog
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
@@ -1171,7 +1171,7 @@ function necromancyInitialize() {
             var elm_head = document.createElement('head');
             var elm_body = document.createElement('body');
 
-            document.documentElement.replaceChild(elm_head, document.head);
+            // document.documentElement.replaceChild(elm_head, document.head);
             document.documentElement.replaceChild(elm_body, document.body);
 
             elm_body.innerHTML = body;
@@ -1185,6 +1185,7 @@ function necromancyInitialize() {
             userscript_styles.concat(stylish_styles).map(function(node) {
                 elm_head.appendChild(node);
             });
+            document.head.innerHTML = elm_head.innerHTML;
 
             /* Tumblr のスクリプトを挿入します */
             var tumblr_script_elements = tumblr_scripts.map(function(script_url) {
