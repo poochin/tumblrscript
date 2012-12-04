@@ -16,8 +16,6 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-// TODO: show notes 機能が本家に取り込まれたので削除します
-
 /**
  * @namespace TumblrTornado
  */
@@ -1138,7 +1136,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
     customkey('c', 'removeBottomPosts', {shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
 
-    customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
+    // customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
     customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
 
