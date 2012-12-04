@@ -1233,39 +1233,6 @@ function necromancyInitialize() {
             });
 
             document.body.appendChild(tumblr_script_elements[0]);
-/*
-            var cmd = [
-                // 'start_observing_key_commands(1);',
-                // 'initialize_tabs();',
-                'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();',
-                'window.next_page = location.pathname;',
-                'window.prev_json = window.new_json = null;',
-                'window.TOTAL_POST = null;',
-                'window.API_KEY = "', API_KEY, '";',
-                'window.LIKE_KEY = "', like_key, '";',
-                'window.PATH_PARSER = ', PATH_PARSER, ';',
-                'window.LOAD_SCROLL_OFFSET = ', LOAD_SCROLL_OFFSET, ';',
-                'window.PostBuilder = ', serialize(PostBuilder), ';',
-                cloneChildren,
-                escapeHtmlScript,
-                trimNodeEtc,
-                trimNodeEvent,
-                trimNodeStyle,
-                trimNodeClass,
-                necromancyPaginator,
-                necromancyObserver,
-                necromancyCallback,
-                buildQueryString,
-                buildElement,
-                buildElementBySource,
-                buildNecromancyURL,
-                '(', getTotalPost, ')();',
-                'new PeriodicalExecuter(necromancyPaginator, 0.2);',
-                'new PeriodicalExecuter(necromancyObserver, 0.02);',
-                'void 0;'].join('');
-
-            execClient(cmd, 100);
-            */
         }
     });
 }
