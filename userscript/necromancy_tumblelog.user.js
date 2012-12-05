@@ -2,7 +2,7 @@
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
 // @match       http://*.tumblr.com/
-// @version     1.1.5
+// @version     1.1.6
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -886,12 +886,12 @@ var PostBuilder = {
         if (now.getDay() == post_date.getDay()) {
             /* pass */
         }
-        else if (false /* 一週間以内か */) {
+        else if ((now - post_date) < (7 * 24 * 60 * 60)) {
             var day_of_week = (new Date(json.timestamp)).getUTCDay();
             permalink_title += [
                 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day_of_week];
         }
-        else if (false /* その他 */) {
+        else {
             var month = (new Date(json.timestamp)).getMonth();
             permalink_title += [
                 'January', 'February', 'March', 'April',
@@ -906,6 +906,10 @@ var PostBuilder = {
             }
             else {
                 permalink_title += (day) + 'th';
+            }
+
+            if (now.getYear() != post_date.getYear()) {
+                permalink_title += ' ' + post_date.getFullYear();
             }
 
             permalink_title += ', ';
