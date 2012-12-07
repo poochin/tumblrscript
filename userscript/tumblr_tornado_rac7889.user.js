@@ -1146,7 +1146,7 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 
     customkey('t', function reblog2rac7889(post) {
-            Tornado.reblog(post, {'channel_id': 'reblogadventcalender7889', 'post[state]': '1'});
+            Tornado.reblog(post, {'channel_id': 'reblogadventcalender7889'});
         },
         {shift: true, usehelp: true}),
 ];
