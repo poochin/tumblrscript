@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado for RAC7889
-// @version     1.1.12
+// @version     1.1.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
