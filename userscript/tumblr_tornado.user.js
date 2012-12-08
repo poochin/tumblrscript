@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.12
+// @version     1.1.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-07-04
+// @updated     2012-12-09
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -335,6 +335,21 @@ function execClient(code, lazy) {
     else {
         setTimeout(function() {location.assign('javascript:' + code + '; void 0;')}, lazy);
     }
+}
+
+/**
+ * クライアント領域で Script を実行します
+ * @param {String} code 実行したいコード
+ */
+function execScript(code) {
+    var script = document.createElement('script');
+    script.setAttribute('type', 'text/javascript');
+    script.innerHTML = code;
+    script.addEventListener('onload', function(e) {
+        with(e) {
+            target.parentNode.removeChild(target);
+        }
+    });
 }
 
 /**
@@ -1200,7 +1215,7 @@ function enhistory() {
 
 /**
  * 次ページパスを訂正すべき場合は正常な次ページパスを返します
- * @return 次ページパスか null
+ * @return 次ページ path か null
  */
 function next_pageCorrection() {
     var m_path = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/);
@@ -1220,42 +1235,42 @@ function next_pageCorrection() {
  * 右カラムにヘルプを表示します
  */
 function showShortcutHelp() {
-    var help = document.createElement('dl');
-    help.id = 'tornado_shortcuts_help';
+    var rightcolumn_help, header_help, helps;
 
-    var normal_shortcuts = document.createElement('dt');
-    normal_shortcuts.id = 'tornado_normal_shortcuts_help';
-    normal_shortcuts.innerHTML = [
-        'Tumblr Tornado <span class="more">[もっと見る]</span>',
-        '<span class="hide">* s-はShift同時押し',
-        '* 小文字は連続入力</span>'].join('<br />');
-    help.appendChild(normal_shortcuts);
+    var rightcolumn_help = buildElement('div',
+        {class: 'tornado_rightcolumn_help'});
 
-    normal_shortcuts.querySelector('span').addEventListener('click', function(e) {
+    var header_help = buildElement('p',
+        {}, 
+        'Tumblr Tornado <span class="tornado_help">[?]</span>');
+
+    header_help.querySelector('span').addEventListener('click', function(e) {
         var hides = document.querySelectorAll('#tornado_shortcuts_help .hide');
         hides = Array.prototype.slice.call(hides);
         hides.map(function(elm) {
             elm.className = '';
         });
-        this.parentNode.removeChild(this);
     });
 
-    for (var i = 0; i < Tornado.shortcuts.length; ++i) {
-        var shortcut = Tornado.shortcuts[i];
-        var dd = document.createElement('dd');
-        if (!shortcut.usehelp) {
-            continue;
-        }
-        if (shortcut.usehelp == 'hide') {
-            dd.className = 'hide';
-        }
-        dd.innerHTML = buildShortcutLineHelp(shortcut);
-        help.appendChild(dd);
-    }
+    rightcolumn_help.appendChild(header_help);
 
-    var right_column = document.querySelector('#right_column');
-    if (right_column) {
-        right_column.appendChild(help);
+    var helps = buildElement('ul',
+        {id: 'tornado_shortcuts_help'});
+
+    Tornado.shortcuts.map(function(shortcut, i) {
+        var className = (shortcut.usehelp == 'hide' && shortcut.usehelp);
+        var help = buildElement('li', 
+            {class: className},
+            buildShortcutLineHelp(shortcut));
+        helps.appendChild(help);
+    });
+
+    rightcolumn_help.appendChild(helps);
+
+    with({right_column: document.querySelector('#right_column')}) {
+        if (right_column) {
+            right_column.appendChild(rightcolumn_help);
+        }
     }
 }
 
@@ -1281,6 +1296,7 @@ function main() {
     code += jsonpRootInfo;
     code += next_pageCorrection;
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
+        /* Queue ページで J/K キーが使用できない為、使えるようにします */
         code += 'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();';
     }
     var next_page = next_pageCorrection();
@@ -1290,7 +1306,7 @@ function main() {
 
     execClient(code, 1000);
 
-    /* URL も重み付けを行う */
+    /* FIXME: URL も重み付けを行う */
     Tornado.shortcuts.sort(function(a, b) {
         return (b.follows.length - a.follows.length) ||
                (b.has_selector.length - a.has_selector.length);
