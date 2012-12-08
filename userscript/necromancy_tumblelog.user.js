@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @match       http://www.tumblr.com/blog/*
-// @version     1.1.0
+// @match       http://*.tumblr.com/
+// @version     1.1.6
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
 // @license     MIT
-// @updated     2012-05-15
+// @updated     2012-12-05
 // @namespace   NecromancyTumblelog
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
@@ -885,12 +886,12 @@ var PostBuilder = {
         if (now.getDay() == post_date.getDay()) {
             /* pass */
         }
-        else if (false /* 一週間以内か */) {
+        else if ((now - post_date) < (7 * 24 * 60 * 60)) {
             var day_of_week = (new Date(json.timestamp)).getUTCDay();
             permalink_title += [
                 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day_of_week];
         }
-        else if (false /* その他 */) {
+        else {
             var month = (new Date(json.timestamp)).getMonth();
             permalink_title += [
                 'January', 'February', 'March', 'April',
@@ -905,6 +906,10 @@ var PostBuilder = {
             }
             else {
                 permalink_title += (day) + 'th';
+            }
+
+            if (now.getYear() != post_date.getYear()) {
+                permalink_title += ' ' + post_date.getFullYear();
             }
 
             permalink_title += ', ';
@@ -1004,6 +1009,7 @@ function necromancyObserver(pe) {
     var parsed_page_path = window.location.href.match(PATH_PARSER);
     if (window.new_json && parsed_page_path != 'random' && parsed_page_path[4] >= window.new_json.response.total_posts) {
         pe.stop();
+        alert('Get last post!');
         $('auto_pagination_loader').hide();
     }
 }
@@ -1142,12 +1148,20 @@ function getTotalPost() {
  * ユーザスクリプトが実行された際に呼び出される関数です
  */
 function necromancyInitialize() {
-    var lang_script = buildElement('script', {
-            src: 'http://assets.tumblr.com/languages/strings/en_US.js?838'});
-    var dsbd_script = buildElement('script', {
-            src: 'http://assets.tumblr.com/javascript/prototype_effects_application_tumblelog.js?838'});
-    document.head.appendChild(lang_script);
-    document.head.appendChild(dsbd_script);
+    var tumblr_scripts  = [
+        'http://assets.tumblr.com/languages/strings/en_US.js?838',
+        'http://assets.tumblr.com/javascript/jquery_with_plugins.js?55d600b2029041781b32956f270dc4a7',
+        'http://assets.tumblr.com/javascript/prototype_and_effects.js?6d9a669b8f64150cfcbe643e4596e1e9',
+        // 'http://assets.tumblr.com/javascript/application_tumblelog_jquery.js?0ce45b99ef61b02d5a4754c7c5aa36ff',
+        'http://assets.tumblr.com/javascript/application.js',
+        'http://assets.tumblr.com/javascript/tumblelog.js',
+        'http://assets.tumblr.com/javascript/spin.js',
+        'http://assets.tumblr.com/javascript/sortable.js',
+        'http://assets.tumblr.com/javascript/shadowybox.js',
+        'http://assets.tumblr.com/javascript/jquery.pano.js',
+        'http://assets.tumblr.com/javascript/jquery.application.js',
+    ];
+
 
     new Ajax('/dashboard', {
         method: 'GET',
@@ -1161,7 +1175,7 @@ function necromancyInitialize() {
             var elm_head = document.createElement('head');
             var elm_body = document.createElement('body');
 
-            document.documentElement.replaceChild(elm_head, document.head);
+            // document.documentElement.replaceChild(elm_head, document.head);
             document.documentElement.replaceChild(elm_body, document.body);
 
             elm_body.innerHTML = body;
@@ -1175,18 +1189,25 @@ function necromancyInitialize() {
             userscript_styles.concat(stylish_styles).map(function(node) {
                 elm_head.appendChild(node);
             });
+            document.head.innerHTML = elm_head.innerHTML;
 
-            var cmd = [
-                'start_observing_key_commands(1);',
-                // 'initialize_tabs();',
+            /* Tumblr のスクリプトを挿入します */
+            var tumblr_script_elements = tumblr_scripts.map(function(script_url) {
+                return buildElement('script', {
+                    src: script_url});
+            });
+
+            var myscript = [
+                'window.Tumblr.enable_dashboard_key_commands = true;',
+                'window.Tumblr.KeyCommands = new window.Tumblr.KeyCommandsConstructor();',
                 'window.next_page = location.pathname;',
                 'window.prev_json = window.new_json = null;',
                 'window.TOTAL_POST = null;',
-                'window.API_KEY = "', API_KEY, '";',
-                'window.LIKE_KEY = "', like_key, '";',
-                'window.PATH_PARSER = ', PATH_PARSER, ';',
-                'window.LOAD_SCROLL_OFFSET = ', LOAD_SCROLL_OFFSET, ';',
-                'window.PostBuilder = ', serialize(PostBuilder), ';',
+                'window.API_KEY = "' + (API_KEY) + '";',
+                'window.LIKE_KEY = "' + (like_key) + '";',
+                'window.PATH_PARSER = ' + (PATH_PARSER) + ';',
+                'window.LOAD_SCROLL_OFFSET = ' + (LOAD_SCROLL_OFFSET) + ';',
+                'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
                 cloneChildren,
                 escapeHtmlScript,
                 trimNodeEtc,
@@ -1203,18 +1224,68 @@ function necromancyInitialize() {
                 '(', getTotalPost, ')();',
                 'new PeriodicalExecuter(necromancyPaginator, 0.2);',
                 'new PeriodicalExecuter(necromancyObserver, 0.02);',
-                'void 0;'].join('');
+            ].join('\n');
 
-            execClient(cmd, 0);
+            var myscript_element = document.createElement('script');
+            myscript_element.innerHTML = myscript;
+
+            tumblr_script_elements.concat([myscript_element]).map(function(elm, index, array) {
+                elm.addEventListener('load', function() {
+                    if(array[index+1]) {
+                        document.body.appendChild(array[index+1]);
+                    }
+                });
+            });
+
+            document.body.appendChild(tumblr_script_elements[0]);
         }
     });
+}
+
+/**
+ * Tumblelog に Necromancy 用のリンクを貼り付けます
+ */
+function embedNecromancyLink() {
+    var link = document.createElement('div'),
+        url = 'http://www.tumblr.com/blog/' + (location.hostname),
+        a_style = [
+            "color: white;",
+            "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08);",
+            "text-decoration: none;",
+            'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif;',
+            "font-size: 12px;",
+            "font-weight: 600;",
+            "line-height: 18px;",
+        ].join('');
+
+    link.innerHTML = '<a href="' + (url) + '" style="' + (a_style) + '">Necromancy</a>';
+    link.style.cssText = [
+        "margin: 3px;",
+        "padding: 0 5px;",
+        "position: absolute;",
+        "top: 22px;",
+        "right: 0;",
+        "border: 1px solid rgba(0, 0, 0, 0.18);",
+        "border-radius: 2px;",
+        "background: rgba(0, 0, 0, 0.38);",
+        "font-size: 12px;",
+        "font-weight: 600;",
+        "line-height: 18px;",
+    ].join('');
+   
+    document.body.appendChild(link);
 }
 
 /**
  * ユーザスクリプトが呼び出されたさいに呼び出されるメイン関数です
  */
 function main() {
-    necromancyInitialize();
+    if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
+        necromancyInitialize();
+    }
+    else if (/^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
+        embedNecromancyLink();
+    }
 }
 
 /**
@@ -1223,9 +1294,10 @@ function main() {
  */
 function isExecPage() {
     if (PATH_PARSER.test(location) &&
-        /^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
-        /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
-            document.documentElement.innerHTML)) {
+        (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
+         /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
+            document.documentElement.innerHTML)) ||
+        /^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
         return true;
     }
     return false;
