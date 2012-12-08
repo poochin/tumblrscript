@@ -126,12 +126,11 @@ var embed_css = [
     "  position: absolute;",
     "  top: 0;",
     "  left: 0;",
-    "  min-width: 200px;",
-    "  max-width: 200px;",
     "  border-radius: 3px;",
     "  -webkit-box-shadow: 0 0 6px #000;",
     "  -moz-box-shadow: 0 0 6px #000;",
     "  box-shadow: 0 0 6px #000;",
+    "  opacity: 0.95;",
     "}",
     ".lite_dialog_sysbar { }",
     ".lite_dialog_sysbar:after {",
@@ -184,6 +183,11 @@ var embed_css = [
     "}",
     ".lite_dialog_body input[type='button']:focus {",
     "  font-weight: bold;",
+    "}",
+    /* Channel Dialog */
+    ".lite_dialog.channel_dialog {",
+    "    min-width: 300px;",
+    "    max-width: 300px;",
     "}",
     /* Shortcut Help */
     "#tornado_shortcuts_help {",
@@ -640,6 +644,7 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
                 document.querySelector('.lite_dialog_close').dispatchEvent(left_click);
             }
             else if (48 <= e.keyCode && e.keyCode <= 57) {
+                /* TODO: これは Lite Dialog が持つべき機能ではありません */
                 /* 48 == '0', 57 == '9' */
                 var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
                 var name = 'button' + number;
@@ -655,6 +660,11 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
             vr = viewportRect();
         elm.style.top = (vr.top + (vr.height / 2) - (elm.offsetHeight / 2)) + 'px';
         elm.style.left = (vr.left + (vr.width / 2) - (elm.offsetWidth / 2)) + 'px';
+    },
+    /**
+     * LiteDialog 内容物の大きさにサイズを合わせます
+     */
+    resize: function() {
     },
 };
 
@@ -732,6 +742,8 @@ var Tornado = {
         var title = ['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' ');
 
         var dialog = new LiteDialog(title);
+        dialog.dialog.className += ' channel_dialog';
+
         var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
     
         $$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
@@ -1242,9 +1254,18 @@ function showShortcutHelp() {
 
     var header_help = buildElement('p',
         {}, 
-        'Tumblr Tornado <span class="tornado_help">[?]</span>');
+        'Tumblr Tornado <span class="show_tornado_help">[?]</span>');
 
-    header_help.querySelector('span').addEventListener('click', function(e) {
+    header_help.querySelector('span.show_tornado_help').addEventListener('click', function(e) {
+        var help_dialog = new LiteDialog('Tumblr Tornado Help');
+        var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
+
+        dialog_body.innerHTML = '<table width="600"><tr><td>s-g</td><td>これはテスト表示です</td></tr></table>';
+        
+        help_dialog.centering();
+
+        
+
         var hides = document.querySelectorAll('#tornado_shortcuts_help .hide');
         hides = Array.prototype.slice.call(hides);
         hides.map(function(elm) {
