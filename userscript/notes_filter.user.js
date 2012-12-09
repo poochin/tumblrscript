@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Notes Filter
 // @match       http://www.tumblr.com/dashboard*
-// @version     1.0.2
+// @version     1.0.3
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -11,7 +11,18 @@
 // ==/UserScript==
 
 (function NotesFilter() {
-    var filter_value, filter_type, now_filtering;
+    var filter_value, filter_type, now_filtering, embed_css;
+
+    document.head.appendChild(document.createElement('style')).textContent = [
+        ".notesfilter_flagged {",
+        "   opacity: 0.5;",
+        "   max-height: 1em !important;",
+        "}",
+        ".notesfilter_flagged > .post_content,",
+        ".notesfilter_flagged > .footer_links {",
+        "   display: none !important;",
+        "}",
+    ].join('\n');
 
     boot();
 
@@ -33,7 +44,7 @@
              "<label><input type=\"radio\" name=\"notesfilter_type\" class=\"notesfilter_over\" checked>超</label>",
              "<label><input type=\"radio\" name=\"notesfilter_type\" class=\"notesfilter_less\">以下</label><br />",
              "<button class=\"notesfilter_enable\">発動する</button>",
-             "<button class=\"notesfilter_disable\" style=\"display: none;\">とめる</button>"].join(''));
+             "<button class=\"notesfilter_disable\" style=\"display: none;\">やめる</button>"].join(''));
 
         var text_value, radio_over, radio_less;
         var button_enable, button_disable;
@@ -65,6 +76,8 @@
             now_filtering = false;
             button_enable.style.display = 'inline';
             button_disable.style.display = 'none';
+
+            trimFilter();
         });
 
         document.body.querySelector('#right_column').appendChild(fieldset);
@@ -92,8 +105,15 @@
     function launchFilter() {
         Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
             if (filter(elm) == false) {
-                elm.parentNode.removeChild(elm);
+                // elm.parentNode.removeChild(elm);
+                elm.classList.add('notesfilter_flagged');
             }
+        });
+    }
+
+    function trimFilter() {
+        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
+            elm.classList.remove('notesfilter_flagged');
         });
     }
 
@@ -106,8 +126,8 @@
 
         elm = e.target;
         if (elm && elm.nodeType == 1 && filter(elm) == false) {
-            elm.parentNode.removeChild(elm);
-            e.preventDefault();
+            // elm.parentNode.removeChild(elm);
+            elm.classList.add('notesfilter_flagged');
         }
     }
 
