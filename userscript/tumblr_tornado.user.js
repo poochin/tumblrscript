@@ -189,6 +189,60 @@ var embed_css = [
     "    min-width: 300px;",
     "    max-width: 300px;",
     "}",
+    /* Help Dialog */
+    "#tornado_help_dialog {",
+    "    height: 80%;",
+    "    min-width: 700px;",
+    "}",
+    "#tornado_help_dialog .lite_dialog_body {",
+    "}",
+    "#tornado_help_dialog .tornado_help_list {",
+    "    margin: 0;",
+    "    padding: 0;",
+    "    position: absolute;",
+    "    top: 35px;",
+    "    right: 5px;",
+    "    bottom: 5px;",
+    "    left: 5px;",
+    "    overflow-y: scroll;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li {",
+    "    display: -webkit-box;",
+    "    display: -moz-box;",
+    "    width: 100%;",
+    "    border-bottom: 1px dashed #888;",
+    "    margin-top: 6px;",
+    "    margin-bottom: 6px;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li:last-child {",
+    "    border-bottom: none;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_title {",
+    "    width: 150px;",
+    "    font-weight: bold;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_key {",
+    "    width: 150px;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc {",
+    "    -webkit-box-flex: 1;",
+    "    -moz-box-flex: 1;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc p {",
+    "    font-size: 18px;",
+    "    margin: 0;",
+    "    padding: 0;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+    "    margin: 0;",
+    "    padding: 0;",
+    "    color: #888;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+    "    width: 200px;",
+    "    list-style: none;",
+    "    float: right;",
+    "}",
     /* Shortcut Help */
     "#tornado_shortcuts_help {",
     "  color: #abb;",
@@ -1250,7 +1304,7 @@ function showShortcutHelp() {
     var rightcolumn_help, header_help, helps;
 
     var rightcolumn_help = buildElement('div',
-        {class: 'tornado_rightcolumn_help'});
+        {id: 'tornado_rightcolumn_help'});
 
     var header_help = buildElement('p',
         {}, 
@@ -1260,17 +1314,63 @@ function showShortcutHelp() {
         var help_dialog = new LiteDialog('Tumblr Tornado Help');
         var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
 
-        dialog_body.innerHTML = '<table width="600"><tr><td>s-g</td><td>これはテスト表示です</td></tr></table>';
+        help_dialog.dialog.id = 'tornado_help_dialog';
+
+        var helps_list = buildElement('ul', {class: 'tornado_help_list'});
+
+        var help_header = buildElement('li', 
+                {},
+                ["<div class=\"tornado_short_title\">Title</div>",
+                 "<div class=\"tornado_short_key\">Key</div>",
+                 "<div class=\"tornado_short_desc\">Description</div>"].join(''));
+        help_header.style.cssText = "text-align: center;";
+
+        helps_list.appendChild(help_header);
+
+        Tornado.shortcuts.map(function(shortcut, i) {
+            var li = buildElement('li'),
+                title_box = buildElement('div', {class: 'tornado_short_title'}),
+                key_box = buildElement('div', {class: 'tornado_short_key'}),
+                desc_box = buildElement('div', {class: 'tornado_short_desc'});
+
+            var key = [], desc, options;
+
+            title_box.innerHTML = (shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title"));
+
+            if (shortcut.follows) {
+                key = key.concat(shortcut.follows);
+            }
+            key.push((shortcut.ctrl  ? 'Ctrl+'  : '') +
+                     (shortcut.alt   ? 'Alt+'   : '') +
+                     (shortcut.shift ? 'Shift+' : '') +
+                     shortcut.match);
+
+            key_box.innerHTML = key.join(', ');
+
+            desc = buildElement('p', {}, shortcut.desc || shortcut.func.name || shortcut.func);
+
+            desc_box.appendChild(desc);
+
+            options = buildElement('ul', {class: 'tornado_help_options'});
+            if (shortcut.has_selector) {
+                options.appendChild(buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
+            }
+            if (shortcut.url) {
+                options.appendChild(buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
+            }
+
+            desc_box.appendChild(options);
+
+            li.appendChild(title_box);
+            li.appendChild(key_box);
+            li.appendChild(desc_box);
+
+            helps_list.appendChild(li);
+        });
+
+        dialog_body.appendChild(helps_list);
         
         help_dialog.centering();
-
-        
-
-        var hides = document.querySelectorAll('#tornado_shortcuts_help .hide');
-        hides = Array.prototype.slice.call(hides);
-        hides.map(function(elm) {
-            elm.className = '';
-        });
     });
 
     rightcolumn_help.appendChild(header_help);
