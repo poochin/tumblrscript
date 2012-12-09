@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name        I've seen it in tumblr.
 // @match       http://www.tumblr.com/dashboard*
-// @version     1.0.0
+// @match       http://www.tumblr.com/tagged*
+// @version     1.0.1
 // @description 一度見たポストを表示しないようにさせます
 // 
 // @author      poochin
@@ -122,7 +123,8 @@
     }
     
     function isExecPage() {
-        return /^https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/.test(location);
+        return /^https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/.test(location) ||
+               /^https?:\/\/www\.tumblr\.com\/tagged(\/.*)?/.test(location);
     }
     
     function boot() {
