@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
-// @version     1.1.12
+// @version     1.1.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/dashboard/*
@@ -12,7 +12,7 @@
 // 
 // @author      poochin
 // @license     MIT
-// @updated     2012-07-04
+// @updated     2012-12-09
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -126,12 +126,11 @@ var embed_css = [
     "  position: absolute;",
     "  top: 0;",
     "  left: 0;",
-    "  min-width: 200px;",
-    "  max-width: 200px;",
     "  border-radius: 3px;",
     "  -webkit-box-shadow: 0 0 6px #000;",
     "  -moz-box-shadow: 0 0 6px #000;",
     "  box-shadow: 0 0 6px #000;",
+    "  opacity: 0.95;",
     "}",
     ".lite_dialog_sysbar { }",
     ".lite_dialog_sysbar:after {",
@@ -184,6 +183,65 @@ var embed_css = [
     "}",
     ".lite_dialog_body input[type='button']:focus {",
     "  font-weight: bold;",
+    "}",
+    /* Channel Dialog */
+    ".lite_dialog.channel_dialog {",
+    "    min-width: 300px;",
+    "    max-width: 300px;",
+    "}",
+    /* Help Dialog */
+    "#tornado_help_dialog {",
+    "    height: 80%;",
+    "    min-width: 700px;",
+    "}",
+    "#tornado_help_dialog .lite_dialog_body {",
+    "}",
+    "#tornado_help_dialog .tornado_help_list {",
+    "    margin: 0;",
+    "    padding: 0;",
+    "    position: absolute;",
+    "    top: 35px;",
+    "    right: 5px;",
+    "    bottom: 5px;",
+    "    left: 5px;",
+    "    overflow-y: scroll;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li {",
+    "    display: -webkit-box;",
+    "    display: -moz-box;",
+    "    width: 100%;",
+    "    border-bottom: 1px dashed #888;",
+    "    margin-top: 6px;",
+    "    margin-bottom: 6px;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li:last-child {",
+    "    border-bottom: none;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_title {",
+    "    width: 150px;",
+    "    font-weight: bold;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_key {",
+    "    width: 150px;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc {",
+    "    -webkit-box-flex: 1;",
+    "    -moz-box-flex: 1;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc p {",
+    "    font-size: 18px;",
+    "    margin: 0;",
+    "    padding: 0;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+    "    margin: 0;",
+    "    padding: 0;",
+    "    color: #888;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+    "    width: 200px;",
+    "    list-style: none;",
+    "    float: right;",
     "}",
     /* Shortcut Help */
     "#tornado_shortcuts_help {",
@@ -335,6 +393,21 @@ function execClient(code, lazy) {
     else {
         setTimeout(function() {location.assign('javascript:' + code + '; void 0;')}, lazy);
     }
+}
+
+/**
+ * クライアント領域で Script を実行します
+ * @param {String} code 実行したいコード
+ */
+function execScript(code) {
+    var script = document.createElement('script');
+    script.setAttribute('type', 'text/javascript');
+    script.innerHTML = code;
+    script.addEventListener('onload', function(e) {
+        with(e) {
+            target.parentNode.removeChild(target);
+        }
+    });
 }
 
 /**
@@ -625,6 +698,7 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
                 document.querySelector('.lite_dialog_close').dispatchEvent(left_click);
             }
             else if (48 <= e.keyCode && e.keyCode <= 57) {
+                /* TODO: これは Lite Dialog が持つべき機能ではありません */
                 /* 48 == '0', 57 == '9' */
                 var number = parseInt(e.keyCode) - '0'.charCodeAt(0);
                 var name = 'button' + number;
@@ -640,6 +714,11 @@ LiteDialog.prototype = /** @lends LiteDialog.prototype */ {
             vr = viewportRect();
         elm.style.top = (vr.top + (vr.height / 2) - (elm.offsetHeight / 2)) + 'px';
         elm.style.left = (vr.left + (vr.width / 2) - (elm.offsetWidth / 2)) + 'px';
+    },
+    /**
+     * LiteDialog 内容物の大きさにサイズを合わせます
+     */
+    resize: function() {
     },
 };
 
@@ -717,6 +796,8 @@ var Tornado = {
         var title = ['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' ');
 
         var dialog = new LiteDialog(title);
+        dialog.dialog.className += ' channel_dialog';
+
         var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
     
         $$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
@@ -1200,7 +1281,7 @@ function enhistory() {
 
 /**
  * 次ページパスを訂正すべき場合は正常な次ページパスを返します
- * @return 次ページパスか null
+ * @return 次ページ path か null
  */
 function next_pageCorrection() {
     var m_path = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/);
@@ -1220,42 +1301,97 @@ function next_pageCorrection() {
  * 右カラムにヘルプを表示します
  */
 function showShortcutHelp() {
-    var help = document.createElement('dl');
-    help.id = 'tornado_shortcuts_help';
+    var rightcolumn_help, header_help, helps;
 
-    var normal_shortcuts = document.createElement('dt');
-    normal_shortcuts.id = 'tornado_normal_shortcuts_help';
-    normal_shortcuts.innerHTML = [
-        'Tumblr Tornado <span class="more">[もっと見る]</span>',
-        '<span class="hide">* s-はShift同時押し',
-        '* 小文字は連続入力</span>'].join('<br />');
-    help.appendChild(normal_shortcuts);
+    var rightcolumn_help = buildElement('div',
+        {id: 'tornado_rightcolumn_help'});
 
-    normal_shortcuts.querySelector('span').addEventListener('click', function(e) {
-        var hides = document.querySelectorAll('#tornado_shortcuts_help .hide');
-        hides = Array.prototype.slice.call(hides);
-        hides.map(function(elm) {
-            elm.className = '';
+    var header_help = buildElement('p',
+        {}, 
+        'Tumblr Tornado <span class="show_tornado_help">[?]</span>');
+
+    header_help.querySelector('span.show_tornado_help').addEventListener('click', function(e) {
+        var help_dialog = new LiteDialog('Tumblr Tornado Help');
+        var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
+
+        help_dialog.dialog.id = 'tornado_help_dialog';
+
+        var helps_list = buildElement('ul', {class: 'tornado_help_list'});
+
+        var help_header = buildElement('li', 
+                {},
+                ["<div class=\"tornado_short_title\">Title</div>",
+                 "<div class=\"tornado_short_key\">Key</div>",
+                 "<div class=\"tornado_short_desc\">Description</div>"].join(''));
+        help_header.style.cssText = "text-align: center;";
+
+        helps_list.appendChild(help_header);
+
+        Tornado.shortcuts.map(function(shortcut, i) {
+            var li = buildElement('li'),
+                title_box = buildElement('div', {class: 'tornado_short_title'}),
+                key_box = buildElement('div', {class: 'tornado_short_key'}),
+                desc_box = buildElement('div', {class: 'tornado_short_desc'});
+
+            var key = [], desc, options;
+
+            title_box.innerHTML = (shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title"));
+
+            if (shortcut.follows) {
+                key = key.concat(shortcut.follows);
+            }
+            key.push((shortcut.ctrl  ? 'Ctrl+'  : '') +
+                     (shortcut.alt   ? 'Alt+'   : '') +
+                     (shortcut.shift ? 'Shift+' : '') +
+                     shortcut.match);
+
+            key_box.innerHTML = key.join(', ');
+
+            desc = buildElement('p', {}, shortcut.desc || shortcut.func.name || shortcut.func);
+
+            desc_box.appendChild(desc);
+
+            options = buildElement('ul', {class: 'tornado_help_options'});
+            if (shortcut.has_selector) {
+                options.appendChild(buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
+            }
+            if (shortcut.url) {
+                options.appendChild(buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
+            }
+
+            desc_box.appendChild(options);
+
+            li.appendChild(title_box);
+            li.appendChild(key_box);
+            li.appendChild(desc_box);
+
+            helps_list.appendChild(li);
         });
-        this.parentNode.removeChild(this);
+
+        dialog_body.appendChild(helps_list);
+        
+        help_dialog.centering();
     });
 
-    for (var i = 0; i < Tornado.shortcuts.length; ++i) {
-        var shortcut = Tornado.shortcuts[i];
-        var dd = document.createElement('dd');
-        if (!shortcut.usehelp) {
-            continue;
-        }
-        if (shortcut.usehelp == 'hide') {
-            dd.className = 'hide';
-        }
-        dd.innerHTML = buildShortcutLineHelp(shortcut);
-        help.appendChild(dd);
-    }
+    rightcolumn_help.appendChild(header_help);
 
-    var right_column = document.querySelector('#right_column');
-    if (right_column) {
-        right_column.appendChild(help);
+    var helps = buildElement('ul',
+        {id: 'tornado_shortcuts_help'});
+
+    Tornado.shortcuts.map(function(shortcut, i) {
+        var className = (shortcut.usehelp == 'hide' && shortcut.usehelp);
+        var help = buildElement('li', 
+            {class: className},
+            buildShortcutLineHelp(shortcut));
+        helps.appendChild(help);
+    });
+
+    rightcolumn_help.appendChild(helps);
+
+    with({right_column: document.querySelector('#right_column')}) {
+        if (right_column) {
+            right_column.appendChild(rightcolumn_help);
+        }
     }
 }
 
@@ -1281,6 +1417,7 @@ function main() {
     code += jsonpRootInfo;
     code += next_pageCorrection;
     if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
+        /* Queue ページで J/K キーが使用できない為、使えるようにします */
         code += 'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();';
     }
     var next_page = next_pageCorrection();
@@ -1290,7 +1427,7 @@ function main() {
 
     execClient(code, 1000);
 
-    /* URL も重み付けを行う */
+    /* FIXME: URL も重み付けを行う */
     Tornado.shortcuts.sort(function(a, b) {
         return (b.follows.length - a.follows.length) ||
                (b.has_selector.length - a.has_selector.length);
