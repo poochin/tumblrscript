@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name        Notes Filter
 // @match       http://www.tumblr.com/dashboard*
+// @match       http://www.tumblr.com/tagged*
 // @version     1.0.3
 // @description Dashboard フィルター(Notes Filter)
 //
@@ -141,7 +142,9 @@
     }
 
     function isExecPage() {
-        return /^https?:\/\/www\.tumblr\.com\/dashboard\/?/.test(location);
+        return (/^https?:\/\/www\.tumblr\.com\/dashboard\/?/.test(location) ||
+                /^https?:\/\/www\.tumblr\.com\/tagged\/?/.test(location));
+
     }
 
     function boot() {
