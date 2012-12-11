@@ -2,6 +2,7 @@
 // @name        I've seen it in tumblr.
 // @match       http://www.tumblr.com/dashboard*
 // @match       http://www.tumblr.com/tagged*
+// @match       http://www.tumblr.com/show*
 // @version     1.0.1
 // @description 一度見たポストを表示しないようにさせます
 // 
@@ -124,7 +125,8 @@
     
     function isExecPage() {
         return /^https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/.test(location) ||
-               /^https?:\/\/www\.tumblr\.com\/tagged(\/.*)?/.test(location);
+               /^https?:\/\/www\.tumblr\.com\/tagged(\/.*)?/.test(location) ||
+               /^https?:\/\/www\.tumblr\.com\/show(\/.*)?/.test(location);
     }
     
     function boot() {
