@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
+// @namespace   https://github.com/poochin
 // @match       http://www.tumblr.com/blog/*
 // @match       http://*.tumblr.com/
 // @version     1.1.6
@@ -1263,8 +1264,8 @@ function embedNecromancyLink() {
         "margin: 3px;",
         "padding: 0 5px;",
         "position: absolute;",
-        "top: 22px;",
-        "right: 0;",
+        "top: 0;",
+        "right: 330px;",
         "border: 1px solid rgba(0, 0, 0, 0.18);",
         "border-radius: 2px;",
         "background: rgba(0, 0, 0, 0.38);",
