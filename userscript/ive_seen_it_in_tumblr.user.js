@@ -4,7 +4,7 @@
 // @match       http://www.tumblr.com/dashboard*
 // @match       http://www.tumblr.com/tagged*
 // @match       http://www.tumblr.com/show*
-// @version     1.0.1
+// @version     1.0.2
 // @description 一度見たポストを表示しないようにさせます
 // 
 // @author      poochin
@@ -22,6 +22,25 @@
 
     boot();
     
+    /**
+     * Node を作成し各種データを同時にセットします
+     * @param {String} tag_name タグ名.
+     * @param {Object} propaties 辞書型のデータ.
+     * @param {String} HTML 文字列.
+     * @return {Object} 作成した Node を返します.
+     */
+    /* buildElement */
+    function buildElement(tag_name, propaties, innerHTML) {
+        var elm = document.createElement(tag_name);
+    
+        for (var key in (propaties || {})) {
+            elm.setAttribute(key, propaties[key]);
+        }
+    
+        elm.innerHTML = innerHTML || '';
+        return elm;
+    }
+
     function postAppended(post) {
         var reblog_button, reblog_key;
     
@@ -59,27 +78,28 @@
     }
     
     function command_field() {
-        var base, right_column, itintumblr, toggle_messages;
+        var base, right_column, itintumblr, toggle_messages, fieldset_html, fieldset;
     
         toggle_messages = ['toEnable', 'toDisable'];
-    
-        base = [
-            '<fieldset id="itintumblr" style="border-radius: 6px;">',
+
+        fieldset_html = [
             '<legend>I\'ve seen it in tumblr.</legend>',
             '<button class="enable_toggle_button"></button>',
             '<button class="check">Check</button>',
             '<br />',
             '<button class="save_button">Save</button>',
-            '<button class="clear_button">Clear</button>',
-            '</fieldset>'].join('');
-    
+            '<button class="clear_button">Clear</button>'].join('');
+
+        fieldset = buildElement('fieldset',
+            {id: 'itintumblr',
+             style: 'border-radius: 6px;'},
+            fieldset_html);
+ 
         right_column = document.querySelector('#right_column');
-        right_column.innerHTML += base;
+        right_column.appendChild(fieldset);
     
-        itintumblr = right_column.querySelector('#itintumblr');
-    
-        itintumblr.querySelector('.enable_toggle_button').innerText = toggle_messages[enable + 0];
-        itintumblr.querySelector('.enable_toggle_button').addEventListener('click', function(e) {
+        fieldset.querySelector('.enable_toggle_button').innerText = toggle_messages[enable + 0];
+        fieldset.querySelector('.enable_toggle_button').addEventListener('click', function(e) {
             enable = !enable;
             localStorage.setItem('itintumblr_enable', enable);
             e.target.innerText = toggle_messages[enable + 0];
@@ -89,7 +109,7 @@
             }
         }, false);
     
-        itintumblr.querySelector('.check').addEventListener('click', function(e) {
+        fieldset.querySelector('.check').addEventListener('click', function(e) {
             var k, cnt;
     
             cnt = 0;
@@ -100,13 +120,13 @@
             alert('閲覧済みのポスト数: ' + cnt + '個');
         }, false);
     
-        itintumblr.querySelector('.save_button').addEventListener('click', function(e) {
+        fieldset.querySelector('.save_button').addEventListener('click', function(e) {
             if (reblog_keys !== null) {
                 localStorage.setItem('itintumblr_reblog_keys', JSON.stringify(reblog_keys));
             }
         }, false);
     
-        itintumblr.querySelector('.clear_button').addEventListener('click', function(e) {
+        fieldset.querySelector('.clear_button').addEventListener('click', function(e) {
             if (confirm('記憶済みの post をクリアしますか？')) {
                 localStorage.removeItem('itintumblr_reblog_keys');
                 reblog_keys = {};
