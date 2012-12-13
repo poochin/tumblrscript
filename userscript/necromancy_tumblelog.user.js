@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @namespace   https://github.com/poochin
-// @match       http://www.tumblr.com/blog/*
-// @match       http://*.tumblr.com/
-// @version     1.1.6
+// @include     http://www.tumblr.com/blog/*
+// @include     http://*.tumblr.com/
+// @version     1.1.7
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin

@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        Notes Filter
 // @namespace   https://github.com/poochin
-// @match       http://www.tumblr.com/dashboard*
-// @match       http://www.tumblr.com/tagged*
-// @version     1.0.3
+// @include     http://www.tumblr.com/dashboard*
+// @include     http://www.tumblr.com/tagged*
+// @version     1.0.4
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin

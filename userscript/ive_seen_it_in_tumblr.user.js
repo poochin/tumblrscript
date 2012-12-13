@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name        I've seen it in tumblr.
 // @namespace   https://github.com/poochin
-// @match       http://www.tumblr.com/dashboard*
-// @match       http://www.tumblr.com/tagged*
-// @match       http://www.tumblr.com/show*
-// @version     1.0.2
+// @include     http://www.tumblr.com/dashboard*
+// @include     http://www.tumblr.com/tagged*
+// @include     http://www.tumblr.com/show*
+// @version     1.0.3
 // @description 一度見たポストを表示しないようにさせます
 // 
 // @author      poochin

@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name        Tumblr Tornado for RAC7889
 // @namespace   https://github.com/poochin
-// @version     1.1.13
+// @version     1.1.14
 // @description Tumblr にショートカットを追加するユーザスクリプト
-// @match       http://www.tumblr.com/dashboard
-// @match       http://www.tumblr.com/dashboard/*
-// @match       http://www.tumblr.com/likes
-// @match       http://www.tumblr.com/likes/*
-// @match       http://www.tumblr.com/blog/*
-// @match       http://www.tumblr.com/tagged/*
-// @match       http://www.tumblr.com/show/*
+// @include     http://www.tumblr.com/dashboard
+// @include     http://www.tumblr.com/dashboard/*
+// @include     http://www.tumblr.com/likes
+// @include     http://www.tumblr.com/likes/*
+// @include     http://www.tumblr.com/blog/*
+// @include     http://www.tumblr.com/tagged/*
+// @include     http://www.tumblr.com/show/*
 // 
 // @author      poochin
 // @license     MIT
