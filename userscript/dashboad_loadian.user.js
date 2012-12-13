@@ -2,7 +2,7 @@
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
 // @match       http://www.tumblr.com/dashboard*
-// @version     1.0.2
+// @version     1.0.3
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -20,6 +20,25 @@
     };
 
     boot();
+
+    /**
+     * Node を作成し各種データを同時にセットします
+     * @param {String} tag_name タグ名.
+     * @param {Object} propaties 辞書型のデータ.
+     * @param {String} HTML 文字列.
+     * @return {Object} 作成した Node を返します.
+     */
+    /* buildElement */
+    function buildElement(tag_name, propaties, innerHTML) {
+        var elm = document.createElement(tag_name);
+    
+        for (var key in (propaties || {})) {
+            elm.setAttribute(key, propaties[key]);
+        }
+    
+        elm.innerHTML = innerHTML || '';
+        return elm;
+    }
 
     /**
      * クライアントエリアのスクロール位置、画面サイズを取得します
@@ -59,21 +78,23 @@
      * 読み込みを開始するスクロール位置をカスタマイズするフォームを埋め込みます。
      */
     function embedCustomForm() {
-        var right_column, form;
+        var right_column, form_html;
 
-        form = [
-            '<fieldset id="dashboard_loadian_custom_form" style="border-radius: 6px;">',
+        form_html = [
             '<legend>Dashboard Loadian</legend>',
             'Offset(px):',
             '<input size="3" type="text" name="offset" value="10000"/>',
-            '<button>Update</button>',
-            '</fieldset>'].join('');
+            '<button class="update_button">Update</button>'].join('');
+
+        loadian.form = buildElement('fieldset',
+            {id: 'dashboard_loadian_custom_form;',
+             style: 'border-radius: 6px'},
+            form_html);
 
         right_column = document.querySelector('#right_column');
-        right_column.innerHTML += form;
+        right_column.appendChild(loadian.form);
 
-        loadian.form = right_column.querySelector('#dashboard_loadian_custom_form');
-        loadian.form.querySelector('button').addEventListener('click', function(e){
+        loadian.form.querySelector('button.update_button').addEventListener('click', function(e){
             loadian.OFFSET = parseInt(loadian.form.querySelector('[name=offset]').value);
         }, false);
     }
