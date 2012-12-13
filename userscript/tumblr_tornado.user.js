@@ -255,6 +255,11 @@ var embed_css = [
     "#tornado_rightcolumn_help > p {",
     "  margin: 0;",
     "}",
+    "#tornado_rightcolumn_help > p .show_tornado_help {",
+    "  font-size: 12px;",
+    "  color: #89BCF0;",
+    "  cursor: pointer;",
+    "}",
     "#tornado_rightcolumn_help > ul {",
     "  margin: 0;",
     "  padding: 0;",
@@ -1322,7 +1327,7 @@ function showShortcutHelp() {
 
     var header_help = buildElement('p',
         {}, 
-        'Tumblr Tornado <span class="show_tornado_help">[?]</span>');
+        'Tumblr Tornado <span class="show_tornado_help">[ ? ]</span>');
 
     header_help.querySelector('span.show_tornado_help').addEventListener('click', function(e) {
         var help_dialog = new LiteDialog('Tumblr Tornado Help');
