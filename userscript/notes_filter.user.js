@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Notes Filter
+// @namespace   https://github.com/poochin
 // @match       http://www.tumblr.com/dashboard*
 // @match       http://www.tumblr.com/tagged*
 // @version     1.0.3

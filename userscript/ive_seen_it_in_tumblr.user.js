@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        I've seen it in tumblr.
+// @namespace   https://github.com/poochin
 // @match       http://www.tumblr.com/dashboard*
 // @match       http://www.tumblr.com/tagged*
 // @match       http://www.tumblr.com/show*

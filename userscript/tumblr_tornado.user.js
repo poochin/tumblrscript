@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Tumblr Tornado
+// @namespace   https://github.com/poochin
 // @version     1.1.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard

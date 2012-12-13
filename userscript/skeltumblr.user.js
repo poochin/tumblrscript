@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name        Skeltumblr
+// @namespace   https://github.com/poochin
 // @version     1.0.0
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @match       http://www.tumblr.com/dashboard
