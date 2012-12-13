@@ -265,6 +265,9 @@ var embed_css = [
     "  padding: 0;",
     "  list-style: none;",
     "}",
+    "#tornado_rightcolumn_help > ul li:nth-of-type(4n) {",
+    "  margin-bottom: 5px;",
+    "}",
     "#tornado_shortcuts_help {",
     "  color: #abb;",
     "  font-size: 12px;",
@@ -1234,17 +1237,17 @@ Tornado.shortcuts = /** @lends Tornado */ [
 
     customkey('t', 'reblog', {title: 'Reblog', desc: '通常のリブログを行います'}),
     customkey('h', 'fast_reblog', {title: 'fast Reblog', desc: '高速リブログを行います'}),
-    customkey('d', 'draft', {title: 'save as Draft', desc: '下書きへ送ります'}),
-    customkey('q', 'queue', {title: 'push to Queue', desc: 'キューへ送ります'}),
-    customkey('p', 'private', {title: 'Private reblog', desc: 'プライベートなリブログを行います'}),
+    customkey('d', 'draft', {title: 'Draft', desc: '下書きへ送ります'}),
+    customkey('q', 'queue', {title: 'Queue', desc: 'キューへ送ります'}),
+    customkey('p', 'private', {title: 'Private', desc: 'プライベートなリブログを行います'}),
 
-    customkey('t', 'reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
-    customkey('d', 'draftToChannel', {follows: ['g'], desc: 'channelへ下書き'}),
-    customkey('q', 'queueToChannel', {follows: ['g'], desc: 'channelのキューへ送る'}),
-    customkey('p', 'privateToChannel', {follows: ['g'], desc: 'channelのprivateでリブログ'}),
+    customkey('t', 'reblogToChannel', {title: 'チャンネル Reblog', follows: ['g'], desc: 'channelへリブログ'}),
+    customkey('d', 'draftToChannel', {title: 'チャンネル Draft', follows: ['g'], desc: 'channelへ下書き'}),
+    customkey('q', 'queueToChannel', {title: 'チャンネル Queue', follows: ['g'], desc: 'channelのキューへ送る'}),
+    customkey('p', 'privateToChannel', {title: 'チャンネル Private', follows: ['g'], desc: 'channelのprivateでリブログ'}),
 
     customkey('i', 'scaleImage', {title: 'photo, video を開閉', desc: '画像や動画ポストを拡縮、開閉します'}),
-    customkey('m', 'rootInfo', {title: 'get Root user name', desc: 'Root 投稿者情報を取得します'}),
+    customkey('m', 'rootInfo', {title: 'Root 投稿者情報を取得', desc: 'Root 投稿者情報を取得します'}),
     customkey('v', 'viewPostPageInBackground', {title: 'ポストへ飛ぶ', usehelp: 'hide'}),
 
     customkey('c', 'cleanPosts', {title: 'ここより上のポストを空白', usehelp: 'hide', desc: '現在より上のポストを空の状態にします'}),
@@ -1364,9 +1367,10 @@ function showShortcutHelp() {
         helps_list.appendChild(help_header);
 
         Tornado._shortcuts.map(function(shortcut, i) {
+            /* TODO: title と key を一つの要素に納めます */
             var li = buildElement('li'),
                 title_box = buildElement('div', {class: 'tornado_short_title'}),
-                key_box = buildElement('div', {class: 'tornado_short_key'}),
+                key_box = buildElement('div', {class: 'tornado_short_key', style: 'text-align: center;'}),
                 desc_box = buildElement('div', {class: 'tornado_short_desc'});
 
             var key = [], desc, options;
@@ -1415,6 +1419,9 @@ function showShortcutHelp() {
         {id: 'tornado_shortcuts_help'});
 
     Tornado.shortcuts.map(function(shortcut, i) {
+        if (shortcut.usehelp === false) {
+            return;
+        }
         var className = (shortcut.usehelp == 'hide' && shortcut.usehelp);
         var help = buildElement('li', 
             {class: className},
