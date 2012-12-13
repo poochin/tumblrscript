@@ -470,7 +470,7 @@ function customkey(match, func, options) {
     return {
         match: match,
         func: func,
-        title: title || func.name || func,
+        title: options.title || func.name || func,
         follows: options.follows || [],
         has_selector: options.has_selector || '',
         url: options.url || null,
@@ -501,9 +501,12 @@ function buildShortcutLineHelp(shortcut) {
         '<code>',
         key,
         '</code>',
+        (shortcut.title || shortcut.desc || shortcut.func.name || shortcut.func)].join('');
+/*
         ((typeof shortcut == 'string')
             ? (shortcut)
             : (shortcut.desc || shortcut.func))].join('');
+*/
 }
 
 /**
@@ -918,7 +921,7 @@ var Tornado = {
             }
             else if (shortcut.has_selector &&
                      post &&
-                     post.querySelector(shortcut.has_selector) === false) {
+                     post.querySelector(shortcut.has_selector) === null) {
                 return false;
             }
             else if (!match.cmp(Tornado.key_follows.slice(-(match.length)))) {
@@ -1221,16 +1224,16 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('j', 'default', {title: 'Next', desc: '次ポストへ移動'}),
     customkey('j', 'halfdown', {title: '下へ半スクロール', shift: true, usehelp: 'hide', desc: '下へ半スクロールします'}),
 
-    customkey('k', 'default', {title: 'Previous', desc: '前ポストへ移動'}),
+    customkey('k', 'default', {title: 'Prev', desc: '前ポストへ移動'}),
     customkey('k', 'halfup', {title: '上へ半スクロール', shift: true, usehelp: 'hide', desc: '上へ半スクロールします'}),
 
     customkey('l', 'default', {title: 'Like', desc: 'Like'}),
 
-    customkey('g', 'goTop', {title: 'Go top', follows: ['g'], usehelp: 'hide', desc: '一番上へスクロールします'}),
-    customkey('g', 'goBottom', {title: 'Go bottom', shift: true, usehelp: 'hide', desc: '一番下へスクロールします'}),
+    customkey('g', 'goTop', {title: '一番上へ', follows: ['g'], usehelp: 'hide', desc: '一番上へスクロールします'}),
+    customkey('g', 'goBottom', {title: '一番下へ', shift: true, usehelp: 'hide', desc: '一番下へスクロールします'}),
 
     customkey('t', 'reblog', {title: 'Reblog', desc: '通常のリブログを行います'}),
-    customkey('h', 'fast_reblog', {title: 'Fast-reblog', desc: '高速リブログを行います'}),
+    customkey('h', 'fast_reblog', {title: 'fast Reblog', desc: '高速リブログを行います'}),
     customkey('d', 'draft', {title: 'save as Draft', desc: '下書きへ送ります'}),
     customkey('q', 'queue', {title: 'push to Queue', desc: 'キューへ送ります'}),
     customkey('p', 'private', {title: 'Private reblog', desc: 'プライベートなリブログを行います'}),
@@ -1257,6 +1260,8 @@ Tornado.shortcuts = /** @lends Tornado */ [
     customkey('p', 'publish', {title: '自ポストを公開', desc: 'Drafts か Queue のポストを公開します', has_selector: 'form[id^=publish]', usehelp: 'hide'}),
     customkey('q', 'enqueue', {title: '下書きをキューに', desc: 'Drafts を Queue へ納めます', has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
+
+Tornado._shortcuts = Tornado.shortcuts.slice(); /* copy for Help Dialog */
 
 /**
  * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
@@ -1358,7 +1363,7 @@ function showShortcutHelp() {
 
         helps_list.appendChild(help_header);
 
-        Tornado.shortcuts.map(function(shortcut, i) {
+        Tornado._shortcuts.map(function(shortcut, i) {
             var li = buildElement('li'),
                 title_box = buildElement('div', {class: 'tornado_short_title'}),
                 key_box = buildElement('div', {class: 'tornado_short_key'}),
