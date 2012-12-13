@@ -472,7 +472,7 @@ function customkey(match, func, options) {
         func: func,
         follows: options.follows || [],
         has_selector: options.has_selector || '',
-        url: options.url || /.*/,
+        url: options.url || null,
         shift: options.shift || false,
         ctrl: options.ctrl || false,
         alt: options.alt || false,
@@ -894,26 +894,37 @@ var Tornado = {
             console.info('Post not found');
         }
 
-        Tornado.shortcuts.every(function(shortcut) {
+        Tornado.shortcuts.some(function(shortcut) {
+            /*
+             優先順位
+             1. URL マッチ
+             2, 所有セレクタ
+             3, 前項入力キー
+             4. Ctrl, Alt, Shift 組み合わせキー
+            */
             var match = shortcut.follows.concat(shortcut.shift
                 ? shortcut.match.toUpperCase()
                 : shortcut.match.toLowerCase());
 
-            if (!shortcut.url.test(location) || 
-                e.shiftKey != shortcut.shift ||
-                e.ctrlKey != shortcut.ctrl ||
-                e.altKey != shortcut.alt) {
-                return true;
+            if (shortcut.url !== null &&
+                shortcut.url.test(location) === false) {
+                return false;
+            }
+            else if (e.shiftKey != shortcut.shift ||
+                     e.ctrlKey  != shortcut.ctrl ||
+                     e.altKey   != shortcut.alt) {
+                return false;
             }
             else if (shortcut.has_selector &&
-                post &&
-                !post.querySelector(shortcut.has_selector)) {
-                return true;
+                     post &&
+                     post.querySelector(shortcut.has_selector) === false) {
+                return false;
             }
             else if (!match.cmp(Tornado.key_follows.slice(-(match.length)))) {
-                return true;
+                return false;
             }
 
+            /* FIXME: 文字列によって関数を推測する機能は廃止します */
             if (typeof shortcut.func == 'string') {
                 Tornado.commands[shortcut.func](post);
             }
@@ -921,7 +932,7 @@ var Tornado = {
                 shortcut.func(post);
             }
             Tornado.key_follows = [];
-            return false;
+            return true;
         });
     },
 };
