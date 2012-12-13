@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.1.14
+// @version     1.1.15
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard/*
@@ -131,7 +131,7 @@ var embed_css = [
     "  -webkit-box-shadow: 0 0 6px #000;",
     "  -moz-box-shadow: 0 0 6px #000;",
     "  box-shadow: 0 0 6px #000;",
-    "  opacity: 0.95;",
+    "  opacity: 0.98;",
     "}",
     ".lite_dialog_sysbar { }",
     ".lite_dialog_sysbar:after {",
@@ -244,7 +244,22 @@ var embed_css = [
     "    list-style: none;",
     "    float: right;",
     "}",
-    /* Shortcut Help */
+    /* Right column Help */
+    "#tornado_rightcolumn_help {",
+    // "  background-color: #344f68;",
+    "  margin: 3px;",
+    "  padding: 5px;",
+    "  box-shadow: 0 0 3px inset;",
+    "  border-radius: 3px;",
+    "}",
+    "#tornado_rightcolumn_help > p {",
+    "  margin: 0;",
+    "}",
+    "#tornado_rightcolumn_help > ul {",
+    "  margin: 0;",
+    "  padding: 0;",
+    "  list-style: none;",
+    "}",
     "#tornado_shortcuts_help {",
     "  color: #abb;",
     "  font-size: 12px;",
@@ -272,11 +287,9 @@ var embed_css = [
     "  height: 1.2em;",
     "}",
     "#tornado_shortcuts_help code {",
-    "  background: #1C3752;",
     "}",
     "#tornado_shortcuts_help code:after {",
     "  content: ': ';",
-    "  background: #2C4762;",
     "}",
     /* Clean Posts */
     ".empty_post {",
