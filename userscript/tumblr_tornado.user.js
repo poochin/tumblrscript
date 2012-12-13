@@ -470,6 +470,7 @@ function customkey(match, func, options) {
     return {
         match: match,
         func: func,
+        title: title || func.name || func,
         follows: options.follows || [],
         has_selector: options.has_selector || '',
         url: options.url || null,
@@ -1217,44 +1218,44 @@ Tornado.commands = {
 };
 
 Tornado.shortcuts = /** @lends Tornado */ [
-    customkey('j', 'default', {desc: '次ポストへ移動'}),
-    customkey('j', 'halfdown', {shift: true, usehelp: 'hide', desc: '下へ半スクロール'}),
+    customkey('j', 'default', {title: 'Next', desc: '次ポストへ移動'}),
+    customkey('j', 'halfdown', {title: '下へ半スクロール', shift: true, usehelp: 'hide', desc: '下へ半スクロールします'}),
 
-    customkey('k', 'default', {desc: '前ポストへ移動'}),
-    customkey('k', 'halfup', {shift: true, usehelp: 'hide', desc: '上へ半スクロール'}),
+    customkey('k', 'default', {title: 'Previous', desc: '前ポストへ移動'}),
+    customkey('k', 'halfup', {title: '上へ半スクロール', shift: true, usehelp: 'hide', desc: '上へ半スクロールします'}),
 
-    customkey('l', 'default', {desc: 'Like'}),
+    customkey('l', 'default', {title: 'Like', desc: 'Like'}),
 
-    customkey('g', 'goTop', {follows: ['g'], usehelp: 'hide', desc: '一番上へスクロール'}),
-    customkey('g', 'goBottom', {shift: true, usehelp: 'hide', desc: '一番下へスクロール'}),
+    customkey('g', 'goTop', {title: 'Go top', follows: ['g'], usehelp: 'hide', desc: '一番上へスクロールします'}),
+    customkey('g', 'goBottom', {title: 'Go bottom', shift: true, usehelp: 'hide', desc: '一番下へスクロールします'}),
 
-    customkey('t', 'reblog'),
-    customkey('h', 'fast_reblog'),
-    customkey('d', 'draft', {desc: '下書きへ送る'}),
-    customkey('q', 'queue', {desc: 'キューへ送る'}),
-    customkey('p', 'private'),
+    customkey('t', 'reblog', {title: 'Reblog', desc: '通常のリブログを行います'}),
+    customkey('h', 'fast_reblog', {title: 'Fast-reblog', desc: '高速リブログを行います'}),
+    customkey('d', 'draft', {title: 'save as Draft', desc: '下書きへ送ります'}),
+    customkey('q', 'queue', {title: 'push to Queue', desc: 'キューへ送ります'}),
+    customkey('p', 'private', {title: 'Private reblog', desc: 'プライベートなリブログを行います'}),
 
     customkey('t', 'reblogToChannel', {follows: ['g'], desc: 'channelへリブログ'}),
     customkey('d', 'draftToChannel', {follows: ['g'], desc: 'channelへ下書き'}),
     customkey('q', 'queueToChannel', {follows: ['g'], desc: 'channelのキューへ送る'}),
     customkey('p', 'privateToChannel', {follows: ['g'], desc: 'channelのprivateでリブログ'}),
 
-    customkey('i', 'scaleImage', {desc: 'photo, video を開閉'}),
-    customkey('m', 'rootInfo', {desc: 'Root投稿者情報を取得します'}),
-    customkey('v', 'viewPostPageInBackground', {usehelp: 'hide'}),
+    customkey('i', 'scaleImage', {title: 'photo, video を開閉', desc: '画像や動画ポストを拡縮、開閉します'}),
+    customkey('m', 'rootInfo', {title: 'get Root user name', desc: 'Root 投稿者情報を取得します'}),
+    customkey('v', 'viewPostPageInBackground', {title: 'ポストへ飛ぶ', usehelp: 'hide'}),
 
-    customkey('c', 'cleanPosts', {usehelp: 'hide', desc: '現在より上のポストを空の状態にする'}),
-    customkey('c', 'removePosts', {shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
-    customkey('c', 'removeBottomPosts', {shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
+    customkey('c', 'cleanPosts', {title: 'ここより上のポストを空白', usehelp: 'hide', desc: '現在より上のポストを空の状態にします'}),
+    customkey('c', 'removePosts', {title: 'ここより上のポストを削除', shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
+    customkey('c', 'removeBottomPosts', {title: 'ここより下のポストを削除', shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
 
     // customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
     customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
-    customkey('o', 'jumpToLastCursor', {shift: true, usehelp: false}),
+    customkey('o', 'jumpToLastCursor', {title: '最後のカーソルへ飛ぶ', desc: 'gg や G で移動した際に最後のカーソル位置へ戻ります', shift: true, usehelp: false}),
 
-    customkey('d', 'delete', {has_selector: 'form[id^=delete]', usehelp: 'hide'}),
-    customkey('d', 'forceDelete', {shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide'}),
-    customkey('p', 'publish', {has_selector: 'form[id^=publish]', usehelp: 'hide'}),
-    customkey('q', 'enqueue', {has_selector: 'form[id^=queue]', usehelp: 'hide'}),
+    customkey('d', 'delete', {title: '自ポストを削除', desc: 'Post が自分のものならばポストを削除します', has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('d', 'forceDelete', {title: '自ポストを強制削除', desc: '確認ボックスを表示することなくポストを削除します', shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide'}),
+    customkey('p', 'publish', {title: '自ポストを公開', desc: 'Drafts か Queue のポストを公開します', has_selector: 'form[id^=publish]', usehelp: 'hide'}),
+    customkey('q', 'enqueue', {title: '下書きをキューに', desc: 'Drafts を Queue へ納めます', has_selector: 'form[id^=queue]', usehelp: 'hide'}),
 ];
 
 /**
