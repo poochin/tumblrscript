@@ -208,12 +208,21 @@ var embed_css = [
     "    overflow-y: scroll;",
     "}",
     "#tornado_help_dialog .tornado_help_list > li {",
+    "    -webkit-box-sizing: border-box;",
     "    display: -webkit-box;",
     "    display: -moz-box;",
     "    width: 100%;",
     "    border-bottom: 1px dashed #888;",
     "    margin-top: 6px;",
     "    margin-bottom: 6px;",
+    "}",
+    "#tornado_help_dialog .tornado_help_list > li.tornado_short_groupname {",
+    "    -webkit-box-sizing: border-box;",
+    "    margin-left: 0;",
+    "    margin-right: -4px;",
+    "    border-left: 4px solid #888;",
+    "    padding: 3px;",
+    "    font-size: 14px;",
     "}",
     "#tornado_help_dialog .tornado_help_list > li:last-child {",
     "    border-bottom: none;",
@@ -474,6 +483,7 @@ function customkey(match, func, options) {
         match: match,
         func: func,
         title: options.title || func.name || func,
+        group: options.group || 0,
         follows: options.follows || [],
         has_selector: options.has_selector || '',
         url: options.url || null,
@@ -1223,48 +1233,59 @@ Tornado.commands = {
     },
 };
 
+/**
+ * Shortcut の分類(書く所が思い当たらないためここに書きました)
+ * 0: other
+ * 1: default
+ * 2: reblog
+ * 3: channel reblog
+ * 4: operator of mine
+ * 5: scroll
+ * 6: decorating post element
+ */
+
 Tornado.shortcuts = /** @lends Tornado */ [
-    customkey('j', 'default', {title: 'Next', desc: '次ポストへ移動'}),
-    customkey('j', 'halfdown', {title: '下へ半スクロール', shift: true, usehelp: 'hide', desc: '下へ半スクロールします'}),
+    customkey('j', 'default', {title: 'Next', desc: '次ポストへ移動', group: 1}),
+    customkey('j', 'halfdown', {title: '下へ半スクロール', shift: true, usehelp: 'hide', desc: '下へ半スクロールします', group: 5}),
 
-    customkey('k', 'default', {title: 'Prev', desc: '前ポストへ移動'}),
-    customkey('k', 'halfup', {title: '上へ半スクロール', shift: true, usehelp: 'hide', desc: '上へ半スクロールします'}),
+    customkey('k', 'default', {title: 'Prev', desc: '前ポストへ移動', group: 1}),
+    customkey('k', 'halfup', {title: '上へ半スクロール', shift: true, usehelp: 'hide', desc: '上へ半スクロールします', group: 5}),
 
-    customkey('l', 'default', {title: 'Like', desc: 'Like'}),
+    customkey('l', 'default', {title: 'Like', desc: 'Like します', group: 1}),
 
-    customkey('g', 'goTop', {title: '一番上へ', follows: ['g'], usehelp: 'hide', desc: '一番上へスクロールします'}),
-    customkey('g', 'goBottom', {title: '一番下へ', shift: true, usehelp: 'hide', desc: '一番下へスクロールします'}),
+    customkey('g', 'goTop', {title: '一番上へ', follows: ['g'], usehelp: 'hide', desc: '一番上へスクロールします', group: 5}),
+    customkey('g', 'goBottom', {title: '一番下へ', shift: true, usehelp: 'hide', desc: '一番下へスクロールします', group: 5}),
+    customkey('o', 'jumpToLastCursor', {title: '最後のカーソルへ飛ぶ', desc: 'gg や G で移動した際に最後のカーソル位置へ戻ります', shift: true, usehelp: false, group: 5}),
 
-    customkey('t', 'reblog', {title: 'Reblog', desc: '通常のリブログを行います'}),
-    customkey('h', 'fast_reblog', {title: 'fast Reblog', desc: '高速リブログを行います'}),
-    customkey('d', 'draft', {title: 'Draft', desc: '下書きへ送ります'}),
-    customkey('q', 'queue', {title: 'Queue', desc: 'キューへ送ります'}),
-    customkey('p', 'private', {title: 'Private', desc: 'プライベートなリブログを行います'}),
+    customkey('t', 'reblog', {title: 'Reblog', desc: '通常のリブログを行います', group: 2}),
+    customkey('h', 'fast_reblog', {title: 'fast Reblog', desc: '高速リブログを行います', group: 2}),
+    customkey('d', 'draft', {title: 'Draft', desc: '下書きへ送ります', group: 2}),
+    customkey('q', 'queue', {title: 'Queue', desc: 'キューへ送ります', group: 2}),
+    customkey('p', 'private', {title: 'Private', desc: 'プライベートなリブログを行います', group: 2}),
 
-    customkey('t', 'reblogToChannel', {title: 'チャンネル Reblog', follows: ['g'], desc: 'channelへリブログ'}),
-    customkey('d', 'draftToChannel', {title: 'チャンネル Draft', follows: ['g'], desc: 'channelへ下書き'}),
-    customkey('q', 'queueToChannel', {title: 'チャンネル Queue', follows: ['g'], desc: 'channelのキューへ送る'}),
-    customkey('p', 'privateToChannel', {title: 'チャンネル Private', follows: ['g'], desc: 'channelのprivateでリブログ'}),
+    customkey('t', 'reblogToChannel', {title: 'チャンネル Reblog', follows: ['g'], desc: 'channelへリブログ', group: 3}),
+    customkey('d', 'draftToChannel', {title: 'チャンネル Draft', follows: ['g'], desc: 'channelへ下書き', group: 3}),
+    customkey('q', 'queueToChannel', {title: 'チャンネル Queue', follows: ['g'], desc: 'channelのキューへ送る', group: 3}),
+    customkey('p', 'privateToChannel', {title: 'チャンネル Private', follows: ['g'], desc: 'channelのprivateでリブログ', group: 3}),
 
-    customkey('i', 'scaleImage', {title: 'photo, video を開閉', desc: '画像や動画ポストを拡縮、開閉します'}),
-    customkey('m', 'rootInfo', {title: 'Root 投稿者情報を取得', desc: 'Root 投稿者情報を取得します'}),
-    customkey('v', 'viewPostPageInBackground', {title: 'ポストへ飛ぶ', usehelp: 'hide'}),
+    customkey('i', 'scaleImage', {title: 'photo, video を開閉', desc: '画像や動画ポストを拡縮、開閉します', group: 0}),
+    customkey('m', 'rootInfo', {title: 'Root 投稿者情報を取得', desc: 'Root 投稿者情報を取得します', group: 0}),
+    customkey('v', 'viewPostPageInBackground', {title: 'ポストへ飛ぶ', usehelp: 'hide', group: 5}),
 
-    customkey('c', 'cleanPosts', {title: 'ここより上のポストを空白', usehelp: 'hide', desc: '現在より上のポストを空の状態にします'}),
-    customkey('c', 'removePosts', {title: 'ここより上のポストを削除', shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します'}),
-    customkey('c', 'removeBottomPosts', {title: 'ここより下のポストを削除', shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します'}),
+    customkey('c', 'cleanPosts', {title: 'ここより上のポストを空白', usehelp: 'hide', desc: '現在より上のポストを空の状態にします', group: 6}),
+    customkey('c', 'removePosts', {title: 'ここより上のポストを削除', shift: true, usehelp: 'hide', desc: '現在より上のポストを画面から削除します', group: 6}),
+    customkey('c', 'removeBottomPosts', {title: 'ここより下のポストを削除', shift: true, follows: ['g'], usehelp: 'hide', desc: '現在より下のポストを画面から削除します', group: 6}),
 
-    // customkey('n', 'notes', {usehelp: 'hide', desc: 'Notes を表示'}),
-    customkey('r', 'topReload', {shift: true, usehelp: 'hide'}),
-    customkey('o', 'jumpToLastCursor', {title: '最後のカーソルへ飛ぶ', desc: 'gg や G で移動した際に最後のカーソル位置へ戻ります', shift: true, usehelp: false}),
+    customkey('n', 'default', {title: 'Notes', usehelp: 'hide', desc: 'Notes を開閉', group: 1}),
+    customkey('r', 'topReload', {shift: true, usehelp: 'hide', group: 0}),
 
-    customkey('d', 'delete', {title: '自ポストを削除', desc: 'Post が自分のものならばポストを削除します', has_selector: 'form[id^=delete]', usehelp: 'hide'}),
-    customkey('d', 'forceDelete', {title: '自ポストを強制削除', desc: '確認ボックスを表示することなくポストを削除します', shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide'}),
-    customkey('p', 'publish', {title: '自ポストを公開', desc: 'Drafts か Queue のポストを公開します', has_selector: 'form[id^=publish]', usehelp: 'hide'}),
-    customkey('q', 'enqueue', {title: '下書きをキューに', desc: 'Drafts を Queue へ納めます', has_selector: 'form[id^=queue]', usehelp: 'hide'}),
+    customkey('d', 'delete', {title: '自ポストを削除', desc: 'Post が自分のものならばポストを削除します', has_selector: 'form[id^=delete]', usehelp: 'hide', group: 4}),
+    customkey('d', 'forceDelete', {title: '自ポストを強制削除', desc: '確認ボックスを表示することなくポストを削除します', shift: true, has_selector: 'form[id^=delete]', usehelp: 'hide', group: 4}),
+    customkey('p', 'publish', {title: '自ポストを公開', desc: 'Drafts か Queue のポストを公開します', has_selector: 'form[id^=publish]', usehelp: 'hide', group: 4}),
+    customkey('q', 'enqueue', {title: '下書きをキューに', desc: 'Drafts を Queue へ納めます', has_selector: 'form[id^=queue]', usehelp: 'hide', group: 4}),
 ];
 
-Tornado._shortcuts = Tornado.shortcuts.slice(); /* copy for Help Dialog */
+Tornado._shortcuts = Tornado.shortcuts.slice().sort(function(a, b){return (a.group || 10) - (b.group||10)});
 
 /**
  * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
@@ -1357,16 +1378,41 @@ function showShortcutHelp() {
 
         var helps_list = buildElement('ul', {class: 'tornado_help_list'});
 
+        /*
         var help_header = buildElement('li', 
                 {},
                 ["<div class=\"tornado_short_title\">Title</div>",
                  "<div class=\"tornado_short_key\">Key</div>",
                  "<div class=\"tornado_short_desc\">Description</div>"].join(''));
         help_header.style.cssText = "text-align: center;";
-
         helps_list.appendChild(help_header);
+        */
 
-        Tornado._shortcuts.map(function(shortcut, i) {
+        Tornado._shortcuts.map(function(shortcut, i, all) {
+            var label;
+
+            if (i == 0 ||
+                all[i-1].group != all[i].group) {
+                label = buildElement('li', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
+                label.innerHTML = [
+                    "その他のコマンド",
+                    "標準のコマンド",
+                    "Reblog コマンド",
+                    "チャンネル Reblog コマンド",
+                    "自ポストへの操作コマンド",
+                    "スクロールコマンド",
+                    "ポストの表示操作"][shortcut.group];
+                helps_list.appendChild(label);
+
+                var help_header = buildElement('li', 
+                        {},
+                        ["<div class=\"tornado_short_title\">Title</div>",
+                         "<div class=\"tornado_short_key\">Key</div>",
+                         "<div class=\"tornado_short_desc\">Description</div>"].join(''));
+                help_header.style.cssText = "text-align: center;";
+                helps_list.appendChild(help_header);
+            }
+
             /* TODO: title と key を一つの要素に納めます */
             var li = buildElement('li'),
                 title_box = buildElement('div', {class: 'tornado_short_title'}),
