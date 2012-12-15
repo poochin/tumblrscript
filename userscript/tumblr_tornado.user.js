@@ -1174,7 +1174,7 @@
                 }
             );
         },
-        delete: function delete(post) {
+        delete: function _delete(post) {
             Tornado.funcs.shutterEffect(post);
             if (!confirm('Delete this post?')) {
                 post.classList.remove('shutter_base');
@@ -1220,7 +1220,7 @@
                 }
             );
         },
-        default: function default() {
+        default: function _default() {
             return true;  /* threw up event */
         },
     };
