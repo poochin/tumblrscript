@@ -1434,9 +1434,9 @@
     });
 
     Tornado.shortcuts.sort(function(a, b) {
-        return ((b.url || '').length - ((a.url || '').length)) ||
-               (b.follows.length - a.follows.length) ||
-               (b.has_selector.length - a.has_selector.length);
+        return ((b.follows.length - a.follows.length) ||
+                (b.has_selector.length - a.has_selector.length) ||
+                ((b.url || '').length - ((a.url || '').length)));
     });
 
     /**
@@ -1477,6 +1477,7 @@
 
     /**
      * クライアントページ領域で実行させます
+     * 文字列は文字列の成すように、関数は関数を実行します。
      */
     Tornado.clientlaunches = [
         /* pjax ライクな挙動にします */
@@ -1606,13 +1607,13 @@
         var helps = buildElement('ul',
             {id: 'tornado_shortcuts_help'});
     
-        Tornado.shortcuts.map(function(shortcut, i) {
-            if (shortcut.usehelp === false) {
+        Tornado._shortcuts.map(function(shortcut, i) {
+            if (shortcut.usehelp == false ||
+                shortcut.usehelp == 'hide') {
                 return;
             }
-            var className = (shortcut.usehelp == 'hide' && shortcut.usehelp);
-            var help = buildElement('li', 
-                {class: className},
+            var help = buildElement('li',
+                {},
                 buildShortcutLineHelp(shortcut));
             helps.appendChild(help);
         });
@@ -1644,10 +1645,10 @@
 
         execScript(Tornado.clientlaunches.map(function(code) {
             if (typeof code === 'string') {
-                script += code + ';\n';
+                return code + ';\n';
             }
             else if (typeof code === 'function') {
-                script += '(' + (code) + ')();\n';
+                return '(' + (code) + ')();\n';
             }
         }).join(''));
     }
