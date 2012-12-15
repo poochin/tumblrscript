@@ -227,59 +227,29 @@
         "    min-width: 700px;",
         "}",
         "#tornado_help_dialog .lite_dialog_body {",
+        "    margin: 2px;",
+        "    position: absolute;",
+        "    left: 0;",
+        "    right: 0;",
+        "    top: 26px;",
+        "    bottom: 0;",
+        "    overflow: auto;",
         "}",
         "#tornado_help_dialog .tornado_help_list {",
-        "    margin: 0;",
-        "    padding: 0;",
-        "    position: absolute;",
-        "    top: 35px;",
-        "    right: 5px;",
-        "    bottom: 5px;",
-        "    left: 5px;",
-        "    overflow-y: scroll;",
         "}",
-        "#tornado_help_dialog .tornado_help_list > li {",
-        "    -webkit-box-sizing: border-box;",
-        "    display: -webkit-box;",
-        "    display: -moz-box;",
-        "    width: 100%;",
-        "    border-bottom: 1px dashed #888;",
-        "    margin-top: 6px;",
-        "    margin-bottom: 6px;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li.tornado_short_groupname {",
-        "    -webkit-box-sizing: border-box;",
+        "    -moz-box-sizing: border-box;",
         "    margin-left: 0;",
         "    margin-right: -4px;",
         "    border-left: 4px solid #888;",
         "    padding: 3px;",
         "    font-size: 14px;",
         "}",
-        "#tornado_help_dialog .tornado_help_list > li:last-child {",
-        "    border-bottom: none;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_title {",
-        "    width: 150px;",
-        "    font-weight: bold;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_key {",
-        "    width: 150px;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc {",
-        "    -webkit-box-flex: 1;",
-        "    -moz-box-flex: 1;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc p {",
-        "    font-size: 18px;",
-        "    margin: 0;",
-        "    padding: 0;",
-        "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+        "#tornado_help_dialog .tornado_help_list .tornado_short_desc .tornado_help_options {",
         "    margin: 0;",
         "    padding: 0;",
         "    color: #888;",
         "}",
-        "#tornado_help_dialog .tornado_help_list > li .tornado_short_desc .tornado_help_options {",
+        "#tornado_help_dialog .tornado_help_list .tornado_short_desc .tornado_help_options {",
         "    width: 200px;",
         "    list-style: none;",
         "    float: right;",
@@ -1521,7 +1491,7 @@
     
             help_dialog.dialog.id = 'tornado_help_dialog';
     
-            var helps_list = buildElement('ul', {class: 'tornado_help_list'});
+            var helps_list = buildElement('table', {class: 'tornado_help_list'});
     
             /*
             var help_header = buildElement('li', 
@@ -1538,7 +1508,8 @@
     
                 if (i == 0 ||
                     all[i-1].group != all[i].group) {
-                    label = buildElement('li', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
+                    var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
+                    label = buildElement('td', {colspan: '3'});
                     label.innerHTML = [
                         "その他のコマンド",
                         "標準のコマンド",
@@ -1547,22 +1518,22 @@
                         "自ポストへの操作コマンド",
                         "スクロールコマンド",
                         "ポストの表示操作"][shortcut.group];
-                    helps_list.appendChild(label);
-    
-                    var help_header = buildElement('li', 
-                            {},
-                            ["<div class=\"tornado_short_title\">Title</div>",
-                             "<div class=\"tornado_short_key\">Key</div>",
-                             "<div class=\"tornado_short_desc\">Description</div>"].join(''));
-                    help_header.style.cssText = "text-align: center;";
-                    helps_list.appendChild(help_header);
+                    tr.appendChild(label);
+                    helps_list.appendChild(tr);
+
+                    tr = buildElement('tr', {},
+                           ["<td class=\"tornado_short_title\">Title</td>",
+                             "<td class=\"tornado_short_key\">Key</td>",
+                             "<td class=\"tornado_short_desc\">Description</td>"].join(''));
+                    tr.style.cssText = "text-align: center;";
+                    helps_list.appendChild(tr);
                 }
     
                 /* TODO: title と key を一つの要素に納めます */
-                var li = buildElement('li'),
-                    title_box = buildElement('div', {class: 'tornado_short_title'}),
-                    key_box = buildElement('div', {class: 'tornado_short_key', style: 'text-align: center;'}),
-                    desc_box = buildElement('div', {class: 'tornado_short_desc'});
+                var li = buildElement('tr'),
+                    title_box = buildElement('td', {class: 'tornado_short_title'}),
+                    key_box = buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
+                    desc_box = buildElement('td', {class: 'tornado_short_desc'});
     
                 var key = [], desc, options;
     
