@@ -21,7 +21,8 @@
  * @namespace TumblrTornado
  */
 (function TumblrTornado() {
-//    'use strict';
+    'use strict';
+
     var Tornado = {};
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
@@ -463,9 +464,9 @@
         script.setAttribute('type', 'text/javascript');
         script.innerHTML = code;
         script.addEventListener('onload', function(e) {
-            with(e) {
-                target.parentNode.removeChild(target);
-            }
+            (function letit(elm) {
+                elm.parentNode.removeChild(elm);
+            })(e.target);
         });
         document.body.appendChild(script);
     }
@@ -994,7 +995,7 @@
         queueToChannel: function queueToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '2'});
         },
-        private: function private(post) {
+        private: function _private(post) {
             Tornado.funcs.reblog(post, {'post[state]': 'private', 'channel_id': '0'});
         },
         privateToChannel: function privateToChannel(post) {
@@ -1056,11 +1057,11 @@
             }
     
             if (type == "photo") {
-                with({elm: post.querySelector('img.image_thumbnail') ||
-                           document.querySelector('#tumblr_lightbox') ||
-                           post.querySelector('a.photoset_photo')}) {
+                (function letit(elm){
                     elm.dispatchEvent(Tornado.left_click);
-                }
+                })(post.querySelector('img.image_thumbnail') ||
+                   document.querySelector('#tumblr_lightbox') ||
+                   post.querySelector('a.photoset_photo'));
             }   
             else if (type == 'video') {
                 toggleVideoEmbed(post);
