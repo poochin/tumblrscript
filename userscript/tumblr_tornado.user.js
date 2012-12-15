@@ -22,15 +22,37 @@
  */
 (function TumblrTornado() {
 //    'use strict';
-
     var Tornado = {};
 
+    /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
     Tornado.vals = {};
 
     Tornado.customkeys = [];
     Tornado.customfuncs = {};
 
+    Tornado.clientfuncs = [];
+    Tornado.clientlaunches = [];
+    /*-- /ここまで Tornado オブジェクトの仮属性 --*/
+
+    Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
+    Tornado.vals.CONSUMER_SECRET = 'wYZ7hzCu5NnSJde8U2d7BW6pz0mtMMAZCoGgGKnT4YNB8uZNDL';
+
+    Tornado.vals.CONTENTTYPE_URLENCODED = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
+
+    Tornado.vals.KEY_MAX_FOLLOWS = 2;
+    Tornado.vals.KEY_CONTINUAL_TIME = 2000;
+
+    Tornado.vals.prev_cursor = null;
+    Tornado.vals.state_texts = {
+        '0': '',
+        '1': 'draft',
+        '2': 'queue',
+        'private': 'private'
+    };
+    Tornado.vals.key_input_time = 0;
+    Tornado.vals.key_follows = []
+    
     Tornado.css = [
         /* Pin Notification */
         "#pin_notification_board {",
@@ -334,9 +356,7 @@
     Tornado.left_click = document.createEvent('MouseEvent');
     Tornado.left_click.initEvent('click', false, true);
 
-    /* root info を取得するのに使います */
-    var API_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
-    
+
     /**
      * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
      */
@@ -354,7 +374,6 @@
                 function(v, k) { return v == another[k]; }
               ));
     };
-    
     
     /**
      * ビデオの開閉トグル関数です。
@@ -447,6 +466,7 @@
                 target.parentNode.removeChild(target);
             }
         });
+        document.body.appendChild(script);
     }
     
     /**
@@ -522,12 +542,7 @@
             '<code>',
             key,
             '</code>',
-            (shortcut.title || shortcut.desc || shortcut.func.name || shortcut.func)].join('');
-    /*
-            ((typeof shortcut == 'string')
-                ? (shortcut)
-                : (shortcut.desc || shortcut.func))].join('');
-    */
+            (shortcut.title || shortcut.desc || shortcut.func.name)].join('');
     }
     
     /**
@@ -770,19 +785,7 @@
      * Tornado のメイン機能部
      * @namespace
      */
-    Tornado.vals.KEY_MAX_FOLLOWS = 2;
-    Tornado.vals.KEY_CONTINUAL_TIME = 2000;
 
-    Tornado.vals.prev_cursor = null;
-    Tornado.vals.state_texts = {
-        '0': '',
-        '1': 'draft',
-        '2': 'queue',
-        'private': 'private'
-    };
-    Tornado.vals.key_input_time = 0;
-    Tornado.vals.key_follows = []
-    
     /**
       * 入力されたキーによってコマンドを実行します
       * @param {Object} e Eventオブジェクト
@@ -858,7 +861,6 @@
             return true;
         });
     };
-
 
     Tornado.funcs = {
         /**
@@ -1105,7 +1107,7 @@
                 vr = viewportRect(),
                 del_count = 0;
     
-            execClient('next_page = null; loading_next_page = true;');
+            execScript('next_page = null; loading_next_page = true;');
             document.body.style.marginBottom = '500px';
     
             $$('#posts > li:not(.new_post)').filter(function(post) {
@@ -1146,7 +1148,7 @@
     
             var permalink = post.querySelector('a.permalink').href;
             var blog_name = permalink.match(/[^\/]*(?=\/(?:post|private))/)[0];
-            var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: API_KEY});
+            var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
             var url = [
                 'http://api.tumblr.com/v2/blog',
                 blog_name,
@@ -1235,8 +1237,7 @@
      * 5: scroll
      * 6: decorating post element
      */
-    /* TODO: Wikipedia/順序集合 を読んでグループ内ソートを可能にします */
-    Tornado.shortcuts = (function lambda(){
+    Tornado.shortcuts = (function letit(){
         var customfuncs = Tornado.customfuncs;
 
         return [
@@ -1427,77 +1428,76 @@
         ]
     })();
     
-    Tornado._shortcuts = Tornado.shortcuts.slice().sort(function(a, b){return (a.group || 10) - (b.group||10)});
-    
+    Tornado._shortcuts = Tornado.shortcuts.slice();
+    Tornado._shortcuts.sort(function(a, b){
+        return (a.group || 10) - (b.group || 10);
+    });
+
+    Tornado.shortcuts.sort(function(a, b) {
+        return ((b.url || '').length - ((a.url || '').length)) ||
+               (b.follows.length - a.follows.length) ||
+               (b.has_selector.length - a.has_selector.length);
+    });
+
     /**
-     * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
-     * @param {Object} json Tumblr API が返す JSON オブジェクト
+     * クライアントページ領域に関数を定義させます
      */
-    function jsonpRootInfo(json) {
-        var post = json.response.posts[0];
-        var root_name = post.reblogged_root_name;
-        var root_url = post.reblogged_root_url;
-        var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
-    
-        var node_post = document.querySelector('#post_' + post.id);
-        var root_info = node_post.querySelector('.root_info');
-        root_info.innerHTML = ' [' + text_root_link + ']';
-    
-        var script = document.querySelector('#showroot_' + post.id);
-        script.parentNode.removeChild(script);
-    }
-    
-    /**
-     * 自分からのリブログに対して .reblogged_you クラスを付けます。
-     */
-    function add_reblogged_you() {
-        $$('#posts>.post:not(.new_post)').slice(-10).map(function(post) {
-            if (post.querySelector('.post_info') &&
-                post.querySelector('.post_info').innerHTML.search('reblogged you:') >= 0) {
-                post.className += ' reblogged_you';
+    Tornado.clientfuncs = [
+        /**
+         * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
+         * @param {Object} json Tumblr API が返す JSON オブジェクト
+         */
+        function jsonpRootInfo(json) {
+            var post = json.response.posts[0];
+            var root_name = post.reblogged_root_name;
+            var root_url = post.reblogged_root_url;
+            var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
+        
+            var node_post = document.querySelector('#post_' + post.id);
+            var root_info = node_post.querySelector('.root_info');
+            root_info.innerHTML = ' [' + text_root_link + ']';
+        
+            var script = document.querySelector('#showroot_' + post.id);
+            script.parentNode.removeChild(script);
+        },
+        /**
+         * 次ページパスを訂正すべき場合は正常な次ページパスを返します
+         * @return 次ページ path か null
+         */
+        function next_pageCorrection() {
+            var m, type, pagenum;
+            if (m = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/)) {
+                type = m[1];
+                pagenum = (m[2] == undefined) ? 2 : parseInt(m[2]) + 1;
+                return '/show/' + type + '/' + pagenum;
             }
-        });
-    }
-    
+            return null;
+        },
+    ];
+
     /**
-     * ロードの度にロケーションバーを書き換えるようにします
+     * クライアントページ領域で実行させます
      */
-    function enhistory() {
-        return [
-            '(',
-            function() {
-                var papr = window._process_auto_paginator_response;
-                window._process_auto_paginator_response = function(transport) {
-                    history.pushState('', '', window.next_page);
-                    papr(transport);
-                    add_reblogged_you();
-    
-                    var next_page = next_pageCorrection();
-                    if (next_page) {
-                        window.next_page = next_page;
-                    }
+    Tornado.clientlaunches = [
+        /* pjax ライクな挙動にします */
+        function enhistory() {
+            var papr = window._process_auto_paginator_response;
+            window._process_auto_paginator_response = function(transport) {
+                history.pushState('', '', window.next_page);
+                papr(transport);
+        
+                var next_page = next_pageCorrection();
+                if (next_page) {
+                    window.next_page = next_page;
                 }
-            },
-            ')();'].join('');
-    }
-    
-    /**
-     * 次ページパスを訂正すべき場合は正常な次ページパスを返します
-     * @return 次ページ path か null
-     */
-    function next_pageCorrection() {
-        var m_path = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/);
-        if (m_path) {
-            var path = [
-                '/show',
-                m_path[1],
-                (m_path[2] == undefined)
-                    ? 2
-                    : parseInt(m_path[2]) + 1].join('/');
-            return path;
-        }
-        return null;
-    };
+            }
+        },
+        'window.next_page = (next_pageCorrection() || window.next_page);',
+        'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
+            'Tumblr.enable_dashboard_key_commands = true;' +
+            'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
+        '}',
+    ];
     
     /**
      * 右カラムにヘルプを表示します
@@ -1618,51 +1618,38 @@
         });
     
         rightcolumn_help.appendChild(helps);
-    
-        with({right_column: document.querySelector('#right_column')}) {
+
+        (function letit(right_column){
             if (right_column) {
                 right_column.appendChild(rightcolumn_help);
             }
-        }
+        })(document.querySelector('#right_column'));
     }
     
     /**
      * ページロード時に一度だけ呼び出されます
      */
     function main() {
+        // document.addEventListener('keydown', Tornado.keyevent, true);
         var keyevent = preapply(Tornado, Tornado.keyevent);
-        document.addEventListener('keydown', keyevent, true);
-    
-        var style_element = document.createElement('style');
-        style_element.Tornado = Tornado;
-        style_element.className = 'tumblr_userscript';
-        style_element.appendChild(document.createTextNode(Tornado.css));
-        document.head.appendChild(style_element);
-    
+        document.addEventListener('keydown', keyevent, true); /* FIXME: preapply を使用しないようにします(thisを使用しないコードにします) */
+
+        var style = document.head.appendChild(document.createElement('style'));
+        style.className = 'tumblr_userscript';
+        style.innerHTML = Tornado.css;
+
         showShortcutHelp();
-        add_reblogged_you();
-    
-        var code = '';
-        code += enhistory();
-        code += add_reblogged_you;
-        code += jsonpRootInfo;
-        code += next_pageCorrection;
-        if (/^https?:\/\/www\.tumblr\.com\/blog\/[^\/]+\/queue/.test(location)) {
-            /* Queue ページで J/K キーが使用できない為、使えるようにします */
-            code += 'Tumblr.enable_dashboard_key_commands=true;Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();';
-        }
-        var next_page = next_pageCorrection();
-        if (next_page) {
-            code += 'window.next_page = "' + next_page + '";';
-        }
-    
-        execClient(code, 1000);
-    
-        /* FIXME: URL も重み付けを行う */
-        Tornado.shortcuts.sort(function(a, b) {
-            return (b.follows.length - a.follows.length) ||
-                   (b.has_selector.length - a.has_selector.length);
-        });
+
+        execScript(Tornado.clientfuncs.join(''));
+
+        execScript(Tornado.clientlaunches.map(function(code) {
+            if (typeof code === 'string') {
+                script += code + ';\n';
+            }
+            else if (typeof code === 'function') {
+                script += '(' + (code) + ')();\n';
+            }
+        }).join(''));
     }
     
     if (window.document.body) {
