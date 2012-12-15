@@ -973,55 +973,52 @@
     };
 
     Tornado.customfuncs = {
-        /**
-         * reblog
-         */
-        reblog: function(post) {
+        reblog: function reblog(post) {
             Tornado.funcs.reblog(post, {'channel_id': '0'});
         },
-        reblogToChannel: function(post) {
+        reblogToChannel: function reblogToChannel(post) {
             Tornado.funcs.channelDialog(post, {'channel_id': '0'});
         },
-        draft: function(post) {
+        draft: function draft(post) {
             Tornado.funcs.reblog(post, {'post[state]': '1', 'channel_id': '0'});
         },
-        draftToChannel: function(post) {
+        draftToChannel: function draftToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '1'});
         },
-        queue: function(post) {
+        queue: function queue(post) {
             Tornado.funcs.reblog(post, {'post[state]': '2', 'channel_id': '0'});
         },
-        queueToChannel: function(post) {
+        queueToChannel: function queueToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '2'});
         },
-        private: function(post) {
+        private: function private(post) {
             Tornado.funcs.reblog(post, {'post[state]': 'private', 'channel_id': '0'});
         },
-        privateToChannel: function(post) {
+        privateToChannel: function privateToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': 'private'});
         },
-        halfdown: function() {
+        halfdown: function halfdown() {
             var view_height = window.innerHeight;
             window.scrollBy(0, +view_height / 2);
         },
-        halfup: function() {
+        halfup: function halfup() {
             var view_height = window.innerHeight;
             window.scrollBy(0, -view_height / 2);
         },
-        goTop: function(post) {
+        goTop: function goTop(post) {
             Tornado.vals.prev_cursor = post;
             window.scroll(0, 0);
         },
-        goBottom: function(post) {
+        goBottom: function goBottom(post) {
             Tornado.vals.prev_cursor = post;
             window.scroll(0, document.height || document.body.clientHeight);
         },
-        jumpToLastCursor: function() {
+        jumpToLastCursor: function jumpToLastCursor() {
             var y = Tornado.vals.prev_cursor.offsetTop;
             Tornado.vals.prev_cursor = null;
             window.scroll(0, y - 7);
         },
-        fast_reblog: function(post) {
+        fast_reblog: function fastReblog(post) {
             var reblog_button = post.querySelector('a.reblog_button');
             var reblog_key = reblog_button.getAttribute('data-reblog-key'),
                 reblog_id = reblog_button.getAttribute('data-reblog-id'),
@@ -1042,13 +1039,13 @@
                 },
             });
         },
-        notes: function(post) {
+        notes: function notes(post) {
             var notes_link = post.querySelector('.reblog_count');
             notes_link.dispatchEvent(Tornado.left_click);
     
             new PinNotification('test');
         },
-        scaleImage: function(post) {
+        scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
             var type = post.className.match(reg_type)[0];
             if (type != "photo" && type != "video") {
@@ -1066,7 +1063,7 @@
                 toggleVideoEmbed(post);
             }   
         },
-        cleanPosts: function(/* post */) {
+        cleanPosts: function cleanPosts(/* post */) {
             var vr = viewportRect(),
                 i = 0;
     
@@ -1084,7 +1081,7 @@
     
             new PinNotification(i + '件のポストを空にしました。');
         },
-        removePosts: function(/* posts */) {
+        removePosts: function removePosts(/* posts */) {
             var dsbd = document.querySelector('#posts'),
                 vr = viewportRect(),
                 del_count = 0;
@@ -1103,7 +1100,7 @@
     
             new PinNotification(del_count + '件のポストを削除しました。');
         },
-        removeBottomPosts: function(/* post */) {
+        removeBottomPosts: function removeBottomPosts(/* post */) {
             var dsbd = document.querySelector('#posts'),
                 vr = viewportRect(),
                 del_count = 0;
@@ -1120,7 +1117,7 @@
     
             new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
         },
-        viewPostPageInBackground: function(post) {
+        viewPostPageInBackground: function viewPostPageInBackground(post) {
             var permalink;
             if (permalink = post.querySelector('.permalink')) {
                 window.open(permalink.href);
@@ -1132,7 +1129,7 @@
          * @fixme "reblogged you:" の際には上手く動きません
          * @fixme private ポストでの取得には対応していません
          */
-        function(post) {
+        function rootInfo(post) {
             var post_id = post.id.match(/\d+/)[0];
             var post_info = post.querySelector('.post_info');
             if (post_info.querySelector('.root_info')) {
@@ -1158,12 +1155,12 @@
     
             document.body.appendChild(script);
         },
-        topReload: function() {
+        topReload: function topReload() {
             var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
             var url = location.href.match(reg_top_path)[0];
             location.assign(url);
         },
-        forceDelete: function(post) {
+        forceDelete: function forceDelete(post) {
             Tornado.funcs.shutterEffect(post);
     
             new PinNotification('Deleting... ' + post.id);
@@ -1177,7 +1174,7 @@
                 }
             );
         },
-        delete: function(post) {
+        delete: function delete(post) {
             Tornado.funcs.shutterEffect(post);
             if (!confirm('Delete this post?')) {
                 post.classList.remove('shutter_base');
@@ -1195,7 +1192,7 @@
                 }
             );
         },
-        publish: function(post) {
+        publish: function publish(post) {
             Tornado.funcs.shutterEffect(post);
     
             new PinNotification('Publishing... ' + post.id);
@@ -1209,7 +1206,7 @@
                 }
             );
         },
-        enqueue: function(post) {
+        enqueue: function enqueue(post) {
             Tornado.funcs.shutterEffect(post);
     
             new PinNotification('Enqueueing... ' + post.id);
@@ -1223,7 +1220,7 @@
                 }
             );
         },
-        default: function() {
+        default: function default() {
             return true;  /* threw up event */
         },
     };
