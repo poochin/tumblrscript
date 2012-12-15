@@ -161,6 +161,7 @@
         "  -moz-box-shadow: 0 0 6px #000;",
         "  box-shadow: 0 0 6px #000;",
         "  opacity: 0.98;",
+        "  z-index: 100;",
         "}",
         ".lite_dialog_sysbar { }",
         ".lite_dialog_sysbar:after {",
