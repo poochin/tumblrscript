@@ -11,8 +11,8 @@
 // @include     http://www.tumblr.com/blog/*
 // @include     http://www.tumblr.com/tagged/*
 // @include     http://www.tumblr.com/show/*
-// @require     http://oauth.googlecode.com/svn/code/javascript/sha1.js
-// @require     http://oauth.googlecode.com/svn/code/javascript/oauth.js
+// @require     http://static.tumblr.com/lf1ujxx/bczmf4vbs/sha1.js
+// @require     http://static.tumblr.com/lf1ujxx/5bBmf4vcf/oauth.js
 //
 // @author      poochin
 // @license     MIT
@@ -953,22 +953,30 @@
 
             OAuth.completeRequest(message, accessor);
 
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function receiveRequestToken(xhr) {
+            function receiveRequestToken(xhr) {
                 if (xhr.readyState == 4) {
-                    if (xhr.status == 200) {
-                        new PinNotification('Success: ' + (state || 'reblog'));
+                    if (xhr.status == 201) {
+                        new PinNotification('Success: ' + (state || 'reblog') + ' to ' + hostname);
                     }
                     else {
-                        new PinNotification('Fails: ' + (state || 'reblog') + '\n' + xhr.response);
+                        var json = JSON.parse(xhr.responseText);
+                        new PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
                     }
                 }
             };
-            xhr.open(message.method, message.action, true);
             var realm = "";
-            xhr.setRequestHeader('Authorization', OAuth.getAuthorizationHeader(realm, message.parameters));
-            xhr.setRequestHeader( "Content-Type", "application/x-www-form-urlencoded" );
-            xhr.send(request_body);
+            var headers = {
+                'Authorization':  OAuth.getAuthorizationHeader(realm, message.parameters),
+                'Content-Type': "application/x-www-form-urlencoded"
+            };
+
+            GM_xmlhttpRequest({
+                url: message.action,
+                method: message.method,
+                headers: headers,
+                data: request_body,
+                onload: receiveRequestToken,
+            });
 
             new PinNotification('Reblog ...');
         },
@@ -979,20 +987,23 @@
                 var title = ['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' ');
 
                 var dialog = new LiteDialog(title);
-                dialog.dialog.clsssName += ' channel_dialog';
+                dialog.dialog.className += ' channel_dialog';
 
                 var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
 
                 var oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
                 var tumblelogs = [];
 
+                var button_num = 0;
                 oauthconfigs.map(function(oauth_config, id_num){
                     oauth_config.tumblelogs.map(function(tumblelog, tumblelog_num){
+                        button_num += 1;
+
                         var button = buildElement('input', {
                             type: 'button',
-                            class: 'button',
+                            class: 'button' + (button_num),
                             name: 'button' + [id_num, tumblelog_num].join('_'),
-                            value: [oauth_config.id, tumblelog.name].join('/')
+                            value: '[' + (button_num) + ']: ' + [oauth_config.id, tumblelog.name].join('/')
                         });
 
                         button.addEventListener('click', function(e) {
@@ -1001,8 +1012,6 @@
 
                             id_num = parseInt(m[1]);
                             tumblelog_num = parseInt(m[2]);
-
-                            console.log(oauthconfigs);
 
                             var  target_blog_info = {
                                 hostname: oauthconfigs[id_num].tumblelogs[tumblelog_num].hostname,
@@ -1153,8 +1162,6 @@
         notes: function notes(post) {
             var notes_link = post.querySelector('.reblog_count');
             notes_link.dispatchEvent(Tornado.left_click);
-    
-            new PinNotification('test');
         },
         scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
@@ -1656,13 +1663,8 @@
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function receiveRequestToken(_xhr) {
                 if (xhr.readyState == 4) {
-                    if (xhr.status == 200) {
-                        new PinNotification('下書きの投稿に成功しました');
-                    }
-                    else {
-                        new PinNotification('下書きの投稿に失敗しました');
-                        console.log(xhr);
-                    }
+                    if (xhr.status == 200) { }
+                    else { }
                 }
             };
             xhr.open(message.method, message.action, false);
