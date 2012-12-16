@@ -227,7 +227,10 @@
         "    min-width: 700px;",
         "}",
         "#tornado_help_dialog .lite_dialog_body {",
+        "    border-width: 1",
+        "    width: 100%;",
         "    margin: 2px;",
+        "    padding: 15px;",
         "    position: absolute;",
         "    left: 0;",
         "    right: 0;",
@@ -236,13 +239,21 @@
         "    overflow: auto;",
         "}",
         "#tornado_help_dialog .tornado_help_list {",
+        "    width: 100%;",
         "}",
-        "    -moz-box-sizing: border-box;",
-        "    margin-left: 0;",
-        "    margin-right: -4px;",
-        "    border-left: 4px solid #888;",
-        "    padding: 3px;",
-        "    font-size: 14px;",
+        "#tornado_help_dialog .tornado_help_list th {",
+        "    padding-top: 5px;",
+        "}",
+        "#tornado_help_dialog .tornado_help_list td {",
+        "    padding: 1px;",
+        "    border-width: 1px;",
+        "}",
+        "#tornado_help_dialog .tornado_help_list td p,",
+        "#tornado_help_dialog .tornado_help_list td ul {",
+        "    margin: 0;",
+        "}",
+        "#tornado_help_dialog .tornado_help_list .tornado_short_key {",
+        "    font-family: monospace;",
         "}",
         "#tornado_help_dialog .tornado_help_list .tornado_short_desc .tornado_help_options {",
         "    margin: 0;",
@@ -484,6 +495,7 @@
             func: func,
             title: options.title || func.name || func,
             group: options.group || 0,
+            grouporder: options.grouporder,
             follows: options.follows || [],
             has_selector: options.has_selector || '',
             url: options.url || null,
@@ -1216,7 +1228,8 @@
             customkey('j', customfuncs.default, {
                 title: 'Next',
                 desc: '次ポストへ移動',
-                group: 1
+                group: 1,
+                grouporder: 1,
             }),
             customkey('j', customfuncs.halfdown, {
                 title: '下へ半スクロール',
@@ -1229,7 +1242,8 @@
             customkey('k', customfuncs.default, {
                 title: 'Prev',
                 desc: '前ポストへ移動',
-                group: 1
+                group: 1,
+                grouporder: 2,
             }),
             customkey('k', customfuncs.halfup, {
                 title: '上へ半スクロール',
@@ -1242,7 +1256,8 @@
             customkey('l', customfuncs.default, {
                 title: 'Like',
                 desc: 'Like します',
-                group: 1
+                group: 1,
+                grouporder: 3,
             }),
 
             customkey('g', customfuncs.goTop, {
@@ -1250,117 +1265,133 @@
                 follows: ['g'],
                 usehelp: 'hide',
                 desc: '一番上へスクロールします',
-                group: 5
+                group: 5,
+                grouporder: 1,
             }),
             customkey('g', customfuncs.goBottom, {
                 title: '一番下へ',
                 shift: true,
                 usehelp: 'hide',
                 desc: '一番下へスクロールします',
-                group: 5
+                group: 5,
+                grouporder: 2,
             }),
             customkey('o', customfuncs.jumpToLastCursor, {
                 title: '最後のカーソルへ飛ぶ',
                 desc: 'gg や G で移動した際に最後のカーソル位置へ戻ります',
                 shift: true,
                 usehelp: false,
-                group: 5
+                group: 5,
+                grouporder: 3,
             }),
 
             customkey('t', customfuncs.reblog, {
                 title: 'Reblog',
                 desc: '通常のリブログを行います',
-                group: 2
+                group: 2,
+                grouporder: 1,
             }),
             customkey('h', customfuncs.fast_reblog, {
                 title: 'fast Reblog',
                 desc: '高速リブログを行います',
-                group: 2
+                group: 2,
+                grouporder: 2,
             }),
             customkey('d', customfuncs.draft, {
                 title: 'Draft',
                 desc: '下書きへ送ります',
-                group: 2
+                group: 2,
+                grouporder: 3,
             }),
             customkey('q', customfuncs.queue, {
                 title: 'Queue',
                 desc: 'キューへ送ります',
-                group: 2
+                group: 2,
+                grouporder: 5,
             }),
             customkey('p', customfuncs.private, {
                 title: 'Private',
                 desc: 'プライベートなリブログを行います',
-                group: 2
+                group: 2,
+                grouporder: 5,
             }),
 
             customkey('t', customfuncs.reblogToChannel, {
-                title: 'チャンネル Reblog',
+                title: 'channel Reblog',
                 follows: ['g'],
-                desc: 'channelへリブログ',
-                group: 3
+                desc: 'channel へリブログ',
+                group: 3,
+                grouporder: 1,
             }),
             customkey('d', customfuncs.draftToChannel, {
-                title: 'チャンネル Draft',
+                title: 'channel Draft',
                 follows: ['g'],
-                desc: 'channelへ下書き',
-                group: 3
+                desc: 'channel へ下書き',
+                group: 3,
+                grouporder: 2,
             }),
             customkey('q', customfuncs.queueToChannel, {
-                title: 'チャンネル Queue',
+                title: 'channel Queue',
                 follows: ['g'],
-                desc: 'channelのキューへ送る',
-                group: 3
+                desc: 'channel のキューへ送る',
+                group: 3,
+                grouporder: 3,
             }),
             customkey('p', customfuncs.privateToChannel, {
-                title: 'チャンネル Private',
+                title: 'channel Private',
                 follows: ['g'],
-                desc: 'channelのprivateでリブログ',
-                group: 3
+                desc: 'channel の private でリブログ',
+                group: 3,
+                grouporder: 4,
             }),
 
             customkey('i', customfuncs.scaleImage, {
-                title: 'photo, video を開閉',
+                title: 'photo, video 開閉',
                 desc: '画像や動画ポストを拡縮、開閉します',
                 group: 0
             }),
             customkey('m', customfuncs.rootInfo, {
-                title: 'Root 投稿者情報を取得',
+                title: 'Root 投稿者情報',
                 desc: 'Root 投稿者情報を取得します',
                 group: 0
             }),
             customkey('v', customfuncs.viewPostPageInBackground, {
-                title: 'ポストへ飛ぶ',
+                title: 'ポストを開く',
                 usehelp: 'hide',
                 group: 5
             }),
 
             customkey('c', customfuncs.cleanPosts, {
-                title: 'ここより上のポストを空白',
+                title: '上ポストを空白',
                 usehelp: 'hide',
                 desc: '現在より上のポストを空の状態にします',
-                group: 6
+                group: 6,
+                grouporder: 1,
             }),
             customkey('c', customfuncs.removePosts, {
-                title: 'ここより上のポストを削除',
+                title: '上ポストを削除',
                 shift: true,
                 usehelp: 'hide',
                 desc: '現在より上のポストを画面から削除します',
-                group: 6
+                group: 6,
+                grouporder: 2,
             }),
             customkey('c', customfuncs.removeBottomPosts, {
-                title: 'ここより下のポストを削除',
+                title: '下ポストを削除',
                 shift: true,
                 follows: ['g'],
                 usehelp: 'hide',
                 desc: '現在より下のポストを画面から削除します',
-                group: 6
+                group: 6,
+                grouporder: 3,
             }),
 
             customkey('n', customfuncs.default, {
                 title: 'Notes',
                 usehelp: 'hide',
                 desc: 'Notes を開閉',
-                group: 1
+                group: 1,
+                grouporder: 4,
             }),
             customkey('r', customfuncs.topReload, {
                 shift: true,
@@ -1402,7 +1433,8 @@
     
     Tornado._shortcuts = Tornado.shortcuts.slice();
     Tornado._shortcuts.sort(function(a, b){
-        return (a.group || 10) - (b.group || 10);
+        return (a.group || 10) - (b.group || 10) ||
+               (a.grouporder) - (b.grouporder);
     });
 
     Tornado.shortcuts.sort(function(a, b) {
@@ -1491,7 +1523,7 @@
     
             help_dialog.dialog.id = 'tornado_help_dialog';
     
-            var helps_list = buildElement('table', {class: 'tornado_help_list'});
+            var helps_list = buildElement('table', {border: '1', class: 'tornado_help_list'});
     
             /*
             var help_header = buildElement('li', 
@@ -1509,7 +1541,7 @@
                 if (i == 0 ||
                     all[i-1].group != all[i].group) {
                     var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
-                    label = buildElement('td', {colspan: '3'});
+                    label = buildElement('th', {colspan: '3'});
                     label.innerHTML = [
                         "その他のコマンド",
                         "標準のコマンド",
