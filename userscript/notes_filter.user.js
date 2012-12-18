@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.4
+// @version     1.0.5
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -93,7 +93,7 @@
             return false;
         }
 
-        notes_count = parseInt(elm_notes.innerHTML.replace(',', ''));
+        notes_count = parseInt(elm_notes.innerHTML.replace(/(,|\.)/g, ''));
 
         if (filter_type == 'over') {
             return (notes_count > filter_value);
