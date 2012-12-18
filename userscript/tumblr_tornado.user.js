@@ -38,6 +38,8 @@
     Tornado.clientfuncs = [];
     Tornado.clientlaunches = [];
 
+    Tornado.windows = {};
+
     Tornado.oauthconfigs = [
         {
             id: '',
@@ -438,24 +440,8 @@
      * @return {Array} NodeList の Array に変換したもの
      */
     function $$(selector) {
-        return Array.prototype.slice.call(document.querySelectorAll(selector));
-    }
-    
-    /**
-     * クライアントページでコードを実行します。
-     * Google chrome と Opera では遅延実行が可能です。
-     * @param {String} code 実行したいコード(// 行コメントは含めないでください).
-     * @param {Number} lazy ミリ秒単位での遅延実行する時間。 デフォルトは 0 です.
-     */
-    // TODO: このやり方をすると chrome では複数のスクリプトを一度に実行できないため script を埋め込む形にする
-    function execClient(code, lazy) {
-        lazy = (typeof lazy == 'undefined' ? 0 : lazy);
-        if (/Firefox/.test(navigator.userAgent)) {
-            location.assign('javascript:' + code + '; void 0;');
-        }
-        else {
-            setTimeout(function() {location.assign('javascript:' + code + '; void 0;')}, lazy);
-        }
+        /* || [] を用いるのは、querySelector は要素を見つけられなかった際に null を返します */
+        return Array.prototype.slice.call(document.querySelectorAll(selector) || []); 
     }
     
     /**
@@ -591,7 +577,7 @@
      */
     function Ajax(url, options) {
         var xhr = this.xhr = new XMLHttpRequest(),
-            async = (options.asynchronous == undefined) || options.asynchronous;
+            async = (options.asynchronous === undefined) || options.asynchronous;
     
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4) {
@@ -620,8 +606,8 @@
         }
     
         /* FIXME: PUT や DELETE にも対応 */
-        if ('POST' != options.method.toUpperCase()) {
-            url = [url, '?', options.parameters].join('');
+        if ('POST' != options.method.toUpperCase() && options.parameters) {
+            url = [url, options.parameters].join('?');
             options.parameters = null;
         }
         else {
@@ -1242,12 +1228,11 @@
                 window.focus();
             }
         },
-        rootInfo:
         /**
          * @fixme "reblogged you:" の際には上手く動きません
          * @fixme private ポストでの取得には対応していません
          */
-        function rootInfo(post) {
+        rootInfo: function rootInfo(post) {
             var post_id = post.id.match(/\d+/)[0];
             var post_info = post.querySelector('.post_info');
             if (post_info.querySelector('.root_info')) {
@@ -1635,7 +1620,130 @@
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
         '}',
     ];
+
+    Tornado.windows.tornado_config = function tornado_config(e) {
+        var config_dialog = new LiteDialog('Tumblr Tornado Config');
+        var dialog_body = config_dialog.dialog.querySelector('.lite_dialog_body');
+
+        if (typeof OAuth == 'undefined') {
+            dialog_body.innerHTML = 
+                 '<p>この環境ではこの機能に対応していません。</p>'
+               + '<p>Chrome では <a href="https://chrome.google.com/webstore/detail/ninjakit/gpbepnljaakggeobkclonlkhbdgccfek">NinjaKit</a> を'
+               + ' Firefox では <a href="https://addons.mozilla.org/firefox/addon/greasemonkey/">Greasemonkey</a> の使用を推奨します。</p>';
+            config_dialog.centering();
+            return;
+        }
+
+        var request_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 認証します'));
+        request_button.addEventListener('click', function() {
+            var request_accessor = Tornado.getRequestToken();
+            GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
+
+            location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
+        });
+
+        var reset_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 情報を消去します'));
+        reset_button.addEventListener('click', function() {
+            GM_deleteValue('oauth_token_secret');
+            GM_deleteValue('oauthconfigs');
+        });
+
+        Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
+
+        var config_list = dialog_body.appendChild(buildElement('ul'));
+
+        Tornado.oauthconfigs.map(function(oauth_config){
+            var li = config_list.appendChild(buildElement('li', {}, 'id:' + oauth_config.id));
+            var ol = li.appendChild(buildElement('ol'));
+
+            oauth_config.tumblelogs.map(function(tumblelog) {
+                ol.appendChild(buildElement('li', {}, tumblelog.hostname + ': ' + tumblelog.name));
+            });
+        });
+
+        config_dialog.centering();
+    };
+
+    Tornado.windows.tornado_help = function tornado_help (e) {
+        var help_dialog = new LiteDialog('Tumblr Tornado Help');
+        var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
     
+        help_dialog.dialog.id = 'tornado_help_dialog';
+    
+        var helps_list = buildElement('table', {border: '1', class: 'tornado_help_list'});
+    
+        Tornado._shortcuts.map(function(shortcut, i, all) {
+            var label;
+    
+            if (i == 0 ||
+                all[i-1].group != all[i].group) {
+                var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
+                label = buildElement('th', {colspan: '3'});
+                label.innerHTML = [
+                    "その他のコマンド",
+                    "標準のコマンド",
+                    "Reblog コマンド",
+                    "チャンネル Reblog コマンド",
+                    "自ポストへの操作コマンド",
+                    "スクロールコマンド",
+                    "ポストの表示操作"][shortcut.group];
+                tr.appendChild(label);
+                helps_list.appendChild(tr);
+
+                tr = buildElement('tr', {},
+                       ["<td class=\"tornado_short_title\">Title</td>",
+                         "<td class=\"tornado_short_key\">Key</td>",
+                         "<td class=\"tornado_short_desc\">Description</td>"].join(''));
+                tr.style.cssText = "text-align: center;";
+                helps_list.appendChild(tr);
+            }
+    
+            /* TODO: title と key を一つの要素に納めます */
+            var li = buildElement('tr'),
+                title_box = buildElement('td', {class: 'tornado_short_title'}),
+                key_box = buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
+                desc_box = buildElement('td', {class: 'tornado_short_desc'});
+    
+            var key = [], desc, options;
+    
+            title_box.innerHTML = (shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title"));
+    
+            if (shortcut.follows) {
+                key = key.concat(shortcut.follows);
+            }
+            key.push((shortcut.ctrl  ? 'Ctrl+'  : '') +
+                     (shortcut.alt   ? 'Alt+'   : '') +
+                     (shortcut.shift ? 'Shift+' : '') +
+                     shortcut.match);
+    
+            key_box.innerHTML = key.join(', ');
+    
+            desc = buildElement('p', {}, shortcut.desc || shortcut.func.name || shortcut.func);
+    
+            desc_box.appendChild(desc);
+    
+            options = buildElement('ul', {class: 'tornado_help_options'});
+            if (shortcut.has_selector) {
+                options.appendChild(buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
+            }
+            if (shortcut.url) {
+                options.appendChild(buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
+            }
+    
+            desc_box.appendChild(options);
+    
+            li.appendChild(title_box);
+            li.appendChild(key_box);
+            li.appendChild(desc_box);
+    
+            helps_list.appendChild(li);
+        });
+    
+        dialog_body.appendChild(helps_list);
+        
+        help_dialog.centering();
+    };
+
     /**
      * 右カラムにヘルプを表示します
      */
@@ -1649,163 +1757,11 @@
             {}, 
             'Tumblr Tornado <span class="show_tornado_config">[conf]</span> <span class="show_tornado_help">[ ? ]</span>');
 
-        function getRequestToken() {
-            var url = 'http://www.tumblr.com/oauth/request_token';
-            var accessor = {
-                consumerKey: Tornado.vals.CONSUMER_KEY,
-                consumerSecret: Tornado.vals.CONSUMER_SECRET
-            };
-
-            var message = { method: 'GET', action: url};
-            var request_body = OAuth.formEncode(message.parameters);
-            OAuth.completeRequest(message, accessor);
-
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function receiveRequestToken(_xhr) {
-                if (xhr.readyState == 4) {
-                    if (xhr.status == 200) { }
-                    else { }
-                }
-            };
-            xhr.open(message.method, message.action, false);
-            var realm = "";
-            xhr.setRequestHeader('Authorization', OAuth.getAuthorizationHeader(realm, message.parameters));
-            xhr.send(request_body);
-
-            var response = OAuth.decodeForm(xhr.responseText);
-            var result = {};
-
-            result[response[0][0]] = response[0][1];
-            result[response[1][0]] = response[1][1];
-            result[response[2][0]] = response[2][1];
-
-            return result;
-        };
-
         /* Tornado config ウィンドウを表示します */
-        header_help.querySelector('span.show_tornado_config').addEventListener('click', function(e) {
-            var config_dialog = new LiteDialog('Tumblr Tornado Config');
-            var dialog_body = config_dialog.dialog.querySelector('.lite_dialog_body');
-
-            if (typeof OAuth == 'undefined') {
-                dialog_body.innerHTML = 
-                     '<p>この環境ではこの機能に対応していません。</p>'
-                   + '<p>Chrome では <a href="https://chrome.google.com/webstore/detail/ninjakit/gpbepnljaakggeobkclonlkhbdgccfek">NinjaKit</a> を'
-                   + ' Firefox では <a href="https://addons.mozilla.org/firefox/addon/greasemonkey/">Greasemonkey</a> の使用を推奨します。</p>';
-                config_dialog.centering();
-                return;
-            }
-
-            var request_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 認証します'));
-            request_button.addEventListener('click', function() {
-                var request_accessor = getRequestToken();
-                GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
-
-                location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
-            });
-
-            var reset_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 情報を消去します'));
-            reset_button.addEventListener('click', function() {
-                GM_deleteValue('oauth_token_secret');
-                GM_deleteValue('oauthconfigs');
-            });
-
-            Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
-
-            var config_list = dialog_body.appendChild(buildElement('ul'));
-
-            Tornado.oauthconfigs.map(function(oauth_config){
-                var li = config_list.appendChild(buildElement('li', {}, 'id:' + oauth_config.id));
-                var ol = li.appendChild(buildElement('ol'));
-
-                oauth_config.tumblelogs.map(function(tumblelog) {
-                    ol.appendChild(buildElement('li', {}, tumblelog.hostname + ': ' + tumblelog.name));
-                });
-            });
-
-            config_dialog.centering();
-        });
+        header_help.querySelector('span.show_tornado_config').addEventListener('click', Tornado.windows.tornado_config);
 
         /* ヘルプウィンドウを表示します */
-        header_help.querySelector('span.show_tornado_help').addEventListener('click', function(e) {
-            var help_dialog = new LiteDialog('Tumblr Tornado Help');
-            var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
-    
-            help_dialog.dialog.id = 'tornado_help_dialog';
-    
-            var helps_list = buildElement('table', {border: '1', class: 'tornado_help_list'});
-    
-            Tornado._shortcuts.map(function(shortcut, i, all) {
-                var label;
-    
-                if (i == 0 ||
-                    all[i-1].group != all[i].group) {
-                    var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
-                    label = buildElement('th', {colspan: '3'});
-                    label.innerHTML = [
-                        "その他のコマンド",
-                        "標準のコマンド",
-                        "Reblog コマンド",
-                        "チャンネル Reblog コマンド",
-                        "自ポストへの操作コマンド",
-                        "スクロールコマンド",
-                        "ポストの表示操作"][shortcut.group];
-                    tr.appendChild(label);
-                    helps_list.appendChild(tr);
-
-                    tr = buildElement('tr', {},
-                           ["<td class=\"tornado_short_title\">Title</td>",
-                             "<td class=\"tornado_short_key\">Key</td>",
-                             "<td class=\"tornado_short_desc\">Description</td>"].join(''));
-                    tr.style.cssText = "text-align: center;";
-                    helps_list.appendChild(tr);
-                }
-    
-                /* TODO: title と key を一つの要素に納めます */
-                var li = buildElement('tr'),
-                    title_box = buildElement('td', {class: 'tornado_short_title'}),
-                    key_box = buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
-                    desc_box = buildElement('td', {class: 'tornado_short_desc'});
-    
-                var key = [], desc, options;
-    
-                title_box.innerHTML = (shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title"));
-    
-                if (shortcut.follows) {
-                    key = key.concat(shortcut.follows);
-                }
-                key.push((shortcut.ctrl  ? 'Ctrl+'  : '') +
-                         (shortcut.alt   ? 'Alt+'   : '') +
-                         (shortcut.shift ? 'Shift+' : '') +
-                         shortcut.match);
-    
-                key_box.innerHTML = key.join(', ');
-    
-                desc = buildElement('p', {}, shortcut.desc || shortcut.func.name || shortcut.func);
-    
-                desc_box.appendChild(desc);
-    
-                options = buildElement('ul', {class: 'tornado_help_options'});
-                if (shortcut.has_selector) {
-                    options.appendChild(buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
-                }
-                if (shortcut.url) {
-                    options.appendChild(buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
-                }
-    
-                desc_box.appendChild(options);
-    
-                li.appendChild(title_box);
-                li.appendChild(key_box);
-                li.appendChild(desc_box);
-    
-                helps_list.appendChild(li);
-            });
-    
-            dialog_body.appendChild(helps_list);
-            
-            help_dialog.centering();
-        });
+        header_help.querySelector('span.show_tornado_help').addEventListener('click', Tornado.windows.tornado_help);
     
         rightcolumn_help.appendChild(header_help);
     
@@ -1831,6 +1787,36 @@
             }
         })(document.querySelector('#right_column'));
     }
+
+    Tornado.getRequestToken = function getRequestToken() {
+        var url = 'http://www.tumblr.com/oauth/request_token';
+        var accessor = {
+            consumerKey: Tornado.vals.CONSUMER_KEY,
+            consumerSecret: Tornado.vals.CONSUMER_SECRET
+        };
+
+        var message = { method: 'GET', action: url};
+        var request_body = OAuth.formEncode(message.parameters);
+        OAuth.completeRequest(message, accessor);
+
+        var a = new Ajax(message.action, {
+            method: message.method, 
+            asynchronous: false,
+            parameters: request_body,
+            requestHeaders: [
+                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
+            ],
+        })
+
+        var response = OAuth.decodeForm(a.xhr.responseText);
+        var result = {};
+
+        result[response[0][0]] = response[0][1];
+        result[response[1][0]] = response[1][1];
+        result[response[2][0]] = response[2][1];
+
+        return result;
+    };
 
     Tornado.getAccessToken = function getAccessToken() {
         var tokens = OAuth.decodeForm(location.search.slice(1));
@@ -1858,22 +1844,16 @@
         var request_body = OAuth.formEncode(message.parameters);
         OAuth.completeRequest(message, accessor);
 
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function receiveAccessToken(_xhr) {
-            if (_xhr.readyState == 4) {
-                if (_xhr.status == 200) {
-                    /* 成功 */
-                }
-                else {}
-            }
-        };
+        var a = new Ajax(message.action, {
+            method: message.method,
+            parameters: message.parameters,
+            asynchronous: false,
+            requestHeaders: [
+                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
+            ],
+        });
 
-        xhr.open(message.method, message.action, false);
-        var realm = '';
-        xhr.setRequestHeader('Authorization', OAuth.getAuthorizationHeader(realm, message.parameters));
-        xhr.send(request_body);
-
-        var response = OAuth.decodeForm(xhr.responseText);
+        var response = OAuth.decodeForm(a.xhr.responseText);
         var access_tokens = {};
 
         access_tokens[response[0][0]] = response[0][1];
@@ -1887,7 +1867,7 @@
 
         var base_name = document.querySelector('#search_field [name=t]').value;
 
-        var tumblelogs = Array.prototype.slice.call(document.querySelectorAll('#popover_blogs .item a')).map(function(item){
+        var tumblelogs =  $$('#popover_blogs .item a').map(function(item){
             return {
                 name: item.text.trim(),
                 hostname: item.href.split('/').slice(-1)[0] + '.tumblr.com'
@@ -1940,9 +1920,7 @@
      * ページロード時に一度だけ呼び出されます
      */
     function main() {
-        // document.addEventListener('keydown', Tornado.keyevent, true);
-        var keyevent = preapply(Tornado, Tornado.keyevent);
-        document.addEventListener('keydown', keyevent, true); /* FIXME: preapply を使用しないようにします(thisを使用しないコードにします) */
+        document.addEventListener('keydown', Tornado.keyevent, true);
 
         var style = document.head.appendChild(document.createElement('style'));
         style.className = 'tumblr_userscript';
