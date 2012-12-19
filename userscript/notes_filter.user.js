@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.6
+// @version     1.0.7
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -133,12 +133,33 @@
         }
     }
 
+    function postDoubleClick(e) {
+        var elm, style;
+
+        elm = e.target;
+        postfound: {
+            while (elm.tagName && elm.id != 'posts') {
+                if (elm.tagName.toUpperCase() == 'LI' &&
+                    /\bpost\b/.test(elm.className)) {
+                    break postfound;
+                }
+                elm = elm.parentNode;
+            }
+            return;
+        }
+        window.scrollTo(0, elm.offsetTop - 7);
+
+        getSelection().removeAllRanges(); // ダブルクリックによって文字/画像の選択が発生するのを抑止しています
+    }
+
+
     function main() {
         filter_value = 500;
         filter_type = 'over';
         now_filtering = false;
 
         document.querySelector('#posts').addEventListener('DOMNodeInserted', filterEvent);
+        document.querySelector('#posts').addEventListener('dblclick', postDoubleClick, true);
         embedCustomOperator();
     }
 
