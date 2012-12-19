@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.7
+// @version     1.0.8
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -92,8 +92,7 @@
         if (elm_notes == null) {
             return false;
         }
-
-        notes_count = parseInt(elm_notes.innerHTML.replace(/(,|\.| )/g, ''));
+        notes_count = parseInt(elm_notes.innerHTML.replace(/(,|\.|\s|\u2002)/g, ''));
 
         if (filter_type == 'over') {
             return (notes_count > filter_value);
@@ -107,7 +106,6 @@
     function launchFilter() {
         Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
             if (filter(elm) == false) {
-                // elm.parentNode.removeChild(elm);
                 elm.classList.add('notesfilter_flagged');
             }
         });
@@ -128,7 +126,6 @@
 
         elm = e.target;
         if (elm && elm.nodeType == 1 && filter(elm) == false) {
-            // elm.parentNode.removeChild(elm);
             elm.classList.add('notesfilter_flagged');
         }
     }
