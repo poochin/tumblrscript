@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.0
+// @version     1.2.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -53,6 +53,7 @@
             ],
         },
     ];
+    Tornado.exclude_tumblelogs = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
@@ -239,6 +240,16 @@
         ".lite_dialog.channel_dialog {",
         "    min-width: 300px;",
         "    max-width: 300px;",
+        "}",
+        ".lite_dialog.channel_dialog .lite_dialog_body > fieldset {",
+        "    width: 265px;",
+        "}",
+        /* Tornado Config Dialog */
+        ".lite_dialog .lite_dialog_body .oauth_config label input[type=checkbox] + span {",
+        "    color: #888;",
+        "}",
+        ".lite_dialog .lite_dialog_body .oauth_config label input[type=checkbox]:checked + span {",
+        "    color: #000;",
         "}",
         /* Help Dialog */
         "#tornado_help_dialog {",
@@ -978,18 +989,26 @@
                 var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
 
                 var oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
+                var exclude_tumblelogs = JSON.parse(GM_getValue('exclude_tumblelogs', '{}'));
                 var tumblelogs = [];
 
                 var button_num = 0;
                 oauthconfigs.map(function(oauth_config, id_num){
+                    var fieldset = dialog_body.appendChild(buildElement('fieldset', {}, '<legend>' + (oauth_config.id) + '</legend>'));
+
                     oauth_config.tumblelogs.map(function(tumblelog, tumblelog_num){
+                        if (exclude_tumblelogs[oauth_config.id] != undefined &&
+                            exclude_tumblelogs[oauth_config.id][tumblelog.hostname] == true) {
+                            return;
+                        }
+
                         button_num += 1;
 
                         var button = buildElement('input', {
                             type: 'button',
                             class: 'button' + (button_num),
                             name: 'button' + [id_num, tumblelog_num].join('_'),
-                            value: '[' + (button_num) + ']: ' + [oauth_config.id, tumblelog.name].join('/')
+                            value: '[' + (button_num) + ']: ' + tumblelog.name
                         });
 
                         button.addEventListener('click', function(e) {
@@ -1008,7 +1027,7 @@
                             Tornado.funcs.apiReblog(post, state_text, target_blog_info);
                             dialog.close();
                         });
-                        dialog_body.appendChild(button);
+                        fieldset.appendChild(button);
                     });
                 });
 
@@ -1649,15 +1668,55 @@
         });
 
         Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
+        Tornado.exclude_tumblelogs = JSON.parse(GM_getValue('exclude_tumblelogs', '{}'));
 
-        var config_list = dialog_body.appendChild(buildElement('ul'));
+        var config_list = dialog_body.appendChild(buildElement('ul', {class: 'oauth_config'}));
 
-        Tornado.oauthconfigs.map(function(oauth_config){
+        Tornado.oauthconfigs.map(function(oauth_config, i){
             var li = config_list.appendChild(buildElement('li', {}, 'id:' + oauth_config.id));
+            var delete_button = li.appendChild(buildElement('button', {class: 'button' + i}, 'アカウント情報を消去'));
+
+            delete_button.addEventListener('click', function(e) {
+                var button = e.target;
+                var i = parseInt(button.className.match(/button(\d+)/)[1]);
+
+                Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
+                Tornado.oauthconfigs = Tornado.oauthconfigs.filter(function(j,k) {return k != i;});
+                GM_setValue('oauthconfigs', JSON.stringify(Tornado.oauthconfigs));
+
+                Tornado.exclude_tumblelogs = JSON.parse(GM_getValue('exclude_tumblelogs', '{}'));
+                delete Tornado.exclude_tumblelogs[oauth_config.id];
+                GM_setValue('exclude_tumblelogs', JSON.stringify(Tornado.exclude_tumblelogs));
+
+                li.parentNode.removeChild(li);
+            });
+
             var ol = li.appendChild(buildElement('ol'));
 
-            oauth_config.tumblelogs.map(function(tumblelog) {
-                ol.appendChild(buildElement('li', {}, tumblelog.hostname + ': ' + tumblelog.name));
+            oauth_config.tumblelogs.map(function(tumblelog, j) {
+                var checked, list_tumblelog;
+
+                checked = (Tornado.exclude_tumblelogs[oauth_config.id]
+                           ? (Tornado.exclude_tumblelogs[oauth_config.id][tumblelog.hostname] === true
+                              ? ''
+                              : 'checked')
+                           : 'checked');
+
+                list_tumblelog = ol.appendChild(buildElement('li', {}, '<label><input type="checkbox" ' + checked + '/><span>' + tumblelog.hostname + ': ' + tumblelog.name + '</span></label>'));
+                list_tumblelog.querySelector('input[type=checkbox]').addEventListener('change', function(e) {
+                    if (Tornado.exclude_tumblelogs[oauth_config.id] == undefined) {
+                        Tornado.exclude_tumblelogs[oauth_config.id] = {};
+                    }
+
+                    if (e.target.checked) {
+                        Tornado.exclude_tumblelogs[oauth_config.id][tumblelog.hostname] = false;
+                    }
+                    else {
+                        Tornado.exclude_tumblelogs[oauth_config.id][tumblelog.hostname] = true;
+                    }
+
+                    GM_setValue('exclude_tumblelogs', JSON.stringify(Tornado.exclude_tumblelogs));
+                });
             });
         });
 
