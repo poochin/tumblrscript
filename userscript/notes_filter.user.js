@@ -79,7 +79,7 @@
             button_enable.style.display = 'inline';
             button_disable.style.display = 'none';
 
-            trimFilter();
+            quitFilter();
         });
 
         document.body.querySelector('#right_column').appendChild(fieldset);
@@ -92,14 +92,15 @@
         if (elm_notes == null) {
             return false;
         }
-        notes_count = parseInt(elm_notes.innerHTML.replace(/(,|\.|\s|\u2002)/g, ''));
 
+        notes_count = parseInt(elm_notes.innerHTML.replace(/(,|\.|\s|\u2002)/g, ''));
         if (filter_type == 'over') {
             return (notes_count > filter_value);
         }
         else if (filter_type == 'less') {
             return (notes_count <= filter_value);
         }
+
         return false;
     }
 
@@ -111,7 +112,7 @@
         });
     }
 
-    function trimFilter() {
+    function quitFilter() {
         Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
             elm.classList.remove('notesfilter_flagged');
         });
@@ -149,7 +150,6 @@
         getSelection().removeAllRanges(); // ダブルクリックによって文字/画像の選択が発生するのを抑止しています
     }
 
-
     function main() {
         filter_value = 500;
         filter_type = 'over';
@@ -157,13 +157,14 @@
 
         document.querySelector('#posts').addEventListener('DOMNodeInserted', filterEvent);
         document.querySelector('#posts').addEventListener('dblclick', postDoubleClick, true);
+
         embedCustomOperator();
     }
 
     function isExecPage() {
+        /* for Opera function */
         return (/^https?:\/\/www\.tumblr\.com\/dashboard\/?/.test(location) ||
                 /^https?:\/\/www\.tumblr\.com\/tagged\/?/.test(location));
-
     }
 
     function boot() {
