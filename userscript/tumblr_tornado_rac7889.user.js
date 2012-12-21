@@ -14,7 +14,7 @@
 // @author      poochin
 // @license     MIT
 // @updated     2012-07-04
-// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
+// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado_rac7889.user.js
 // ==/UserScript==
 
 /**

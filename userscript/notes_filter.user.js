@@ -9,7 +9,7 @@
 // @author      poochin
 // @license     MIT
 // @updated     2012-12-09
-// @updateURL   https://github.com/poochin/tumblrscript/
+// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/notes_filter.user.js
 // ==/UserScript==
 
 (function NotesFilter() {

@@ -2,13 +2,13 @@
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
-// @version     1.0.4
+// @version     1.0.4.1
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
 // @license     MIT
 // @updated     2012-06-16
-// @updateURL   https://gist.github.com/2931134
+// @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/dashboad_loadian.user.js
 // ==/UserScript==
 
 (function DashboardLoadian() {
