@@ -959,6 +959,7 @@
                         var json = JSON.parse(xhr.responseText);
                         new PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
                     }
+                    reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
                 }
             };
             var realm = "";
@@ -967,6 +968,9 @@
                 'Content-Type': "application/x-www-form-urlencoded"
             };
 
+            Tornado.funcs.shutterEffect(post);
+            reblog_button.className += ' loading';
+        
             GM_xmlhttpRequest({
                 url: message.action,
                 method: message.method,
