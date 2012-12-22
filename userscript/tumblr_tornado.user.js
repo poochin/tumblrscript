@@ -241,8 +241,8 @@
         "    min-width: 300px;",
         "    max-width: 300px;",
         "}",
-        ".lite_dialog.channel_dialog .lite_dialog_body > fieldset {",
-        "    width: 265px;",
+        ".lite_dialog.channel_dialog .lite_dialog_body p {",
+        "    margin: 0;",
         "}",
         /* Tornado Config Dialog */
         ".lite_dialog .lite_dialog_body .oauth_config label input[type=checkbox] + span {",
@@ -994,7 +994,11 @@
 
                 var button_num = 0;
                 oauthconfigs.map(function(oauth_config, id_num){
-                    var fieldset = dialog_body.appendChild(buildElement('fieldset', {}, '<legend>' + (oauth_config.id) + '</legend>'));
+                    if (dialog_body.lastChild && dialog_body.lastChild.tagName.toUpperCase() != 'HR') {
+                        dialog_body.appendChild(document.createElement('hr'));
+                    }
+
+                    var account_div = buildElement('div', {}, '<p>Account: <span style="font-weight: bold;">' + (oauth_config.id) + '</span></p>');
 
                     oauth_config.tumblelogs.map(function(tumblelog, tumblelog_num){
                         if (exclude_tumblelogs[oauth_config.id] != undefined &&
@@ -1027,8 +1031,12 @@
                             Tornado.funcs.apiReblog(post, state_text, target_blog_info);
                             dialog.close();
                         });
-                        fieldset.appendChild(button);
+                        account_div.appendChild(button);
                     });
+
+                    if (account_div.children.length > 1) {
+                        dialog_body.appendChild(account_div);
+                    }
                 });
 
                 dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
