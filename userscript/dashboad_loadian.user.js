@@ -2,7 +2,9 @@
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
-// @version     1.0.4.1
+// @include     http://www.tumblr.com/show*
+// @include     http://www.tumblr.com/tagged*
+// @version     1.0.5
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -111,7 +113,9 @@
      * @return {Bool} 実行すべきページなら true を返します
      */
     function isExecPage() {
-        return /^https?:\/\/www\.tumblr\.com\/dashboard.*/.test(location);
+        return /^https?:\/\/www\.tumblr\.com\/dashboard.*/.test(location) ||
+               /^https?:\/\/www\.tumblr\.com\/show.*/.test(location) ||
+               /^https?:\/\/www\.tumblr\.com\/tagged.*/.test(location);
     }
 
     /**
