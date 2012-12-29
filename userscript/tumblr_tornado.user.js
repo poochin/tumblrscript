@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.2
+// @version     1.2.3
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -29,6 +29,7 @@
     var Tornado = {};
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
+
     Tornado.funcs = {};
     Tornado.vals = {};
 
@@ -54,7 +55,10 @@
         },
     ];
     Tornado.exclude_tumblelogs = {};
+    Tornado.i18n = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
+    Tornado.lang = window.navigator.language;
+    Tornado.gm_api = (typeof GM_info != 'undefined' ? true : false);
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
     Tornado.vals.CONSUMER_SECRET = 'wYZ7hzCu5NnSJde8U2d7BW6pz0mtMMAZCoGgGKnT4YNB8uZNDL';
@@ -1375,7 +1379,10 @@
         return [
             customkey('j', customfuncs.default, {
                 title: 'Next',
-                desc: '次ポストへ移動',
+                desc: {
+                    ja: '次ポストへ移動',
+                    en: 'Go to the next post'
+                },
                 group: 1,
                 grouporder: 1,
             }),
@@ -1383,13 +1390,19 @@
                 title: '下へ半スクロール',
                 shift: true,
                 usehelp: 'hide',
-                desc: '下へ半スクロールします',
+                desc: {
+                    ja: '下へ半スクロールします',
+                    en: 'Half scroll down'
+                },
                 group: 5
             }),
 
             customkey('k', customfuncs.default, {
                 title: 'Prev',
-                desc: '前ポストへ移動',
+                desc: {
+                    ja: '前ポストへ移動',
+                    en: 'Go the the previous post'
+                },
                 group: 1,
                 grouporder: 2,
             }),
@@ -1397,13 +1410,19 @@
                 title: '上へ半スクロール',
                 shift: true,
                 usehelp: 'hide',
-                desc: '上へ半スクロールします',
+                desc: {
+                    ja: '上へ半スクロールします',
+                    en: 'Half scroll up'
+                },
                 group: 5
             }),
 
             customkey('l', customfuncs.default, {
                 title: 'Like',
-                desc: 'Like します',
+                desc: {
+                    ja: 'Like します',
+                    en: 'Like this post'
+                },
                 group: 1,
                 grouporder: 3,
             }),
@@ -1412,7 +1431,10 @@
                 title: '一番上へ',
                 follows: ['g'],
                 usehelp: 'hide',
-                desc: '一番上へスクロールします',
+                desc: {
+                    ja: '一番上へスクロールします',
+                    en: 'Go Top',
+                },
                 group: 5,
                 grouporder: 1,
             }),
@@ -1420,13 +1442,19 @@
                 title: '一番下へ',
                 shift: true,
                 usehelp: 'hide',
-                desc: '一番下へスクロールします',
+                desc: {
+                    ja: '一番下へスクロールします',
+                    en: 'Go Bottom',
+                },
                 group: 5,
                 grouporder: 2,
             }),
             customkey('o', customfuncs.jumpToLastCursor, {
                 title: '最後のカーソルへ飛ぶ',
-                desc: 'gg や G で移動した際に最後のカーソル位置へ戻ります',
+                desc: {
+                    ja: 'gg や G で移動した際に最後のカーソル位置へ戻ります',
+                    en: 'Go back Last Cursor(when gg, G)'
+                },
                 shift: true,
                 usehelp: false,
                 group: 5,
@@ -1435,31 +1463,46 @@
 
             customkey('t', customfuncs.reblog, {
                 title: 'Reblog',
-                desc: '通常のリブログを行います',
+                desc: {
+                    ja: '通常のリブログを行います',
+                    en: 'Reblog'
+                },
                 group: 2,
                 grouporder: 1,
             }),
             customkey('h', customfuncs.fast_reblog, {
                 title: 'fast Reblog',
-                desc: '高速リブログを行います',
+                desc: {
+                    ja: '高速リブログを行います',
+                    en: 'Fast Reblog',
+                },
                 group: 2,
                 grouporder: 2,
             }),
             customkey('d', customfuncs.draft, {
                 title: 'Draft',
-                desc: '下書きへ送ります',
+                desc: {
+                    ja: '下書きへ送ります',
+                    en: 'Save as draft'
+                },
                 group: 2,
                 grouporder: 3,
             }),
             customkey('q', customfuncs.queue, {
                 title: 'Queue',
-                desc: 'キューへ送ります',
+                desc: {
+                    ja: 'キューへ送ります',
+                    en: 'Add to queue'
+                },
                 group: 2,
                 grouporder: 5,
             }),
             customkey('p', customfuncs.private, {
                 title: 'Private',
-                desc: 'プライベートなリブログを行います',
+                desc: {
+                    ja: 'プライベートなリブログを行います',
+                    en: 'Private reblog'
+                },
                 group: 2,
                 grouporder: 5,
             }),
@@ -1467,44 +1510,66 @@
             customkey('t', customfuncs.reblogToChannel, {
                 title: 'channel Reblog',
                 follows: ['g'],
-                desc: 'channel へリブログ',
+                desc: {
+                    ja: 'channel へリブログ',
+                    en: 'Reblog to channel',
+                },
                 group: 3,
                 grouporder: 1,
             }),
             customkey('d', customfuncs.draftToChannel, {
                 title: 'channel Draft',
                 follows: ['g'],
-                desc: 'channel へ下書き',
+                desc: {
+                    ja: 'channel へ下書き',
+                    en: 'Save to channel as draft'
+                },
                 group: 3,
                 grouporder: 2,
             }),
             customkey('q', customfuncs.queueToChannel, {
                 title: 'channel Queue',
                 follows: ['g'],
-                desc: 'channel のキューへ送る',
+                desc: {
+                    ja: 'channel のキューへ送る',
+                    en: 'Add to channel to queue'
+                },
                 group: 3,
                 grouporder: 3,
             }),
             customkey('p', customfuncs.privateToChannel, {
                 title: 'channel Private',
                 follows: ['g'],
-                desc: 'channel の private でリブログ',
+                desc: {
+                    ja: 'channel の private でリブログ',
+                    en: 'Private reblog'
+                },
                 group: 3,
                 grouporder: 4,
             }),
 
             customkey('i', customfuncs.scaleImage, {
                 title: 'photo, video 開閉',
-                desc: '画像や動画ポストを拡縮、開閉します',
+                desc: {
+                    ja: '画像や動画ポストを拡縮、開閉します',
+                    en: 'Scale image or Open video'
+                },
                 group: 0
             }),
             customkey('m', customfuncs.rootInfo, {
                 title: 'Root 投稿者情報',
-                desc: 'Root 投稿者情報を取得します',
+                desc: {
+                    ja: 'Root 投稿者情報を取得します',
+                    en: 'Get root post user',
+                },
                 group: 0
             }),
             customkey('v', customfuncs.viewPostPageInBackground, {
                 title: 'ポストを開く',
+                desc: {
+                    ja: '現在のポストを新タブで開きます',
+                    en: 'Open new tab this post'
+                },
                 usehelp: 'hide',
                 group: 5
             }),
@@ -1512,7 +1577,10 @@
             customkey('c', customfuncs.cleanPosts, {
                 title: '上ポストを空白',
                 usehelp: 'hide',
-                desc: '現在より上のポストを空の状態にします',
+                desc: {
+                    ja: '現在より上のポストを空の状態にします',
+                    en: 'Clean above post'
+                },
                 group: 6,
                 grouporder: 1,
             }),
@@ -1520,7 +1588,10 @@
                 title: '上ポストを削除',
                 shift: true,
                 usehelp: 'hide',
-                desc: '現在より上のポストを画面から削除します',
+                desc: {
+                    ja: '現在より上のポストを画面から削除します',
+                    en: 'Remove above post'
+                },
                 group: 6,
                 grouporder: 2,
             }),
@@ -1529,7 +1600,10 @@
                 shift: true,
                 follows: ['g'],
                 usehelp: 'hide',
-                desc: '現在より下のポストを画面から削除します',
+                desc: {
+                    ja: '現在より下のポストを画面から削除します',
+                    en: 'Remove following post'
+                },
                 group: 6,
                 grouporder: 3,
             }),
@@ -1537,7 +1611,10 @@
             customkey('n', customfuncs.default, {
                 title: 'Notes',
                 usehelp: 'hide',
-                desc: 'Notes を開閉',
+                desc: {
+                    ja: 'Notes を開閉',
+                    en: 'Open Notes'
+                },
                 group: 1,
                 grouporder: 4,
             }),
@@ -1549,14 +1626,20 @@
 
             customkey('d', customfuncs.delete, {
                 title: '自ポストを削除',
-                desc: 'Post が自分のものならばポストを削除します',
+                desc: {
+                    ja: 'Post が自分のものならばポストを削除します',
+                    en: 'Delete my post'
+                },
                 has_selector: 'form[id^=delete]',
                 usehelp: 'hide',
                 group: 4
             }),
             customkey('d', customfuncs.forceDelete, {
                 title: '自ポストを強制削除',
-                desc: '確認ボックスを表示することなくポストを削除します',
+                desc: {
+                    ja: '確認ボックスを表示することなくポストを削除します',
+                    en: 'Force delete my post',
+                },
                 shift: true,
                 has_selector: 'form[id^=delete]',
                 usehelp: 'hide',
@@ -1564,14 +1647,20 @@
             }),
             customkey('p', customfuncs.publish, {
                 title: '自ポストを公開',
-                desc: 'Drafts か Queue のポストを公開します',
+                desc: {
+                    ja: 'Drafts か Queue のポストを公開します',
+                    en: 'Publish my post drafted or queued'
+                },
                 has_selector: 'form[id^=publish]',
                 usehelp: 'hide',
                 group: 4
             }),
             customkey('q', customfuncs.enqueue, {
                 title: '下書きをキューに',
-                desc: 'Drafts を Queue へ納めます',
+                desc: {
+                    ja: 'Drafts を Queue へ納めます',
+                    en: 'Enqueue my draft',
+                },
                 has_selector: 'form[id^=queue]',
                 usehelp: 'hide',
                 group: 4
@@ -1788,8 +1877,10 @@
                      shortcut.match);
     
             key_box.innerHTML = key.join(', ');
-    
-            desc = buildElement('p', {}, shortcut.desc || shortcut.func.name || shortcut.func);
+
+            var description = (shortcut.desc && (shortcut.desc[Tornado.lang] || shortcut.desc['en'] || shortcut.desc['ja'] || shortcut.desc)) ||
+                               shortcut.func.name;
+            var desc = buildElement('p', {}, description);
     
             desc_box.appendChild(desc);
     
