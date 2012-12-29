@@ -2,7 +2,7 @@
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.0
+// @version     1.0.1
 // @description ユーザスクリプトの概要を記入してください
 // 
 // @author      poochin
@@ -14,6 +14,9 @@
 (function Skelton() {
 
     var css = [
+        "#posts > .notification {",
+        "    overflow: visible;",
+        "}",
         "#posts > .notification img.full {",
         "    display: none !important;",
         "    position: absolute !important;",
@@ -44,6 +47,12 @@
         }
     }
 
+    function addAltText(elm) {
+        var quote;
+        quote = elm.querySelector('em').textContent;
+        quote = quote.replace(/(\s|\r|\n)+/g, ' ');
+        elm.setAttribute('title', quote);
+    }
 
     function main() {
         var style, notifications;
@@ -53,11 +62,13 @@
 
         notifications = Array.prototype.slice.call(document.querySelectorAll('#posts > .notification'));
         notifications.map(appendFullImage);
+        notifications.map(addAltText);
 
         document.getElementById('posts').addEventListener('DOMNodeInserted', function(e) {
             var elm = e.target;
             if (/\bnotification\b/.test(elm.className)) {
                 appendFullImage(elm);
+                addAltText(elm);
             }
         });
     }
