@@ -1739,6 +1739,7 @@
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
         '}',
+        'Tumblr.KeyCommands.scroll_speed=20;',
     ];
 
     Tornado.windows.tornado_config = function tornado_config(e) {
