@@ -612,6 +612,10 @@
                 }
             }
         }
+
+        if (options.parameters && (typeof options.parameters != 'string')) {
+            options.parameters = buildQueryString(options.parameters);
+        }
     
         if (options.method == undefined && options.parameters) {
             options.method = 'POST';
@@ -1766,7 +1770,7 @@
             return;
         }
 
-        var request_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 認証します'));
+        var request_button = dialog_body.appendChild(buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 認証します', en: 'Authorize OAuth'})));
         request_button.addEventListener('click', function() {
             var request_accessor = Tornado.getRequestToken();
             GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
@@ -1774,7 +1778,7 @@
             location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
         });
 
-        var reset_button = dialog_body.appendChild(buildElement('button', {}, 'OAuth 情報を消去します'));
+        var reset_button = dialog_body.appendChild(buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 情報を消去します', en: 'Clear OAuth information'})));
         reset_button.addEventListener('click', function() {
             GM_deleteValue('oauth_token_secret');
             GM_deleteValue('oauthconfigs');
@@ -2040,6 +2044,7 @@
         var request_body = OAuth.formEncode(message.parameters);
         OAuth.completeRequest(message, accessor);
 
+        console.log(true);
         var a = new Ajax(message.action, {
             method: message.method,
             parameters: message.parameters,
@@ -2134,6 +2139,7 @@
                 return '(' + (code) + ')();\n';
             }
         }).join(''));
+
 
         if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
             Tornado.verifyAccessToken();
