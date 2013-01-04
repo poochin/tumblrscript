@@ -57,7 +57,7 @@
     Tornado.exclude_tumblelogs = {};
     Tornado.i18n = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
-    Tornado.lang = window.navigator.language;
+    Tornado.lang = window.navigator.language.split('-')[0];
     Tornado.gm_api = (typeof GM_info != 'undefined' ? true : false);
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
@@ -1111,6 +1111,16 @@
                 function() { post.classList.add('shuttering'); },
                 delay_shutter);
          },
+         i18n: function i18n(message) {
+            if (typeof message == 'string') {
+                return message;
+            }
+
+            return message[Tornado.lang] ||
+                   message['en'] ||
+                   message['ja'] ||
+                   message;
+        },
     };
 
     Tornado.customfuncs = {
@@ -1749,7 +1759,8 @@
         if (typeof OAuth == 'undefined') {
             dialog_body.innerHTML = 
                  '<p>この環境ではこの機能に対応していません。</p>'
-               + '<p>Chrome では <a href="https://chrome.google.com/webstore/detail/ninjakit/gpbepnljaakggeobkclonlkhbdgccfek">NinjaKit</a> を'
+               + '<p>Chrome では <a href="https://chrome.google.com/webstore/detail/ninjakit/gpbepnljaakggeobkclonlkhbdgccfek">NinjaKit</a> か'
+               + ' <a href="https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo">Tampermonkey</a> を、'
                + ' Firefox では <a href="https://addons.mozilla.org/firefox/addon/greasemonkey/">Greasemonkey</a> の使用を推奨します。</p>';
             config_dialog.centering();
             return;
@@ -1840,14 +1851,36 @@
                 all[i-1].group != all[i].group) {
                 var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
                 label = buildElement('th', {colspan: '3'});
-                label.innerHTML = [
-                    "その他のコマンド",
-                    "標準のコマンド",
-                    "Reblog コマンド",
-                    "チャンネル Reblog コマンド",
-                    "自ポストへの操作コマンド",
-                    "スクロールコマンド",
-                    "ポストの表示操作"][shortcut.group];
+                label.innerHTML = Tornado.funcs.i18n([
+                    {
+                        ja: 'その他のコマンド',
+                        en: 'Other Commands'
+                    },
+                    {
+                        ja: '標準のコマンド',
+                        en: 'Default Commands'
+                    },
+                    {
+                        ja: 'Reblog コマンド',
+                        en: 'Reblog Commands'
+                    },
+                    {
+                        ja: 'チャンネル Reblog コマンド',
+                        en: 'Channel Reblog Commands'
+                    },
+                    {
+                        ja: '自ポストへの操作コマンド',
+                        en: 'Operating your post'
+                    },
+                    {
+                        ja: 'スクロールコマンド',
+                        en: 'Scroll Commands'
+                    },
+                    {
+                        ja: 'ポストの表示操作',
+                        en: 'Operation post display'
+                    },
+                    ][shortcut.group]);
                 tr.appendChild(label);
                 helps_list.appendChild(tr);
 
