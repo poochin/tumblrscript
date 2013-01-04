@@ -16,12 +16,12 @@
     var filter_value, filter_type, now_filtering, embed_css;
 
     document.head.appendChild(document.createElement('style')).textContent = [
-        ".notesfilter_flagged {",
+        "#posts .post.notesfilter_flagged {",
         "   opacity: 0.5;",
-        "   max-height: 1em !important;",
+        "   max-height: 1.5em !important;",
         "}",
-        ".notesfilter_flagged > .post_content,",
-        ".notesfilter_flagged > .footer_links {",
+        "#posts .post.notesfilter_flagged .post_content,",
+        "#posts .post.notesfilter_flagged .footer_links {",
         "   display: none !important;",
         "}",
     ].join('\n');
