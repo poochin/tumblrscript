@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8
+// @version     1.2.8.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1069,7 +1069,7 @@
         },
         channelDialog: function channelDialog(post, postdata) {
 
-            if (window.GM_getValue || JSON.parse(GM_getValue('oauthconfigs', '[]')).length) {
+            if (Tornado.gm_api && JSON.parse(GM_getValue('oauthconfigs', '[]')).length) {
                 var state_text = Tornado.vals.state_texts[postdata["post[state]"]] || '';
                 var title = ['Reblog', (state_text) ? ('as ' + state_text) : ('') , 'to [channel]'].join(' ');
 
