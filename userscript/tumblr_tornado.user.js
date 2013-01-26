@@ -635,7 +635,8 @@
                 options.requestHeaders.indexOf('Content-Type') < 0 ||
                 options.requestHeaders.indexOf('Content-type') < 0 ||
                 options.requestHeaders.indexOf('content-type') < 0) {
-                // options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+                options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+                // FIXME: ここ Content-Type 設定してても入っちゃいます
             }
         }
     
@@ -948,7 +949,13 @@
                         parameters: JSON.stringify(postdata),
                         requestHeaders: ['Content-Type', 'application/json'],
                         onSuccess: function(_xhr) {
-                            console.log(_xhr);
+                            reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
+        
+                            var dp = default_postdata;
+                            new PinNotification([
+                                'Success: Reblogged',
+                                (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
+                                (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
                         },
                     });
                 },
