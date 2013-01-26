@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.7
+// @version     1.2.8
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -17,7 +17,7 @@
 //
 // @author      poochin
 // @license     MIT
-// @updated     2012-12-09
+// @updated     2013-01-26
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -631,7 +631,12 @@
             options.parameters = null;
         }
         else {
-            options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+            if (options.requestHeaders == undefined ||
+                options.requestHeaders.indexOf('Content-Type') < 0 ||
+                options.requestHeaders.indexOf('Content-type') < 0 ||
+                options.requestHeaders.indexOf('content-type') < 0) {
+                // options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+            }
         }
     
         xhr.open(options.method, url, async);
@@ -886,13 +891,77 @@
         
             var reblog_button = post.querySelector('a.reblog_button');
             reblog_button.className += ' loading';
-        
+
+            var reblog_id, reblog_key, form_key;
+            reblog_id = reblog_button.getAttribute('data-reblog-id');
+            reblog_key = reblog_button.getAttribute('data-reblog-key');
+            form_key = reblog_button.getAttribute('data-user-form-key');
+
+            var parameters = JSON.stringify({
+                reblog_id: reblog_id,
+                reblog_key: reblog_key,
+                form_key: form_key,
+                post_type: false
+            });
+
+            new Ajax('http://www.tumblr.com/svc/post/fetch', {
+                method: 'post',
+                parameters: parameters,
+                onSuccess: function(_xhr) {
+                    var response_json = JSON.parse(_xhr.response);
+
+                    var postdata = response_json;
+                    for (var name in postdata['post']) {
+                        postdata['post[' + name + ']'] = postdata['post'][name];
+                    }
+                    delete postdata['post'];
+                    for (var name in (default_postdata || {})) {
+                        postdata[name] = default_postdata[name];
+                    }
+
+                    postdata['reblog_id'] = parseInt(reblog_id);
+                    postdata['reblog_key'] = reblog_key;
+                    postdata['form_key'] = form_key;
+                    postdata['reblog'] = true;
+                    postdata['errors'] = false;
+                    postdata['silent'] = true;
+                    postdata['detached'] = true;
+                    postdata['silent'] = true;
+                    postdata['context_id'] = '';
+                    postdata['reblog_post_id'] = reblog_id;
+                    postdata['is_rich_text[one]'] = '0';
+                    postdata['is_rich_text[two]'] = '1';
+                    postdata['is_rich_text[three]'] = '0';
+                    postdata['post[slug]'] = '';
+                    postdata['post[draft_status]'] = '';
+                    postdata['post[data]'] = '';
+                    postdata['MAX_FILE_SIZE'] = "10485760";
+                    postdata['post[tags]'] = '';
+                    postdata['post[publish_on]'] = '';
+                    // postdata['post[state]'] = '';
+                    postdata['custom_tweet'] = '';
+                    postdata['post[photoset_order]'] = 'o1';
+                    postdata['images[o1]'] = '';
+
+                    new Ajax('http://www.tumblr.com/svc/post/update', {
+                        method: 'post',
+                        parameters: JSON.stringify(postdata),
+                        requestHeaders: ['Content-Type', 'application/json'],
+                        onSuccess: function(_xhr) {
+                            console.log(_xhr);
+                        },
+                    });
+                },
+            });
+
+
+            /*
             new Ajax(reblog_button.href, {
                 method: 'GET',
                 onSuccess: function(_xhr) {
                     var dummy_elm = buildElementBySource(_xhr.responseText);
         
-                    /* 有効な form データを集めます */
+                    /* 有効な form データを集めます
                     var form = dummy_elm.querySelector('#content > form');
                     var postdata = gatherFormValues(form);
                     delete postdata['preview_post'];
@@ -924,6 +993,7 @@
                     });
                 },
             });
+            */
         },
         /**
             target_blog_info = {
@@ -1130,25 +1200,29 @@
 
     Tornado.customfuncs = {
         reblog: function reblog(post) {
-            Tornado.funcs.reblog(post, {'channel_id': '0'});
+            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
+            Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
         },
         reblogToChannel: function reblogToChannel(post) {
             Tornado.funcs.channelDialog(post, {'channel_id': '0'});
         },
         draft: function draft(post) {
-            Tornado.funcs.reblog(post, {'post[state]': '1', 'channel_id': '0'});
+            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
+            Tornado.funcs.reblog(post, {'post[state]': '1', 'channel_id': channel_id});
         },
         draftToChannel: function draftToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '1'});
         },
         queue: function queue(post) {
-            Tornado.funcs.reblog(post, {'post[state]': '2', 'channel_id': '0'});
+            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
+            Tornado.funcs.reblog(post, {'post[state]': '2', 'channel_id': channel_id});
         },
         queueToChannel: function queueToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '2'});
         },
         private: function _private(post) {
-            Tornado.funcs.reblog(post, {'post[state]': 'private', 'channel_id': '0'});
+            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
+            Tornado.funcs.reblog(post, {'post[state]': 'private', 'channel_id': channel_id});
         },
         privateToChannel: function privateToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': 'private'});
