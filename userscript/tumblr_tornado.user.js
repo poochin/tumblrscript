@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.1
+// @version     1.2.8.3
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1211,7 +1211,7 @@
             Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
         },
         reblogToChannel: function reblogToChannel(post) {
-            Tornado.funcs.channelDialog(post, {'channel_id': '0'});
+            Tornado.funcs.channelDialog(post, {'post[state]': '0', 'channel_id': '0'});
         },
         draft: function draft(post) {
             var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
