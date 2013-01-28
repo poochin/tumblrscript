@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.4
+// @version     1.2.8.5
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -663,7 +663,18 @@
     
         setTimeout(function() { board.removeChild(elm); }, 3000);
     }
-    
+
+    /**
+     * Object(dst) の名と値を Object(dict) へ更新します
+     */    
+    function dictUpdate(dict, dst) {
+        /* TODO: あとで外に出します */
+        var name;
+        for (name in (dst || {})) {
+            dict[name] = dst[name];
+        }
+    }
+
     /**
      * form の有効な値を集めます
      */
@@ -909,46 +920,53 @@
                 method: 'post',
                 parameters: parameters,
                 onSuccess: function(_xhr) {
+                    var name;
                     var response_json = JSON.parse(_xhr.response);
 
-                    var postdata = response_json;
+                    var postdata = {
+                        channel_id: undefined,
+                        form_key: form_key,
+                        reblog_key: reblog_key,
+                        reblog_id: parseInt(reblog_id),
+                        reblog_post_id: reblog_id,
+                        detached: true,
+                        reblog: true,
+                        silent: true,
+                        context_id: "",
+                        // "is_rich_text[one]": "0",
+                        // "is_rich_text[two]": "0",
+                        // "is_rich_text[three]": "0",
+                        pre_upload: "",
+                        preuploaded_url: "",
+                        preuploaded_ch: "",
+                        "post[date]": "",
+                        "post[publish_on]": "",
+                        "post[state]": "0",
+                        "post[photoset_order]": "o1",
+                        valid_embed_code: "1",
+                        remove_album_art: "",
+                        album_art: "",
+                        MAX_FILE_SIZE: "10485760",
+                        custom_tweet: "[URL]",
+                    };
+                    dictUpdate(postdata, response_json);
 
-                    for (var name in postdata['post']) {
+                    for (name in postdata['post']) {
                         postdata['post[' + name + ']'] = postdata['post'][name];
                     }
-                    for (var name in postdata['post[id3_tags]']) {
+                    delete postdata['post'];
+
+                    for (name in postdata['post[id3_tags]']) {
                         postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
                     }
-                    delete postdata['post'];
                     delete postdata['post[id3_tags]'];
 
-                    for (var name in (default_postdata || {})) {
-                        postdata[name] = default_postdata[name];
+                    // FIXME: twitter に送信する機能は未実装です
+                    if (postdata['send_to_twitter']) {
+                        postdata['send_to_twitter'] = 'on';
                     }
 
-                    postdata['reblog_id'] = parseInt(reblog_id);
-                    postdata['reblog_key'] = reblog_key;
-                    postdata['form_key'] = form_key;
-                    postdata['reblog'] = true;
-                    postdata['errors'] = false;
-                    postdata['silent'] = true;
-                    postdata['detached'] = true;
-                    postdata['silent'] = true;
-                    postdata['context_id'] = '';
-                    postdata['reblog_post_id'] = reblog_id;
-                    postdata['is_rich_text[one]'] = '0';
-                    postdata['is_rich_text[two]'] = '1';
-                    postdata['is_rich_text[three]'] = '0';
-                    postdata['post[slug]'] = '';
-                    postdata['post[draft_status]'] = '';
-                    postdata['post[data]'] = '';
-                    postdata['MAX_FILE_SIZE'] = "10485760";
-                    postdata['post[tags]'] = '';
-                    postdata['post[publish_on]'] = '';
-                    // postdata['post[state]'] = '';
-                    postdata['custom_tweet'] = '';
-                    postdata['post[photoset_order]'] = 'o1';
-                    postdata['images[o1]'] = '';
+                    dictUpdate(postdata, default_postdata);
 
                     new Ajax('http://www.tumblr.com/svc/post/update', {
                         method: 'post',
@@ -967,8 +985,8 @@
                 },
             });
 
-
             /*
+            // TODO: 2013-07-01 まで以下の機能を必要としない場合はこの部分を削除します
             new Ajax(reblog_button.href, {
                 method: 'GET',
                 onSuccess: function(_xhr) {
