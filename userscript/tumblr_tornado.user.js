@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.6
+// @version     1.2.8.10
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -831,8 +831,8 @@
         if (112 <= e.keyCode && e.keyCode <= 123) {
             return; /* Function keys */
         }
-        else if (!(65 <= e.keyCode && e.keyCode <= 90)) {
-            return; /* Not Alphabet */
+        else if (!(65 <= e.keyCode && e.keyCode <= 90) && !(48 <= e.keyCode && e.keyCode <= 57)) {
+            return; /* Not Alphabet and Number */
         }
     
         /* 入力エリア、またはリッチテキストでは無効にします */
@@ -864,10 +864,6 @@
              3, 前項入力キー
              4. Ctrl, Alt, Shift 組み合わせキー
             */
-            var match = shortcut.follows.concat(shortcut.shift
-                ? shortcut.match.toUpperCase()
-                : shortcut.match.toLowerCase());
-    
             if (shortcut.url !== null &&
                 shortcut.url.test(location) === false) {
                 return false;
@@ -882,11 +878,14 @@
                      post.querySelector(shortcut.has_selector) === null) {
                 return false;
             }
-            else if (!match.cmp(Tornado.vals.key_follows.slice(-(match.length)))) {
+            else if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
+                      (typeof shortcut.match == 'string' ? ((shortcut.shift ? shortcut.match.toUpperCase()
+                                                                            : shortcut.match.toLowerCase()) == Tornado.vals.key_follows.slice(-1)[0])
+                                                         : shortcut.match.indexOf(Tornado.vals.key_follows.slice(-1)[0]) >= 0))) {
                 return false;
             }
     
-            shortcut.func(post);
+            shortcut.func(post, e);
             Tornado.vals.key_follows = [];
             return true;
         });
@@ -1237,6 +1236,11 @@
         },
         reblogToChannel: function reblogToChannel(post) {
             Tornado.funcs.channelDialog(post, {'post[state]': '0', 'channel_id': '0'});
+        },
+        directReblogToChannel: function directReblogToChannel(post, e) {
+            var channel_num = parseInt(String.fromCharCode(e.keyCode)) - 1;
+            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[channel_num].id.slice(9);
+            Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
         },
         draft: function draft(post) {
             var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
@@ -1625,6 +1629,14 @@
                     en: 'Private reblog'
                 },
                 group: 2,
+                grouporder: 5,
+            }),
+            
+            customkey(['1', '2', '3', '4', '5', '6', '7', '8', '9'], customfuncs.directReblogToChannel, {
+                title: 'channel Reblog',
+                desc: 'channel へすぐにリブログします',
+                usehelp: 'hide',
+                group: 3,
                 grouporder: 5,
             }),
 
