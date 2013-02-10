@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.10
+// @version     1.2.8.11
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -18,7 +18,7 @@
 //
 // @author      poochin
 // @license     MIT
-// @updated     2013-01-26
+// @updated     2013-02-10
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -31,7 +31,6 @@
     var Tornado = {};
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
-
     Tornado.funcs = {};
     Tornado.vals = {};
 
@@ -59,8 +58,14 @@
     Tornado.exclude_tumblelogs = {};
     Tornado.i18n = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
+    
     Tornado.lang = window.navigator.language.split('-')[0];
     Tornado.gm_api = (typeof GM_info != 'undefined' ? true : false);
+
+    Tornado.browser = (window.opera ? 'opera'
+                    :  window.navigator.userAgent.match(/Chrome/) ? 'chrome'
+                    :  window.navigator.userAgent.match(/Firefox/) ? 'firefox'
+                    :  '');
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
     Tornado.vals.CONSUMER_SECRET = 'wYZ7hzCu5NnSJde8U2d7BW6pz0mtMMAZCoGgGKnT4YNB8uZNDL';
@@ -916,115 +921,126 @@
                 post_type: false
             });
 
-            new Ajax('http://www.tumblr.com/svc/post/fetch', {
-                method: 'post',
-                parameters: parameters,
-                onSuccess: function(_xhr) {
-                    var name;
-                    var response_json = JSON.parse(_xhr.response);
+            if (Tornado.browser != 'opera') {
+                new Ajax('http://www.tumblr.com/svc/post/fetch', {
+                    method: 'post',
+                    parameters: parameters,
+                    onSuccess: function(_xhr) {
+                        var name;
+                        var response_json = JSON.parse(_xhr.response);
+    
+                        var postdata = {
+                            channel_id: undefined,
+                            form_key: form_key,
+                            reblog_key: reblog_key,
+                            reblog_id: parseInt(reblog_id),
+                            reblog_post_id: reblog_id,
+                            detached: true,
+                            reblog: true,
+                            silent: true,
+                            context_id: "",
+                            // "is_rich_text[one]": "0",
+                            // "is_rich_text[two]": "0",
+                            // "is_rich_text[three]": "0",
+                            pre_upload: "",
+                            preuploaded_url: "",
+                            preuploaded_ch: "",
+                            "post[date]": "",
+                            "post[publish_on]": "",
+                            "post[state]": "0",
+                            "post[photoset_order]": "o1",
+                            valid_embed_code: "1",
+                            remove_album_art: "",
+                            album_art: "",
+                            MAX_FILE_SIZE: "10485760",
+                            custom_tweet: "[URL]",
+                        };
+                        dictUpdate(postdata, response_json);
+    
+                        for (name in postdata['post']) {
+                            postdata['post[' + name + ']'] = postdata['post'][name];
+                        }
+                        delete postdata['post'];
+    
+                        for (name in postdata['post[id3_tags]']) {
+                            postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
+                        }
+                        delete postdata['post[id3_tags]'];
+    
+                        // FIXME: twitter に送信する機能は未実装です
+                        if (postdata['send_to_twitter']) {
+                            postdata['send_to_twitter'] = 'on';
+                            postdata['custom_tweet'] = '[URL]';
+                        }
+    
+                        dictUpdate(postdata, default_postdata);
+    
+                        new Ajax('http://www.tumblr.com/svc/post/update', {
+                            method: 'post',
+                            parameters: JSON.stringify(postdata),
+                            requestHeaders: ['Content-Type', 'application/json'],
+                            onSuccess: function(_xhr) {
+                                var dp, json;
 
-                    var postdata = {
-                        channel_id: undefined,
-                        form_key: form_key,
-                        reblog_key: reblog_key,
-                        reblog_id: parseInt(reblog_id),
-                        reblog_post_id: reblog_id,
-                        detached: true,
-                        reblog: true,
-                        silent: true,
-                        context_id: "",
-                        // "is_rich_text[one]": "0",
-                        // "is_rich_text[two]": "0",
-                        // "is_rich_text[three]": "0",
-                        pre_upload: "",
-                        preuploaded_url: "",
-                        preuploaded_ch: "",
-                        "post[date]": "",
-                        "post[publish_on]": "",
-                        "post[state]": "0",
-                        "post[photoset_order]": "o1",
-                        valid_embed_code: "1",
-                        remove_album_art: "",
-                        album_art: "",
-                        MAX_FILE_SIZE: "10485760",
-                        custom_tweet: "[URL]",
-                    };
-                    dictUpdate(postdata, response_json);
-
-                    for (name in postdata['post']) {
-                        postdata['post[' + name + ']'] = postdata['post'][name];
-                    }
-                    delete postdata['post'];
-
-                    for (name in postdata['post[id3_tags]']) {
-                        postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
-                    }
-                    delete postdata['post[id3_tags]'];
-
-                    // FIXME: twitter に送信する機能は未実装です
-                    if (postdata['send_to_twitter']) {
-                        postdata['send_to_twitter'] = 'on';
-                    }
-
-                    dictUpdate(postdata, default_postdata);
-
-                    new Ajax('http://www.tumblr.com/svc/post/update', {
-                        method: 'post',
-                        parameters: JSON.stringify(postdata),
-                        requestHeaders: ['Content-Type', 'application/json'],
-                        onSuccess: function(_xhr) {
-                            reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-        
-                            var dp = default_postdata;
-                            new PinNotification([
-                                'Success: Reblogged',
-                                (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
-                                (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
-                        },
-                    });
-                },
-            });
-
-            /*
-            // TODO: 2013-07-01 まで以下の機能を必要としない場合はこの部分を削除します
-            new Ajax(reblog_button.href, {
-                method: 'GET',
-                onSuccess: function(_xhr) {
-                    var dummy_elm = buildElementBySource(_xhr.responseText);
-        
-                    /* 有効な form データを集めます
-                    var form = dummy_elm.querySelector('#content > form');
-                    var postdata = gatherFormValues(form);
-                    delete postdata['preview_post'];
-                    for (var name in (default_postdata || {})) {
-                        postdata[name] = default_postdata[name];
-                    }
-        
-                    new Ajax(form.action, {
-                        method: form.method,
-                        parameters: buildQueryString(postdata),
-                        requestHeaders: HeaderContentType,
-                        onSuccess: function(_xhr) {
-                            var response_elm = buildElementBySource(_xhr.responseText);
-        
-                            if (response_elm.querySelector('ul#errors')) {
-                                reblog_button.className = reblog_button.className.replace('loading', '');
-                                alert(response_elm.querySelector('ul#errors').textContent.trim());
-                            }
-                            else {
                                 reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-        
-                                var dp = default_postdata;
-                                new PinNotification([
-                                    'Success: Reblogged',
-                                    (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
-                                    (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
-                            }
-                        },
-                    });
-                },
-            });
-            */
+
+                                json = JSON.parse(_xhr.responseText);
+
+                                if (json.errors) {
+                                    alert(json.errors);
+                                }
+                                else {
+                                    var dp = default_postdata;
+                                    new PinNotification([
+                                        'Success: Reblogged',
+                                        (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
+                                        (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
+                                }
+                            },
+                        });
+                    },
+                });
+            }
+            else if (Tornado.browser == 'opera') {
+                /* FIXME: 正しく動きません */
+                new Ajax(reblog_button.href, {
+                    method: 'GET',
+                    onSuccess: function(_xhr) {
+                        var dummy_elm = buildElementBySource(_xhr.responseText);
+            
+                        /* 有効な form データを集めます */
+                        var form = dummy_elm.querySelector('#content > form');
+                        var postdata = gatherFormValues(form);
+                        delete postdata['preview_post'];
+                        for (var name in (default_postdata || {})) {
+                            postdata[name] = default_postdata[name];
+                        }
+            
+                        new Ajax(form.action, {
+                            method: form.method,
+                            parameters: buildQueryString(postdata),
+                            requestHeaders: HeaderContentType,
+                            onSuccess: function(_xhr) {
+                                var response_elm = buildElementBySource(_xhr.responseText);
+            
+                                if (response_elm.querySelector('ul#errors')) {
+                                    reblog_button.className = reblog_button.className.replace('loading', '');
+                                    alert(response_elm.querySelector('ul#errors').textContent.trim());
+                                }
+                                else {
+                                    reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
+            
+                                    var dp = default_postdata;
+                                    new PinNotification([
+                                        'Success: Reblogged',
+                                        (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
+                                        (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
+                                }
+                            },
+                        });
+                    },
+                });
+            }
         },
         /**
             target_blog_info = {
