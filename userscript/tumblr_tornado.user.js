@@ -30,6 +30,9 @@
 
     var Tornado = {};
 
+    console = (typeof console != 'undefined') ? console : {};
+    console.log = (typeof console.log != 'undefined') ? console.log : function(){};
+
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
     Tornado.vals = {};
@@ -2179,7 +2182,6 @@
         var request_body = OAuth.formEncode(message.parameters);
         OAuth.completeRequest(message, accessor);
 
-        console.log(true);
         var a = new Ajax(message.action, {
             method: message.method,
             parameters: message.parameters,
