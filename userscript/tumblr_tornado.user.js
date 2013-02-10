@@ -1061,7 +1061,6 @@
                         if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
                             postdata['send_to_twitter'] = 'on';
                             postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
-                            console.log(postdata['custom_tweet']);
                         }
     
                         new Ajax('http://www.tumblr.com/svc/post/update', {
