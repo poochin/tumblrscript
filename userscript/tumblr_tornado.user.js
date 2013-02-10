@@ -30,9 +30,6 @@
 
     var Tornado = {};
 
-    console = (typeof console != 'undefined') ? console : {};
-    console.log = (typeof console.log != 'undefined') ? console.log : function(){};
-
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
     Tornado.vals = {};
@@ -58,10 +55,16 @@
             ],
         },
     ];
-    Tornado.exclude_tumblelogs = {};
+    Tornado.exclude_tumblelogs = {}; // API 用であります
     Tornado.i18n = {};
+
+    Tornado.tumblelog_configs = {
+        name: {
+            twitterOn: true || false,
+        },
+    };
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
-    
+
     Tornado.lang = window.navigator.language.split('-')[0];
     Tornado.gm_api = (typeof GM_info != 'undefined' ? true : false);
 
@@ -380,6 +383,8 @@
         "}",
     ].join('\n');
 
+    console = (typeof console != 'undefined') ? console : {};
+    console.log = (typeof console.log != 'undefined') ? console.log : function(){};
 
     /**
      * Tornado で使用できる左クリックイベントです。
@@ -387,7 +392,6 @@
      */
     Tornado.left_click = document.createEvent('MouseEvent');
     Tornado.left_click.initEvent('click', false, true);
-
 
     /**
      * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
@@ -818,11 +822,93 @@
         resize: function() {
         },
     };
+
     
     /**
      * Tornado のメイン機能部
      * @namespace
      */
+    Tornado.buildCustomTweet = function buildCustomTweet(postdata) {
+        function truncate(text, length, trunc) {
+            if (text.length > length) {
+                text = text.slice(0, length - trunc.length) + trunc;
+            }
+            return text;
+        }
+
+        var type;
+        var prefix, body, suffix;
+        var length;
+
+        var one, two, three;
+        one = postdata['post[one]'];
+        two = postdata['post[two]'];
+        three = postdata['post[three]'];
+
+        type = postdata['post[type]'];
+        length = 140 - 30;
+        prefix = '';
+        body = '';
+        suffix = ' [URL]';
+
+        switch (type) {
+            case 'regular':
+            case 'conversation':
+                if (one && two) {
+                    body = [one, two].join(' - ');
+                }
+                else if (one) {
+                    body = one;
+                }
+                else {
+                    body = two;
+                }
+                break;
+            case 'photo':
+            case 'video':
+            case 'audio':
+                body = two;
+                break;
+            case 'note':
+                // what is note?
+                body = one;
+                break;
+            case 'link':
+                if (one && three) {
+                    body = [one, three].join(' - ');
+                }
+                else if (one) {
+                    body = one;
+                }
+                else if (three) {
+                    body = three;
+                }
+                else {
+                    body = two.match(/https?:\/\/([^\/]+)/)[1];
+                }
+                break;
+            case 'quote':
+                body = [
+                    "\u201c",
+                    truncate(one, length - 5, '\u2026'),
+                    "\u201d"
+                ].join('');
+                if (one.length <= (length - 5) &&
+                    two &&
+                    body.length < (length - 5)) {
+                    body += " - " + two;
+                }
+                break;
+            default:
+                break;
+        }
+
+        if (!body) {
+            suffix = suffix.replace(/(^ +| +$)/g, '');
+        }
+
+        return prefix + truncate(body, length, '\u2026') + suffix;
+    };
 
     /**
       * 入力されたキーによってコマンドを実行します
@@ -969,14 +1055,14 @@
                             postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
                         }
                         delete postdata['post[id3_tags]'];
-    
-                        // FIXME: twitter に送信する機能は未実装です
-                        if (postdata['send_to_twitter']) {
-                            postdata['send_to_twitter'] = 'on';
-                            postdata['custom_tweet'] = '[URL]';
-                        }
-    
+
                         dictUpdate(postdata, default_postdata);
+
+                        if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
+                            postdata['send_to_twitter'] = 'on';
+                            postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
+                            console.log(postdata['custom_tweet']);
+                        }
     
                         new Ajax('http://www.tumblr.com/svc/post/update', {
                             method: 'post',
@@ -1833,6 +1919,28 @@
     });
 
     /**
+     * クライアントページの情報を元に tumblelog の設定を回収します
+     */
+    Tornado.initTumblelogConfigs = function() {
+        var base_template = buildElementBySource($$('#base_template')[0].innerHTML);
+        var config_elms = base_template.querySelectorAll('#tumblelog_choices .popover_post_options .option');
+
+        Tornado.tumblelog_configs = {};
+
+        Array.prototype.slice.call(config_elms).map(function(elm) {
+            var i;
+            var attrs = elm.attributes;
+            var name = elm.getAttribute('data-option-value');
+
+            Tornado.tumblelog_configs[name] = {};
+
+            for (i = 0; i < attrs.length; ++i) {
+                Tornado.tumblelog_configs[name][attrs[i].name] = attrs[i].value;
+            }
+        });
+    };
+
+    /**
      * クライアントページ領域に関数を定義させます
      */
     Tornado.clientfuncs = [
@@ -2258,6 +2366,8 @@
      * ページロード時に一度だけ呼び出されます
      */
     function main() {
+        Tornado.initTumblelogConfigs();
+
         document.addEventListener('keydown', Tornado.keyevent, true);
 
         var style = document.head.appendChild(document.createElement('style'));
@@ -2282,9 +2392,12 @@
             Tornado.verifyAccessToken();
         }
     }
-    
+
+    /**
+     * Opera 用に起動するべきページかどうかを判定しています
+     */
     if (window.document.body) {
-        if (window.opera) {
+        if (Tornado.browser == 'opera') {
             if (/^https?:\/\/www\.tumblr\.com\//.test(location)) {
                 main();
             }
