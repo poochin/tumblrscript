@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.11
+// @version     1.2.8.12
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -835,15 +835,33 @@
             }
             return text;
         }
+        function textIntoHTMLLike(html) {
+            var text;
+            var elm = document.createElement('div');
+            elm.innerHTML = html;
+
+            if (elm.textContent) {
+                text = elm.textContent;
+            }
+            else if (elm.innerText) {
+                text = elm.innerText;
+            }
+            else {
+                text = "";
+            }
+
+            text = text.replace(/<[^>]+>/g, '');
+            return text.replace(/( |\r|\n)+/g, ' ').replace(/(^ +| +$)/g, '');
+        }
 
         var type;
         var prefix, body, suffix;
         var length;
 
         var one, two, three;
-        one = postdata['post[one]'];
-        two = postdata['post[two]'];
-        three = postdata['post[three]'];
+        one = textIntoHTMLLike(postdata['post[one]']);
+        two = textIntoHTMLLike(postdata['post[two]']);
+        three = textIntoHTMLLike(postdata['post[three]']);
 
         type = postdata['post[type]'];
         length = 140 - 30;
