@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.12
+// @version     1.2.8.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -391,7 +391,7 @@
      * Element.dispatchEvent(Tornado.left_click) として使います。
      */
     Tornado.left_click = document.createEvent('MouseEvent');
-    Tornado.left_click.initEvent('click', false, true);
+    Tornado.left_click.initEvent('click', true, true);
 
     /**
      * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
