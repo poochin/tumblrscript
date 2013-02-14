@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.14
+// @version     1.2.8.15
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -855,6 +855,7 @@
         }
 
         var type;
+        var prefix_list;
         var prefix, body, suffix;
         var length;
 
@@ -869,6 +870,19 @@
         body = '';
         suffix = ' [URL]';
 
+        prefix_list = {
+            regular: '',
+            quote: '',
+            link: '',
+            note: '', /* whether */
+            answer: '', /* whether */
+            photo: 'Photo: ',
+            conversation: 'Overheard: ',
+            audio: 'Audio: ',
+            video: 'Video: '
+        };
+        prefix = prefix_list[type];
+            
         switch (type) {
             case 'regular':
             case 'conversation':
@@ -921,7 +935,7 @@
                 break;
         }
 
-        if (!body) {
+        if (!body.length) {
             suffix = suffix.replace(/(^ +| +$)/g, '');
         }
 
