@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.8.13
+// @version     1.2.8.14
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1440,6 +1440,7 @@
     
             if (type == "photo") {
                 (function letit(elm){
+                    setTimeout(function(){}, 0);
                     elm.dispatchEvent(Tornado.left_click);
                 })(post.querySelector('img.image_thumbnail') ||
                    document.querySelector('#tumblr_lightbox') ||
@@ -1939,6 +1940,10 @@
      * クライアントページの情報を元に tumblelog の設定を回収します
      */
     Tornado.initTumblelogConfigs = function() {
+        if ($$('#base_template').length == 0) {
+            return;
+        }
+
         var base_template = buildElementBySource($$('#base_template')[0].innerHTML);
         var config_elms = base_template.querySelectorAll('#tumblelog_choices .popover_post_options .option');
 
