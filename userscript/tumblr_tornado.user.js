@@ -1454,10 +1454,11 @@
     
             if (type == "photo") {
                 (function letit(elm){
-                    // redrew bug on chrome code by Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
-                    post.className += "force_redraw";
+                    // from Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
+                    // This is excellent code to fix redrew bug of chrome.
+                    post.className += " force_redraw";
                     post.offsetHeight;
-                    post.className = post.className.replace(/\bforce_redraw\b/, '');
+                    post.className = post.className.replace(/\b force_redraw\b/, '');
 
                     elm.dispatchEvent(Tornado.left_click);
                 })(post.querySelector('img.image_thumbnail') ||
