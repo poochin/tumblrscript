@@ -1454,7 +1454,11 @@
     
             if (type == "photo") {
                 (function letit(elm){
-                    setTimeout(function(){}, 0);
+                    // redrew bug on chrome code by Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
+                    post.className += "force_redraw";
+                    post.offsetHeight;
+                    post.className = post.className.replace(/\bforce_redraw\b/, '');
+
                     elm.dispatchEvent(Tornado.left_click);
                 })(post.querySelector('img.image_thumbnail') ||
                    document.querySelector('#tumblr_lightbox') ||
