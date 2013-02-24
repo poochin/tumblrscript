@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.1
+// @version     1.2.9.2
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -383,8 +383,9 @@
         "}",
     ].join('\n');
 
-    console = (typeof console != 'undefined') ? console : {};
-    console.log = (typeof console.log != 'undefined') ? console.log : function(){};
+    if (typeof console) {
+        console = {log: function(){}};
+    }
 
     /**
      * Tornado で使用できる左クリックイベントです。
