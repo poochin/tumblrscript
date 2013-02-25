@@ -22,6 +22,11 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
+
+// TODO: Tornado オブジェクトに含まれていない関数を Tornado.etc にまとめます
+// TODO: OAuth にまつわる関数を Tornado.oauth にまとめます
+// TODO: init 系の関数を整理します
+// TODO: BeforeAutoPaginationQueue, AfterAutoPaginationQueue を用いて次ページのロード時のアクションを設定します
 /**
  * @namespace TumblrTornado
  */
@@ -91,6 +96,7 @@
     Tornado.vals.key_input_time = 0;
     Tornado.vals.key_follows = []
     
+    // TODO: css を PinNotification、LiteDialog や Right column Help 部位などに切り分ける
     Tornado.css = [
         /* Pin Notification */
         "#pin_notification_board {",
@@ -411,6 +417,7 @@
                 function(v, k) { return v == another[k]; }
               ));
     };
+
     
     /**
      * ビデオの開閉トグル関数です。
