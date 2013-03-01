@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.3
+// @version     1.2.9.4
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -18,12 +18,12 @@
 //
 // @author      poochin
 // @license     MIT
-// @updated     2013-02-10
+// @updated     2013-03-01
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
 
-// TODO: Tornado オブジェクトに含まれていない関数を Tornado.etc にまとめます
+// TODO: customkey を class 化します
 // TODO: OAuth にまつわる関数を Tornado.oauth にまとめます
 // TODO: init 系の関数を整理します
 // TODO: BeforeAutoPaginationQueue, AfterAutoPaginationQueue を用いて次ページのロード時のアクションを設定します
@@ -35,10 +35,12 @@
     'use strict';
 
     var Tornado = {};
+    var Etc; /* Tornado.etc へのショートハンドです */
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
     Tornado.vals = {};
+    Etc = Tornado.etc = {};
 
     Tornado.customkeys = [];
     Tornado.customfuncs = {};
@@ -444,7 +446,7 @@
      * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
      * @param {Node} post 対象のビデオポスト要素
      */
-    function toggleVideoEmbed(post) {
+    Etc.toggleVideoEmbed =  function toggleVideoEmbed(post) {
         var post_id = post.id.match(/\d+/)[0],
             toggle = post.querySelector('.video_thumbnail'),
             embed = post.querySelector('.video_embed'),
@@ -459,18 +461,18 @@
             toggle.style.display = 'block';
             watch.style.display = 'none';
         }
-    }
+    };
     
     /**
      * HTML 文字列から Node 群を返します
      * @param {String} html 作成した HTML 文字列.
      * @return {Object} HTML を元に作成した要素を持つ DocumentFragment.
      */
-    function buildElementBySource(html) {
+    Etc.buildElementBySource = function buildElementBySource(html) {
         var range = document.createRange();
         range.selectNodeContents(document.body);
         return range.createContextualFragment(html);
-    }
+    };
     
     /**
      * Node を作成し各種データを同時にセットします
@@ -479,8 +481,7 @@
      * @param {String} HTML 文字列.
      * @return {Object} 作成した Node を返します.
      */
-    /* buildElement */
-    function buildElement(tag_name, propaties, innerHTML) {
+    Etc.buildElement = function buildElement(tag_name, propaties, innerHTML) {
         var elm = document.createElement(tag_name);
     
         for (var key in (propaties || {})) {
@@ -489,23 +490,23 @@
     
         elm.innerHTML = innerHTML || '';
         return elm;
-    }
+    };
     
     /**
      * document.querySelectorAll へのショートハンド
      * @param {String} selector CSS Selector
      * @return {Array} NodeList の Array に変換したもの
      */
-    function $$(selector) {
+    var $$ = Etc.$$ = function $$(selector) {
         /* || [] を用いるのは、querySelector は要素を見つけられなかった際に null を返します */
         return Array.prototype.slice.call(document.querySelectorAll(selector) || []); 
-    }
+    };
     
     /**
      * クライアント領域で Script を実行します
      * @param {String} code 実行したいコード
      */
-    function execScript(code) {
+    Etc.execScript = function execScript(code) {
         var script = document.createElement('script');
         script.setAttribute('type', 'text/javascript');
         script.innerHTML = code;
@@ -515,26 +516,26 @@
             })(e.target);
         });
         document.body.appendChild(script);
-    }
+    };
     
     /**
      * クライアントエリアのスクロール位置、画面サイズを取得します
      * @return {Object} left, top, width, height を備えた辞書を返します
      */
-    function viewportRect() {
+    Etc.viewportRect = function viewportRect() {
         return {
             left: document.documentElement.scrollLeft || document.body.scrollLeft,
             top: document.documentElement.scrollTop || document.body.scrollTop,
             width: document.documentElement.clientWidth,
             height: document.documentElement.clientHeight};
-    }
+    };
     
     /**
      * 要素の位置、サイズを取得します
      * @TODO absolute, fixed な要素の子要素などは再帰的に親へ辿る必要があります
      * @return {Object} 要素の left, top, width, height を備えた辞書を返します
      */
-    function nodeRect (elm) {
+    Etc.nodeRect = function nodeRect (elm) {
         return {
             left: elm.offsetLeft,
             top: elm.offsetTop,
@@ -545,6 +546,7 @@
     /**
      * キーイベント用の辞書を生成して返します
      * @TODO needpost オプションを設定
+     * @TODO class 化する
      * @param {String} match 最後に発火させる時のキー文字
      * @param {String}   func Tornado.commands の関数名
      * @param {Function} func 実行させたい関数
@@ -576,7 +578,7 @@
      * @param {Object} shortcut customkey で作成したオブジェクト
      * @returns HTML 文字列を返します
      */
-    function buildShortcutLineHelp(shortcut) {
+    Etc.buildShortcutLineHelp = function buildShortcutLineHelp(shortcut) {
         var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'],
             key = [];
     
@@ -592,7 +594,7 @@
             key,
             '</code>',
             (shortcut.title || shortcut.desc || shortcut.func.name)].join('');
-    }
+    };
     
     /**
      * 特定の関数は this があるオブジェクトを指している事を想定しています。
@@ -603,18 +605,18 @@
      * @param {args}     デフォルトの引数
      * @returns 上記の目的を満たすクロージャ
      */
-    function preapply(self, func, args) {
+    Etc.preapply = function preapply(self, func, args) {
         return function() {
             func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
         };
-    }
+    };
     
     /**
      * 辞書型オブジェクトをクエリ文字列に変換します
      * @param {Object} dict 辞書型オブジェクト
      * @return {String} クエリ文字列
      */
-    function buildQueryString(dict) {
+    Etc.buildQueryString = function buildQueryString(dict) {
         if (typeof dict == 'undefined') {
             return '';
         }
@@ -624,7 +626,7 @@
                           encodeURIComponent(dict[key])].join('='));
         }
         return queries.join('&');
-    }
+    };
     
     /**
      * prototype.js 風な Ajax 関数
@@ -656,7 +658,7 @@
         }
 
         if (options.parameters && (typeof options.parameters != 'string')) {
-            options.parameters = buildQueryString(options.parameters);
+            options.parameters = Etc.buildQueryString(options.parameters);
         }
     
         if (options.method == undefined && options.parameters) {
@@ -708,18 +710,18 @@
     /**
      * Object(dst) の名と値を Object(dict) へ更新します
      */    
-    function dictUpdate(dict, dst) {
+    Etc.dictUpdate = function dictUpdate(dict, dst) {
         /* TODO: あとで外に出します */
         var name;
         for (name in (dst || {})) {
             dict[name] = dst[name];
         }
-    }
+    };
 
     /**
      * form の有効な値を集めます
      */
-    function gatherFormValues(form) {
+    Etc.gatherFormValues = function gatherFormValues(form) {
         var values = {},
             items = form.querySelectorAll('input, textarea, select');
         Array.prototype.slice.call(items).filter(function(elm) {
@@ -730,7 +732,7 @@
             values[elm.name] = elm.value;
         });
         return values;
-    }
+    };
     
     /**
      * 軽量なダイアログボックスを表示します
@@ -749,10 +751,10 @@
     
         var caption = dialog.querySelector('.lite_dialog_caption');
         caption.appendChild(document.createTextNode(title));
-        caption.addEventListener('mousedown', preapply(this, this.mousedown));
+        caption.addEventListener('mousedown', Etc.preapply(this, this.mousedown));
     
         var close = dialog.querySelector('.lite_dialog_close');
-        close.addEventListener('click', preapply(this, this.close));
+        close.addEventListener('click', Etc.preapply(this, this.close));
     
         document.body.appendChild(dialog);
         this.centering();
@@ -781,8 +783,8 @@
          * @param {Object} e event
          */
         mousedown: function(e) {
-            this.mousemove = preapply(this, this.mousemove);
-            this.mouseup = preapply(this, this.mouseup);
+            this.mousemove = Etc.preapply(this, this.mousemove);
+            this.mouseup = Etc.preapply(this, this.mouseup);
       
             document.addEventListener('mousemove', this.mousemove);
             document.addEventListener('mouseup', this.mouseup);
@@ -840,7 +842,7 @@
          */
         centering: function() {
             var elm = this.dialog,
-                vr = viewportRect();
+                vr = Etc.viewportRect();
             elm.style.top = (vr.top + (vr.height / 2) - (elm.offsetHeight / 2)) + 'px';
             elm.style.left = (vr.left + (vr.width / 2) - (elm.offsetWidth / 2)) + 'px';
         },
@@ -977,7 +979,7 @@
     Tornado.keyevent = function keyevent(e) {
         var post,
             margin_top = 7,  /* post 上部に 7px の余白が設けられます */
-            vr = viewportRect(),
+            vr = Etc.viewportRect(),
             ch = String.fromCharCode(e.keyCode);
     
         ch = (e.shiftKey ? ch.toUpperCase() : ch.toLowerCase());
@@ -1104,7 +1106,7 @@
                             MAX_FILE_SIZE: "10485760",
                             custom_tweet: "[URL]",
                         };
-                        dictUpdate(postdata, response_json);
+                        Etc.dictUpdate(postdata, response_json);
     
                         for (name in postdata['post']) {
                             postdata['post[' + name + ']'] = postdata['post'][name];
@@ -1116,7 +1118,7 @@
                         }
                         delete postdata['post[id3_tags]'];
 
-                        dictUpdate(postdata, default_postdata);
+                        Etc.dictUpdate(postdata, default_postdata);
 
                         if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
                             postdata['send_to_twitter'] = 'on';
@@ -1154,11 +1156,11 @@
                 new Ajax(reblog_button.href, {
                     method: 'GET',
                     onSuccess: function(_xhr) {
-                        var dummy_elm = buildElementBySource(_xhr.responseText);
+                        var dummy_elm = Etc.buildElementBySource(_xhr.responseText);
             
                         /* 有効な form データを集めます */
                         var form = dummy_elm.querySelector('#content > form');
-                        var postdata = gatherFormValues(form);
+                        var postdata = Etc.gatherFormValues(form);
                         delete postdata['preview_post'];
                         for (var name in (default_postdata || {})) {
                             postdata[name] = default_postdata[name];
@@ -1166,10 +1168,10 @@
             
                         new Ajax(form.action, {
                             method: form.method,
-                            parameters: buildQueryString(postdata),
+                            parameters: Etc.buildQueryString(postdata),
                             requestHeaders: HeaderContentType,
                             onSuccess: function(_xhr) {
-                                var response_elm = buildElementBySource(_xhr.responseText);
+                                var response_elm = Etc.buildElementBySource(_xhr.responseText);
             
                                 if (response_elm.querySelector('ul#errors')) {
                                     reblog_button.className = reblog_button.className.replace('loading', '');
@@ -1276,7 +1278,7 @@
                         dialog_body.appendChild(document.createElement('hr'));
                     }
 
-                    var account_div = buildElement('div', {}, '<p>Account: <span style="font-weight: bold;">' + (oauth_config.id) + '</span></p>');
+                    var account_div = Etc.buildElement('div', {}, '<p>Account: <span style="font-weight: bold;">' + (oauth_config.id) + '</span></p>');
 
                     oauth_config.tumblelogs.map(function(tumblelog, tumblelog_num){
                         if (exclude_tumblelogs[oauth_config.id] != undefined &&
@@ -1286,7 +1288,7 @@
 
                         button_num += 1;
 
-                        var button = buildElement('input', {
+                        var button = Etc.buildElement('input', {
                             type: 'button',
                             class: 'button' + (button_num),
                             name: 'button' + [id_num, tumblelog_num].join('_'),
@@ -1333,7 +1335,7 @@
         
                 $$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
                     var channel_id = elm.id.slice(9);
-                    var button = buildElement('input', {
+                    var button = Etc.buildElement('input', {
                             type: 'button',
                             class: 'button' + (i + 1),
                             name: channel_id,
@@ -1363,7 +1365,7 @@
             new Ajax(form.action, {
                 method: form.method,
                 requestHeaders: HeaderContentType,
-                parameters: buildQueryString(gatherFormValues(form)),
+                parameters: Etc.buildQueryString(Etc.gatherFormValues(form)),
                 onSuccess: onSuccess,
                 onFailure: onFailure});
         },
@@ -1458,7 +1460,7 @@
             reblog_button.className += ' loading';
             new Ajax('/fast_reblog', {
                 method: 'POST',
-                parameters: buildQueryString({reblog_key: reblog_key, reblog_post_id: reblog_id, form_key: form_key}),
+                parameters: Etc.buildQueryString({reblog_key: reblog_key, reblog_post_id: reblog_id, form_key: form_key}),
                 onSuccess: function(_xhr) {
                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
                     new PinNotification('Success: fast Reblogged');
@@ -1494,11 +1496,11 @@
                    post.querySelector('a.photoset_photo'));
             }   
             else if (type == 'video') {
-                toggleVideoEmbed(post);
+                Etc.toggleVideoEmbed(post);
             }   
         },
         cleanPosts: function cleanPosts(/* post */) {
-            var vr = viewportRect(),
+            var vr = Etc.viewportRect(),
                 i = 0;
     
             $$('#posts > li:not(.new_post)').filter(function(post) {
@@ -1517,7 +1519,7 @@
         },
         removePosts: function removePosts(/* posts */) {
             var dsbd = document.querySelector('#posts'),
-                vr = viewportRect(),
+                vr = Etc.viewportRect(),
                 del_count = 0;
     
             $$('#posts > li:not(.new_post)').filter(function(post) {
@@ -1536,10 +1538,10 @@
         },
         removeBottomPosts: function removeBottomPosts(/* post */) {
             var dsbd = document.querySelector('#posts'),
-                vr = viewportRect(),
+                vr = Etc.viewportRect(),
                 del_count = 0;
     
-            execScript('next_page = null; loading_next_page = true;');
+            Etc.execScript('next_page = null; loading_next_page = true;');
             document.body.style.marginBottom = '500px';
     
             $$('#posts > li:not(.new_post)').filter(function(post) {
@@ -1579,7 +1581,7 @@
     
             var permalink = post.querySelector('a.permalink').href;
             var blog_name = permalink.match(/[^\/]*(?=\/(?:post|private))/)[0];
-            var qs = buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
+            var qs = Etc.buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
             var url = [
                 'http://api.tumblr.com/v2/blog',
                 blog_name,
@@ -1991,7 +1993,7 @@
             return;
         }
 
-        var base_template = buildElementBySource($$('#base_template')[0].innerHTML);
+        var base_template = Etc.buildElementBySource($$('#base_template')[0].innerHTML);
         var config_elms = base_template.querySelectorAll('#tumblelog_choices .popover_post_options .option');
 
         Tornado.tumblelog_configs = {};
@@ -2085,7 +2087,7 @@
             return;
         }
 
-        var request_button = dialog_body.appendChild(buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 認証します', en: 'Authorize OAuth'})));
+        var request_button = dialog_body.appendChild(Etc.buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 認証します', en: 'Authorize OAuth'})));
         request_button.addEventListener('click', function() {
             var request_accessor = Tornado.oauth.getRequestToken();
             GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
@@ -2093,7 +2095,7 @@
             location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
         });
 
-        var reset_button = dialog_body.appendChild(buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 情報を消去します', en: 'Clear OAuth information'})));
+        var reset_button = dialog_body.appendChild(Etc.buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 情報を消去します', en: 'Clear OAuth information'})));
         reset_button.addEventListener('click', function() {
             GM_deleteValue('oauth_token_secret');
             GM_deleteValue('oauthconfigs');
@@ -2102,11 +2104,11 @@
         Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
         Tornado.exclude_tumblelogs = JSON.parse(GM_getValue('exclude_tumblelogs', '{}'));
 
-        var config_list = dialog_body.appendChild(buildElement('ul', {class: 'oauth_config'}));
+        var config_list = dialog_body.appendChild(Etc.buildElement('ul', {class: 'oauth_config'}));
 
         Tornado.oauthconfigs.map(function(oauth_config, i){
-            var li = config_list.appendChild(buildElement('li', {}, 'id:' + oauth_config.id));
-            var delete_button = li.appendChild(buildElement('button', {class: 'button' + i}, 'アカウント情報を消去'));
+            var li = config_list.appendChild(Etc.buildElement('li', {}, 'id:' + oauth_config.id));
+            var delete_button = li.appendChild(Etc.buildElement('button', {class: 'button' + i}, 'アカウント情報を消去'));
 
             delete_button.addEventListener('click', function(e) {
                 var button = e.target;
@@ -2123,7 +2125,7 @@
                 li.parentNode.removeChild(li);
             });
 
-            var ol = li.appendChild(buildElement('ol'));
+            var ol = li.appendChild(Etc.buildElement('ol'));
 
             oauth_config.tumblelogs.map(function(tumblelog, j) {
                 var checked, list_tumblelog;
@@ -2134,7 +2136,7 @@
                               : 'checked')
                            : 'checked');
 
-                list_tumblelog = ol.appendChild(buildElement('li', {}, '<label><input type="checkbox" ' + checked + '/><span>' + tumblelog.hostname + ': ' + tumblelog.name + '</span></label>'));
+                list_tumblelog = ol.appendChild(Etc.buildElement('li', {}, '<label><input type="checkbox" ' + checked + '/><span>' + tumblelog.hostname + ': ' + tumblelog.name + '</span></label>'));
                 list_tumblelog.querySelector('input[type=checkbox]').addEventListener('change', function(e) {
                     if (Tornado.exclude_tumblelogs[oauth_config.id] == undefined) {
                         Tornado.exclude_tumblelogs[oauth_config.id] = {};
@@ -2161,15 +2163,15 @@
     
         help_dialog.dialog.id = 'tornado_help_dialog';
     
-        var helps_list = buildElement('table', {border: '1', class: 'tornado_help_list'});
+        var helps_list = Etc.buildElement('table', {border: '1', class: 'tornado_help_list'});
     
         Tornado._shortcuts.map(function(shortcut, i, all) {
             var label;
     
             if (i == 0 ||
                 all[i-1].group != all[i].group) {
-                var tr = buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
-                label = buildElement('th', {colspan: '3'});
+                var tr = Etc.buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
+                label = Etc.buildElement('th', {colspan: '3'});
                 label.innerHTML = Tornado.funcs.i18n([
                     {
                         ja: 'その他のコマンド',
@@ -2203,7 +2205,7 @@
                 tr.appendChild(label);
                 helps_list.appendChild(tr);
 
-                tr = buildElement('tr', {},
+                tr = Etc.buildElement('tr', {},
                        ["<td class=\"tornado_short_title\">Title</td>",
                          "<td class=\"tornado_short_key\">Key</td>",
                          "<td class=\"tornado_short_desc\">Description</td>"].join(''));
@@ -2212,10 +2214,10 @@
             }
     
             /* TODO: title と key を一つの要素に納めます */
-            var li = buildElement('tr'),
-                title_box = buildElement('td', {class: 'tornado_short_title'}),
-                key_box = buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
-                desc_box = buildElement('td', {class: 'tornado_short_desc'});
+            var li = Etc.buildElement('tr'),
+                title_box = Etc.buildElement('td', {class: 'tornado_short_title'}),
+                key_box = Etc.buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
+                desc_box = Etc.buildElement('td', {class: 'tornado_short_desc'});
     
             var key = [], desc, options;
     
@@ -2233,16 +2235,16 @@
 
             var description = (shortcut.desc && (shortcut.desc[Tornado.lang] || shortcut.desc['en'] || shortcut.desc['ja'] || shortcut.desc)) ||
                                shortcut.func.name;
-            var desc = buildElement('p', {}, description);
+            var desc = Etc.buildElement('p', {}, description);
     
             desc_box.appendChild(desc);
     
-            options = buildElement('ul', {class: 'tornado_help_options'});
+            options = Etc.buildElement('ul', {class: 'tornado_help_options'});
             if (shortcut.has_selector) {
-                options.appendChild(buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
+                options.appendChild(Etc.buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
             }
             if (shortcut.url) {
-                options.appendChild(buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
+                options.appendChild(Etc.buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
             }
     
             desc_box.appendChild(options);
@@ -2265,10 +2267,10 @@
     function showShortcutHelp() {
         var rightcolumn_help, header_help, helps;
     
-        var rightcolumn_help = buildElement('div',
+        var rightcolumn_help = Etc.buildElement('div',
             {id: 'tornado_rightcolumn_help'});
     
-        var header_help = buildElement('p',
+        var header_help = Etc.buildElement('p',
             {}, 
             'Tumblr Tornado <span class="show_tornado_config">[conf]</span> <span class="show_tornado_help">[ ? ]</span>');
 
@@ -2280,7 +2282,7 @@
     
         rightcolumn_help.appendChild(header_help);
     
-        var helps = buildElement('ul',
+        var helps = Etc.buildElement('ul',
             {id: 'tornado_shortcuts_help'});
     
         Tornado._shortcuts.map(function(shortcut, i) {
@@ -2288,9 +2290,9 @@
                 shortcut.usehelp == 'hide') {
                 return;
             }
-            var help = buildElement('li',
+            var help = Etc.buildElement('li',
                 {},
-                buildShortcutLineHelp(shortcut));
+                Etc.buildShortcutLineHelp(shortcut));
             helps.appendChild(help);
         });
     
@@ -2399,18 +2401,18 @@
         var new_setting = new LiteDialog('New OAuth Settings');
         var setting_body = new_setting.dialog.querySelector('.lite_dialog_body');
 
-        setting_body.appendChild(buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
-        setting_body.appendChild(buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
+        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
+        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
 
-        var tumblelog_list = setting_body.appendChild(buildElement('ul'));
+        var tumblelog_list = setting_body.appendChild(Etc.buildElement('ul'));
 
         tumblelogs.map(function(tumblelog) {
-            tumblelog_list.appendChild(buildElement('li', {},
+            tumblelog_list.appendChild(Etc.buildElement('li', {},
                 'Name: ' + tumblelog.name + '<br />' +
                 'Host name: ' + tumblelog.hostname + '<br />'));
         });
 
-        var ok = setting_body.appendChild(buildElement('button', {}, 'この設定を保存します'));
+        var ok = setting_body.appendChild(Etc.buildElement('button', {}, 'この設定を保存します'));
 
         ok.addEventListener('click', function() {
             Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
@@ -2445,9 +2447,9 @@
 
         showShortcutHelp();
 
-        execScript(Tornado.clientfuncs.join(''));
+        Etc.execScript(Tornado.clientfuncs.join(''));
 
-        execScript(Tornado.clientlaunches.map(function(code) {
+        Etc.execScript(Tornado.clientlaunches.map(function(code) {
             if (typeof code === 'string') {
                 return code + ';\n';
             }
