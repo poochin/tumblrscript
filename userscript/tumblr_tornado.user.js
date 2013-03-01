@@ -27,6 +27,7 @@
 // TODO: OAuth にまつわる関数を Tornado.oauth にまとめます
 // TODO: init 系の関数を整理します
 // TODO: BeforeAutoPaginationQueue, AfterAutoPaginationQueue を用いて次ページのロード時のアクションを設定します
+// TODO: endless summer -> time [m]achine
 /**
  * @namespace TumblrTornado
  */
@@ -68,6 +69,8 @@
             twitterOn: true || false,
         },
     };
+
+    Tornado.oauth = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
 
     Tornado.lang = window.navigator.language.split('-')[0];
@@ -96,9 +99,11 @@
     Tornado.vals.key_input_time = 0;
     Tornado.vals.key_follows = []
     
-    // TODO: css を PinNotification、LiteDialog や Right column Help 部位などに切り分ける
-    Tornado.css = [
-        /* Pin Notification */
+
+    Tornado.css = "";
+    
+    /* Pin Notification */
+    Tornado.css += [
         "#pin_notification_board {",
         "    position: fixed;",
         "    right: 15px;",
@@ -159,6 +164,10 @@
         "    90%  { opacity: 1; }",
         "    100% { opacity: 0; }",
         "}",
+    ].join('\n');
+
+    /* Reblog Effect */
+    Tornado.css += [
         /* Reblog Shutter */
         "#posts > .post.shutter_base {",
         "    background-color: #F8ABA6;",
@@ -191,8 +200,11 @@
         "  50% { -moz-transform: rotate(360deg) scale(1.1, 1.1); }",
         "  55% { -moz-transform: rotate(360deg) scale(1, 1); }",
         "  100% { -moz-transform: rotate(360deg) scale(1, 1); }",
-        "}",
-        /* Lite Dialog */
+        "}"
+    ].join('\n');
+
+    /* Lite Dialog */
+    Tornado.css += [
         ".lite_dialog {",
         "  background-color: #fff;",
         "  padding: 2px;",
@@ -259,6 +271,10 @@
         ".lite_dialog_body input[type='button']:focus {",
         "  font-weight: bold;",
         "}",
+    ].join('\n');
+
+    /* Lite Dialog, Tornado Extending */
+    Tornado.css += [
         /* Channel Dialog */
         ".lite_dialog.channel_dialog {",
         "    min-width: 300px;",
@@ -318,6 +334,10 @@
         "    list-style: none;",
         "    float: right;",
         "}",
+    ].join('\n');
+
+    /* Right column Information */
+    Tornado.css += [
         /* Right column Help */
         "#tornado_rightcolumn_help {",
         // "  background-color: #344f68;",
@@ -389,6 +409,7 @@
         "}",
     ].join('\n');
 
+    /* console が存在しない環境でもエラーで止まらないようにします */
     if (typeof console == 'undefined') {
         console = {log: function(){}};
     }
@@ -418,7 +439,6 @@
               ));
     };
 
-    
     /**
      * ビデオの開閉トグル関数です。
      * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
@@ -2067,7 +2087,7 @@
 
         var request_button = dialog_body.appendChild(buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 認証します', en: 'Authorize OAuth'})));
         request_button.addEventListener('click', function() {
-            var request_accessor = Tornado.getRequestToken();
+            var request_accessor = Tornado.oauth.getRequestToken();
             GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
 
             location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
@@ -2283,7 +2303,7 @@
         })(document.querySelector('#right_column'));
     }
 
-    Tornado.getRequestToken = function getRequestToken() {
+    Tornado.oauth.getRequestToken = function getRequestToken() {
         var url = 'http://www.tumblr.com/oauth/request_token';
         var accessor = {
             consumerKey: Tornado.vals.CONSUMER_KEY,
@@ -2313,7 +2333,7 @@
         return result;
     };
 
-    Tornado.getAccessToken = function getAccessToken() {
+    Tornado.oauth.getAccessToken = function getAccessToken() {
         var tokens = OAuth.decodeForm(location.search.slice(1));
         var tokenSecret = GM_getValue('oauth_token_secret');
 
@@ -2357,8 +2377,8 @@
         return access_tokens;
     };
 
-    Tornado.verifyAccessToken = function verifyAccessToken() {
-        var access_tokens = Tornado.getAccessToken();
+    Tornado.oauth.verifyAccessToken = function verifyAccessToken() {
+        var access_tokens = Tornado.oauth.getAccessToken();
 
         var base_name = document.querySelector('#search_field [name=t]').value;
 
@@ -2438,7 +2458,7 @@
 
 
         if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
-            Tornado.verifyAccessToken();
+            Tornado.oauth.verifyAccessToken();
         }
     }
 
