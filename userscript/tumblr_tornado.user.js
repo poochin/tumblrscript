@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.4
+// @version     1.2.9.5
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -24,9 +24,7 @@
 
 
 // TODO: customkey を class 化します
-// TODO: OAuth にまつわる関数を Tornado.oauth にまとめます
 // TODO: init 系の関数を整理します
-// TODO: BeforeAutoPaginationQueue, AfterAutoPaginationQueue を用いて次ページのロード時のアクションを設定します
 // TODO: endless summer -> time [m]achine
 /**
  * @namespace TumblrTornado
@@ -2041,10 +2039,16 @@
             if (m = location.href.match(/show\/(photos|text|quotes|links|chats|audio|videos)\/?(\d+)?/)) {
                 type = m[1];
                 pagenum = (m[2] == undefined) ? 2 : parseInt(m[2]) + 1;
-                return '/show/' + type + '/' + pagenum;
+                next_page = '/show/' + type + '/' + pagenum;
             }
-            return null;
         },
+        /**
+         * pjax ライクにページの読み込みとロケーションバーを連動させます
+         */
+         function dsbdPjax() {
+            next_pageCorrection();
+            history.pushState('', '', next_page);
+         },
     ];
 
     /**
@@ -2052,20 +2056,7 @@
      * 文字列は文字列の成すように、関数は関数を実行します。
      */
     Tornado.clientlaunches = [
-        /* pjax ライクな挙動にします */
-        function enhistory() {
-            var papr = window._process_auto_paginator_response;
-            window._process_auto_paginator_response = function(transport) {
-                history.pushState('', '', window.next_page);
-                papr(transport);
-        
-                var next_page = next_pageCorrection();
-                if (next_page) {
-                    window.next_page = next_page;
-                }
-            }
-        },
-        'window.next_page = (next_pageCorrection() || window.next_page);',
+        'BeforeAutoPaginationQueue.push(dsbdPjax);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
