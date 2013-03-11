@@ -24,8 +24,8 @@
 
 
 // TODO: customkey を class 化します
-// TODO: init 系の関数を整理します
 // TODO: endless summer -> time [m]achine
+// TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
 /**
  * @namespace TumblrTornado
  */
@@ -1473,6 +1473,10 @@
             var notes_link = post.querySelector('.reblog_count');
             notes_link.dispatchEvent(Tornado.left_click);
         },
+        endlessSummer: function() {
+           Etc.execScript('window.ison_endless_summer = !(window.ison_endless_summer)'); 
+           new PinNotification('Change Mode! endless summer');
+        },
         scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
             var type = post.className.match(reg_type)[0];
@@ -1926,6 +1930,14 @@
                 usehelp: 'hide',
                 group: 0
             }),
+            customkey('e', customfuncs.endlessSummer, {
+                title: 'エンドレスサマー on ダッシュボード(On/Off)',
+                shift: true,
+                desc: {
+                    ja: 'ダッシュボードの下降をランダムにします',
+                },
+                group: 0
+            }),
 
             customkey('d', customfuncs.delete, {
                 title: '自ポストを削除',
@@ -2049,6 +2061,24 @@
             next_pageCorrection();
             history.pushState('', '', next_page);
          },
+         /**
+          * Dashboard をランダムに降下する為の機能です
+          */
+         function endlessSummer() {
+            var oldest_id = 264102; // http://ku.tumblr.com/post/264102
+
+            if (window.ison_endless_summer == false) {
+                return;
+            }
+
+            var path = location.href.match(/\/dashboard(\/(\d+)\/(\d+))?/);
+            var page, last_id;
+            var page = (path[2] ? parseInt(path[2]) : 1),
+                last_id = path[3];
+
+            var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
+            next_page = '/dashboard/' + (page + 1) + '/' + next_id;
+         },
     ];
 
     /**
@@ -2057,11 +2087,14 @@
      */
     Tornado.clientlaunches = [
         'BeforeAutoPaginationQueue.push(dsbdPjax);',
+        'BeforeAutoPaginationQueue.push(endlessSummer);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
+        'window.ison_endless_summer = false;',
+        'window.endless_summer_first_post_id = parseInt($$("#posts>.post[data-post-id]")[0].getAttribute("data-post-id"));',
     ];
 
     Tornado.windows.tornado_config = function tornado_config(e) {
