@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.7
+// @version     1.2.9.8
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -22,7 +22,7 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-
+// TODO: share_value を class 化するか関数で参照しやすくします
 // TODO: customkey を class 化します
 // TODO: endless summer -> time [m]achine
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
@@ -1474,8 +1474,27 @@
             notes_link.dispatchEvent(Tornado.left_click);
         },
         endlessSummer: function() {
-           Etc.execScript('window.ison_endless_summer = !(window.ison_endless_summer)'); 
-           new PinNotification('Change Mode! endless summer');
+            function parseBool(str) {
+                if (str == 'true') return true;
+                return false;
+            }
+
+            var id_endless_summer = 'tornado_share_value_endless_summer';
+            var elm_endless_summer = $$('#' + id_endless_summer)[0];
+            var value;
+
+            if (elm_endless_summer === undefined) {
+                elm_endless_summer = Etc.buildElement('input', {
+                        type: 'hidden',
+                        id: id_endless_summer,
+                        value: false});
+                $$('#tornado_rightcolumn_help')[0].appendChild(elm_endless_summer);
+            }
+
+            value = elm_endless_summer.value = !parseBool(elm_endless_summer.value);
+
+            Etc.execScript('window.ison_endless_summer = !(window.ison_endless_summer)'); 
+            new PinNotification('Endless summer was turned ' + ({true: 'On', false: 'Off'}[value]));
         },
         scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
@@ -2321,6 +2340,10 @@
         });
     
         rightcolumn_help.appendChild(helps);
+
+        rightcolumn_help.appendChild(Etc.buildElement('fieldset', {
+                id: 'tornado_share_value',
+                style: "display:none;"}));
 
         (function letit(right_column){
             if (right_column) {
