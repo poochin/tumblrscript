@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.10
+// @version     1.2.9.11
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1118,10 +1118,12 @@
 
                         Etc.dictUpdate(postdata, default_postdata);
 
-                        if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
-                            postdata['send_to_twitter'] = 'on';
-                            postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
-                        }
+                        try {
+                            if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
+                                postdata['send_to_twitter'] = 'on';
+                                postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
+                            }
+                        } catch (e) { }
     
                         new Ajax('http://www.tumblr.com/svc/post/update', {
                             method: 'post',
