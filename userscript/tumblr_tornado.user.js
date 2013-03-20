@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.11
+// @version     1.2.9.12
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1952,7 +1952,7 @@
                 group: 0
             }),
             customkey('e', customfuncs.endlessSummer, {
-                title: 'エンドレスサマー',
+                title: 'Endless Summer',
                 shift: true,
                 desc: {
                     ja: 'ダッシュボードの下降をランダムにします',
