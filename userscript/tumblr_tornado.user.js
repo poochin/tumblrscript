@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.13
+// @version     1.2.9.14
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2302,6 +2302,22 @@
         });
     
         dialog_body.appendChild(helps_list);
+
+        /* ソースへのリンク */
+        dialog_body.appendChild(document.createElement('hr'));
+        dialog_body.appendChild(Etc.buildElementBySource([
+                '<div style="text-align: right;">',
+                'Tumblr Tornado Repositories',
+                '(',
+                '<a href="https://userscripts.org/scripts/show/137667">stable</a>',
+                ', ',
+                '<a href="https://github.com/poochin/tumblrscript/blob/master/userscript/tumblr_tornado.user.js">beta</a>',
+                ', ',
+                '<a href="https://github.com/poochin/tumblrscript/blob/dev/userscript/tumblr_tornado.user.js">alpha</a>',
+                ')',
+                '</div>'
+                ].join('\n')));
+
         
         help_dialog.centering();
     };
