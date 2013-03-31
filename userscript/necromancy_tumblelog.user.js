@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/blog/*
 // @include     http://*.tumblr.com/
-// @version     1.1.7
+// @version     1.1.8
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -23,6 +23,11 @@
 
 var API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
 var LOAD_SCROLL_OFFSET = 5000;
+
+var Browser = (window.opera                                 ? 'opera'
+              : window.navigator.userAgent.match(/Chrome/)  ? 'chrome'
+              : window.navigator.userAgent.match(/Firefox/) ? 'firefox'
+                                                            : '');
 
 /**
  *  /blog/
@@ -45,7 +50,7 @@ var PATH_PARSER =
 function serialize(_obj)
 {
    // Let Gecko browsers do this the easy way
-   if (typeof _obj.toSource !== 'undefined' && typeof _obj.callee === 'undefined')
+   if (Browser != 'chrome' && typeof _obj.toSource !== 'undefined' && typeof _obj.callee === 'undefined')
    {
       return _obj.toSource();
    }
@@ -107,6 +112,21 @@ function execClient(code, lazy) {
     }
 }
 
+/**
+ * クライアント領域で Script を実行します
+ * @param {String} code 実行したいコード
+ */
+function execScript (code) {
+    var script = document.createElement('script');
+    script.setAttribute('type', 'text/javascript');
+    script.innerHTML = code;
+    script.addEventListener('onload', function(e) {
+        (function letit(elm) {
+            elm.parentNode.removeChild(elm);
+        })(e.target);
+    });
+    document.body.appendChild(script);
+};
 
 /**
  * 辞書型オブジェクトから HTTP クエリ文字列を作成します。
@@ -1158,7 +1178,7 @@ function necromancyInitialize() {
         'http://assets.tumblr.com/javascript/tumblelog.js',
         'http://assets.tumblr.com/javascript/spin.js',
         'http://assets.tumblr.com/javascript/sortable.js',
-        'http://assets.tumblr.com/javascript/shadowybox.js',
+        // 'http://assets.tumblr.com/javascript/shadowybox.js',
         'http://assets.tumblr.com/javascript/jquery.pano.js',
         'http://assets.tumblr.com/javascript/jquery.application.js',
     ];
