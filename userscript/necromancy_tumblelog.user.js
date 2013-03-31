@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/blog/*
 // @include     http://*.tumblr.com/
-// @version     1.1.8
+// @version     1.1.9
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -362,7 +362,7 @@ var PostBuilder = {
         var url_fast_reblog = ['/fast_reblog', json.id, json.reblog_key].join('/');
         return buildElement('a', {
                 href: url_reblog,
-                class: 'reblog_button post_control',
+                class: 'reblog_button post_control post_control_icon',
                 title: 'Reblog',
                 'data-reblog-key': json.reblog_key,
                 'data-reblog-id': json.id,
@@ -391,7 +391,7 @@ var PostBuilder = {
             root_id = (url ? url.match(/(?:post\/(\d+)|private_\d+?(\d+))/)[1] : '');
         }
         var like_button = frag.appendChild(buildElement('a', {
-                    class: 'like_button post_control like_root_' + root_id,
+                    class: 'like_button post_control post_control_icon like_root_' + root_id,
                     href: '#',
                     title: 'like',
                     id: 'like_button_' + json.id,
@@ -427,7 +427,7 @@ var PostBuilder = {
             '</a>'];
         if (json.reblogged_from_url) {
             html = html.concat([
-                ' reblogged ',
+                ' <span class="reblog_icon" title="' + (json.blog_name) + ' reblogged ' + (json.reblogged_from_name) + '">reblogged</span> ',
                 '<a href="', json.reblogged_from_url, '">',
                 json.reblogged_from_name,
                 '</a>']);
@@ -793,7 +793,7 @@ var PostBuilder = {
      */
     footerLinks: function(json) {
         var footer_links = buildElement('div', {
-                class: 'footer_links'});
+                class: 'post_footer_links'});
         if (json.source_url) {
             var source_url = footer_links.appendChild(buildElement('span', {
                         id: 'source_url_' + json.id,
