@@ -1960,7 +1960,7 @@
                 usehelp: 'hide',
                 group: 0
             }),
-            customkey('e', customfuncs.endlessSummer, {
+            customkey('s', customfuncs.endlessSummer, {
                 title: 'Endless Summer',
                 shift: true,
                 desc: {
