@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.17
+// @version     1.2.9.18
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -508,7 +508,7 @@
         addElement: function(name, value) {
             var id = this.buildId(name);
 
-            var elm = Etc.buildElement('inpug', {
+            var elm = (window.Etc || window).buildElement('inpug', {
                     type: 'hidden',
                     id: id,
                     value: value});
@@ -2206,6 +2206,7 @@
             var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
             next_page = '/dashboard/' + (page + 1) + '/' + next_id;
          },
+         Etc.buildElement,
     ];
 
     /**
@@ -2222,10 +2223,13 @@
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
         'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post[data-post-id]").getAttribute("data-post-id"));',
-        ((Tornado.browser === 'chrome') ? ("Tumblr.KeyCommands.scroll_offset = 6;") : ";"),
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
     ];
 
+
+    /**
+     * tornado の oauth 設定
+     */
     Tornado.windows.tornado_config = function tornado_config(e) {
         var config_dialog = new LiteDialog('Tumblr Tornado Config');
         var dialog_body = config_dialog.dialog.querySelector('.lite_dialog_body');
