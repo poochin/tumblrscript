@@ -422,6 +422,65 @@
     Tornado.left_click.initEvent('click', true, true);
 
     /**
+     * オブジェクトをシリアライズします
+     * http://blog.stchur.com/2007/04/06/serializing-objects-in-javascript/
+     * @param {Object} _obj 辞書型のオブジェクト.
+     * @return {String} eval で復元できるシリアライズした文字列を返します.
+     */
+    Etc.serialize = function(_obj) {
+       // Let Gecko browsers do this the easy way
+       if (Tornado.browser != 'chrome' && typeof _obj.toSource !== 'undefined' && typeof _obj.callee === 'undefined')
+       {
+          return _obj.toSource();
+       }
+       // Other browsers must do it the hard way
+       switch (typeof _obj)
+       {
+          // numbers, booleans, and functions are trivial:
+          // just return the object itself since its default .toString()
+          // gives us exactly what we want
+          case 'number':
+          case 'boolean':
+          case 'function':
+             return _obj;
+             break;
+
+          // for JSON format, strings need to be wrapped in quotes
+          case 'string':
+             return '\'' + _obj.replace("'", "\'") + '\'';
+             break;
+
+          case 'object':
+             if (_obj instanceof RegExp) {
+                /* RegExp return /regexp/ */
+                return _obj.toString();
+             }
+
+             var str;
+             if (_obj.constructor === Array || typeof _obj.callee !== 'undefined')
+             {
+                str = '[';
+                var i, len = _obj.length;
+                for (i = 0; i < len - 1; i++) { str += Etc.serialize(_obj[i]) + ','; }
+                str += Etc.serialize(_obj[i]) + ']';
+             }
+             else
+             {
+                str = '{';
+                var key;
+                for (key in _obj) { str += key + ':' + Etc.serialize(_obj[key]) + ','; }
+                str = str.replace(/\,$/, '') + '}';
+             }
+             return str;
+             break;
+
+          default:
+             return 'UNKNOWN';
+             break;
+       }
+    };
+
+    /**
      * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
      */
     var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
@@ -437,6 +496,60 @@
             : this.every(
                 function(v, k) { return v == another[k]; }
               ));
+    };
+
+    /**
+     * ShareValue
+     */
+    Etc.ShareValue = {
+        buildId: function(name) {
+            return 'tornado_share_value_' + name;
+        },
+        addElement: function(name, value) {
+            var id = this.buildId(name);
+
+            var elm = Etc.buildElement('inpug', {
+                    type: 'hidden',
+                    id: id,
+                    value: value});
+
+            return document.querySelectorAll('#tornado_rightcolumn_help')[0].appendChild(elm);
+        },
+        set: function(name, value) {
+            var id = this.buildId(name);
+            var elm = document.querySelectorAll('#' + id)[0];
+
+            if (elm === undefined) {
+                elm = this.addElement(name, value);
+            }
+
+            elm.setAttribute('value', value);
+        },
+        get: function(name, default_value) {
+            var id = this.buildId(name);
+            var elm = document.querySelectorAll('#' + id)[0];
+
+            if (elm === undefined) {
+                elm = this.addElement(name, default_value);
+            }
+
+            return elm.getAttribute('value');
+        },
+        toggle: function(name, default_value) {
+            var id = this.buildId(name);
+            var elm = document.querySelectorAll('#' + id)[0];
+            var value;
+
+            if (elm === undefined) {
+                elm = this.addElement(name, default_value);
+            }
+            else {
+                value = elm.getAttribute('value');
+                elm.setAttribute('value', value == 'false');
+            }
+
+            return elm.getAttribute('value');
+        },
     };
 
     /**
@@ -1485,27 +1598,10 @@
             notes_link.dispatchEvent(Tornado.left_click);
         },
         endlessSummer: function() {
-            function parseBool(str) {
-                if (str == 'true') return true;
-                return false;
-            }
+            var name = 'endless_summer';
+            var value = Etc.ShareValue.toggle(name, true);
 
-            var id_endless_summer = 'tornado_share_value_endless_summer';
-            var elm_endless_summer = $$('#' + id_endless_summer)[0];
-            var value;
-
-            if (elm_endless_summer === undefined) {
-                elm_endless_summer = Etc.buildElement('input', {
-                        type: 'hidden',
-                        id: id_endless_summer,
-                        value: false});
-                $$('#tornado_rightcolumn_help')[0].appendChild(elm_endless_summer);
-            }
-
-            value = elm_endless_summer.value = !parseBool(elm_endless_summer.value);
-
-            Etc.execScript('window.ison_endless_summer = !(window.ison_endless_summer)'); 
-            new PinNotification('Endless summer was turned ' + ({true: 'On', false: 'Off'}[value]));
+            new PinNotification('Endless summer was turned ' + ({'true': 'On', 'false': 'Off'}[value]));
         },
         scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
@@ -2096,8 +2192,9 @@
           */
          function endlessSummer() {
             var oldest_id = 264102; // http://ku.tumblr.com/post/264102
+            var name = 'endless_summer';
 
-            if (window.ison_endless_summer == false) {
+            if (ShareValue.get(name, false) === "false") {
                 return;
             }
 
@@ -2125,7 +2222,8 @@
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
         'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post[data-post-id]").getAttribute("data-post-id"));',
-        ((Tornado.browser === 'chrome') ? ("Tumblr.KeyCommands.scroll_offset = 6;") : ""),
+        ((Tornado.browser === 'chrome') ? ("Tumblr.KeyCommands.scroll_offset = 6;") : ";"),
+        'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
     ];
 
     Tornado.windows.tornado_config = function tornado_config(e) {
