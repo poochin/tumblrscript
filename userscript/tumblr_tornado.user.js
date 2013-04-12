@@ -22,9 +22,8 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-// TODO: share_value を class 化するか関数で参照しやすくします
 // TODO: customkey を class 化します
-// TODO: endless summer -> time [m]achine
+// TODO: customkey に expr を定義します
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
 /**
  * @namespace TumblrTornado
@@ -499,6 +498,61 @@
     };
 
     /**
+     * KeyEventCache
+     */
+    Etc.KeyEventCache = {
+        cache: [],
+        cache_length: 3,
+        expire_time: 2000,
+        last_time: 0,
+        add: function(e) {
+            var ch,
+                key_with = "",
+                key;
+
+            if (112 <= e.keyCode && e.keyCode <= 123) {
+                return; /* Function keys */
+            }
+            else if (!(65 <= e.keyCode && e.keyCode <= 90) &&
+                     !(48 <= e.keyCode && e.keyCode <= 57)) {
+                return; /* None Alphabet and Number */
+            }
+
+            /* 入力エリア、またはリッチテキスト内では無効にします */
+            if (e.target.tagName   === 'INPUT' ||
+                e.target.tagName   === 'TEXTAREA' ||
+                e.target.className === 'mceContentBody') {
+                return;
+            }
+
+            ch = String.fromCharCode(e.keyCode);
+            if (e.shift_key) {
+                key_with += "s";
+            }
+            if (e.ctrl_key) {
+                key_with += "c";
+            }
+            if (e.alt_key) {
+                key_with += "a";
+            }
+
+            key = "";
+            if (key_with.length) {
+                key = key_with + '-';
+            }
+            key += ch;
+
+            if (this.last_time + this.expire_time < new Date()) {
+                this.cache.length = 0;
+            }
+            this.last_time = (new Date() * 1);
+
+            this.cache.push(ch);
+            this.cache = this.cache.slice(this.cache_length);
+        },
+    };
+
+    /**
      * ShareValue
      */
     Etc.ShareValue = {
@@ -653,6 +707,29 @@
             width: elm.offsetWidth,
             height: elm.offsetHeight};
     };
+
+    Etc.CustomKey = function(options) {
+        this.options = options;
+    };
+
+    Etc.CustomKey.prototype = {
+        urlTest: function() {
+            return true; /* TODO */
+            if (shortcut.url !== null &&
+                shortcut.url.test(location) === false) {
+                return false;
+            }
+        },
+        keyTest: function() {
+            return true; /* TODO */
+        },
+        hasSelectorTest: function() {
+            return true; /* TODO */
+        },
+        exprTest: function() {
+            return true; /* TODO */
+        },
+    };
     
     /**
      * キーイベント用の辞書を生成して返します
@@ -671,6 +748,7 @@
         return {
             match: match,
             func: func,
+            expr: (options.expr && typeof options.expr === 'function') || function() {return true;},
             title: options.title || func.name || func,
             group: options.group || 0,
             grouporder: options.grouporder,
@@ -1088,6 +1166,53 @@
       * @param {Object} e Eventオブジェクト
       */
     Tornado.keyevent = function keyevent(e) {
+        var post,
+            margin_top = 7,
+            vr = Etc.viewportRect();
+
+        Etc.KeyEventCache.add(e);
+
+        post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
+            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
+        })[0];
+        if (!post) {
+            console.info('Post not found');
+        }
+
+        Tornado.shortcuts.some(function(shortcut) {
+            /*
+             優先順位
+             1. URL マッチ
+             2, 所有セレクタ
+             3, 前項入力キー
+             4. Ctrl, Alt, Shift 組み合わせキー
+            */
+            if (shortcut.url !== null &&
+                shortcut.url.test(location) === false) {
+                return false;
+            }
+            else if (e.shiftKey != shortcut.shift ||
+                     e.ctrlKey  != shortcut.ctrl ||
+                     e.altKey   != shortcut.alt) {
+                return false;
+            }
+            else if (shortcut.has_selector &&
+                     post &&
+                     post.querySelector(shortcut.has_selector) === null) {
+                return false;
+            }
+            else if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
+                      (typeof shortcut.match == 'string' ? ((shortcut.shift ? shortcut.match.toUpperCase()
+                                                                            : shortcut.match.toLowerCase()) == Tornado.vals.key_follows.slice(-1)[0])
+                                                         : shortcut.match.indexOf(Tornado.vals.key_follows.slice(-1)[0]) >= 0))) {
+                return false;
+            }
+    
+            shortcut.func(post, e);
+            Tornado.vals.key_follows = [];
+            return true;
+        })
+
         var post,
             margin_top = 7,  /* post 上部に 7px の余白が設けられます */
             vr = Etc.viewportRect(),
