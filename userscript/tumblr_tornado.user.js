@@ -714,7 +714,7 @@
     Etc.CustomKey = function(options) {
         this.url          = options.url;
         this.expr         = (options.expr && typeof options.expr === 'function') || function() {return true;};
-        this.title        = options.title || func.name || func;
+        this.title        = options.title || options.func.name || options.func;
         this.group        = options.group || 0;
         this.grouporder   = options.grouporder;
         this.has_selector = options.has_selector || null;
@@ -1206,7 +1206,7 @@
             console.info('Post not found');
         }
 
-        Tornado.newshortcuts.some(function(shortcut) {
+        Tornado.shortcuts.some(function(shortcut) {
             /*
              優先順位
              1. URL マッチ
@@ -1229,87 +1229,6 @@
 
             shortcut.func(post, e);
             Etc.KeyEventCache.clear();
-            return true;
-
-            if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
-                      (typeof shortcut.match == 'string' ? ((shortcut.shift ? shortcut.match.toUpperCase()
-                                                                            : shortcut.match.toLowerCase()) == Tornado.vals.key_follows.slice(-1)[0])
-                                                         : shortcut.match.indexOf(Tornado.vals.key_follows.slice(-1)[0]) >= 0))) {
-                return false;
-            }
-    
-            shortcut.func(post, e);
-            Tornado.vals.key_follows = [];
-            return true;
-        });
-        return;
-
-        var post,
-            margin_top = 7,  /* post 上部に 7px の余白が設けられます */
-            vr = Etc.viewportRect(),
-            ch = String.fromCharCode(e.keyCode);
-    
-        ch = (e.shiftKey ? ch.toUpperCase() : ch.toLowerCase());
-    
-        if (112 <= e.keyCode && e.keyCode <= 123) {
-            return; /* Function keys */
-        }
-        else if (!(65 <= e.keyCode && e.keyCode <= 90) && !(48 <= e.keyCode && e.keyCode <= 57)) {
-            return; /* Not Alphabet and Number */
-        }
-    
-        /* 入力エリア、またはリッチテキストでは無効にします */
-        if (e.target.tagName === 'INPUT' ||
-            e.target.tagName === 'TEXTAREA' ||
-            e.target.className === 'mceContentBody') {
-            return;
-        }
-    
-        /* 連続キーバインド用 */
-        if (Tornado.vals.key_input_time + Tornado.vals.KEY_CONTINUAL_TIME < new Date()) {
-            Tornado.vals.key_follows = [];
-        }
-        Tornado.vals.key_input_time = new Date() * 1;
-        Tornado.vals.key_follows = Tornado.vals.key_follows.concat(ch).slice(-Tornado.vals.KEY_MAX_FOLLOWS);
-    
-        post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
-            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
-        })[0];
-        if (!post) {
-            console.info('Post not found');
-        }
-    
-        Tornado.shortcuts.some(function(shortcut) {
-            /*
-             優先順位
-             1. URL マッチ
-             2, 所有セレクタ
-             3, 前項入力キー
-             4. Ctrl, Alt, Shift 組み合わせキー
-            */
-            if (shortcut.url !== null &&
-                shortcut.url.test(location) === false) {
-                return false;
-            }
-            else if (e.shiftKey != shortcut.shift ||
-                     e.ctrlKey  != shortcut.ctrl ||
-                     e.altKey   != shortcut.alt) {
-                return false;
-            }
-            else if (shortcut.has_selector &&
-                     post &&
-                     post.querySelector(shortcut.has_selector) === null) {
-                return false;
-            }
-            else if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
-                      (typeof shortcut.match == 'string' ? ((shortcut.shift ? shortcut.match.toUpperCase()
-                                                                            : shortcut.match.toLowerCase()) == Tornado.vals.key_follows.slice(-1)[0])
-                                                         : shortcut.match.indexOf(Tornado.vals.key_follows.slice(-1)[0]) >= 0))) {
-                return false;
-            }
-    
-            shortcut.func(post, e);
-            Tornado.vals.key_follows = [];
             return true;
         });
     };
@@ -1673,7 +1592,7 @@
         },
     };
 
-    Tornado.customfuncs = {
+    var CustomFuncs = Tornado.customfuncs = {
         reblog: function reblog(post) {
             var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
             Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
@@ -1944,49 +1863,10 @@
         },
     };
     
-    /**
-     * Shortcut の分類
-     * 0: other
-     * 1: default
-     * 2: reblog
-     * 3: channel reblog
-     * 4: operator of mine
-     * 5: scroll
-     * 6: decorating post element
-     */
-    Tornado.newshortcuts = [
+    Tornado.shortcuts = [
         new Etc.CustomKey({
-                key_bind: ['s-g'],
-                func: Tornado.customfuncs.goBottom,
-                title: '一番下へ',
-                shift: true,
-                usehelp: 'hide',
-                desc: {
-                    ja: '一番下へスクロールします',
-                    en: 'Go Bottom',
-                },
-                group: 5,
-                grouporder: 2,
-        }),
-        new Etc.CustomKey({
-                key_bind: ['g', 'g'],
-                func: Tornado.customfuncs.goTop,
-                title: '一番上へ',
-                usehelp: 'hide',
-                desc: {
-                    ja: '一番上へスクロールします',
-                    en: 'Go Top',
-                },
-                group: 5,
-                grouporder: 1,
-        }),
-    ];
-
-    Tornado.shortcuts = (function letit(){
-        var customfuncs = Tornado.customfuncs;
-
-        return [
-            customkey('j', customfuncs.default, {
+                key_bind: ['j'],
+                func: CustomFuncs.default, 
                 title: 'Next',
                 desc: {
                     ja: '次ポストへ移動',
@@ -1995,9 +1875,10 @@
                 group: 1,
                 grouporder: 1,
             }),
-            customkey('j', customfuncs.halfdown, {
+        new Etc.CustomKey({
+                key_bind: 's-j',
+                func: CustomFuncs.halfdown,
                 title: '下へ半スクロール',
-                shift: true,
                 usehelp: 'hide',
                 desc: {
                     ja: '下へ半スクロールします',
@@ -2006,7 +1887,9 @@
                 group: 5
             }),
 
-            customkey('k', customfuncs.default, {
+        new Etc.CustomKey({
+                key_bind: ['k'],
+                func: CustomFuncs.default,
                 title: 'Prev',
                 desc: {
                     ja: '前ポストへ移動',
@@ -2015,9 +1898,10 @@
                 group: 1,
                 grouporder: 2,
             }),
-            customkey('k', customfuncs.halfup, {
+        new Etc.CustomKey({
+                key_bind: ['s-k'],
+                func: CustomFuncs.halfup,
                 title: '上へ半スクロール',
-                shift: true,
                 usehelp: 'hide',
                 desc: {
                     ja: '上へ半スクロールします',
@@ -2026,7 +1910,9 @@
                 group: 5
             }),
 
-            customkey('l', customfuncs.default, {
+        new Etc.CustomKey({
+                key_bind: ['l'],
+                func: CustomFuncs.default,
                 title: 'Like',
                 desc: {
                     ja: 'Like します',
@@ -2036,9 +1922,10 @@
                 grouporder: 3,
             }),
 
-            customkey('g', customfuncs.goTop, {
+        new Etc.CustomKey({
+                key_bind: ['g', 'g'],
+                func: CustomFuncs.goTop,
                 title: '一番上へ',
-                follows: ['g'],
                 usehelp: 'hide',
                 desc: {
                     ja: '一番上へスクロールします',
@@ -2047,9 +1934,10 @@
                 group: 5,
                 grouporder: 1,
             }),
-            customkey('g', customfuncs.goBottom, {
+        new Etc.CustomKey({
+                key_bind: ['s-g'],
+                func: CustomFuncs.goBottom, 
                 title: '一番下へ',
-                shift: true,
                 usehelp: 'hide',
                 desc: {
                     ja: '一番下へスクロールします',
@@ -2058,19 +1946,22 @@
                 group: 5,
                 grouporder: 2,
             }),
-            customkey('o', customfuncs.jumpToLastCursor, {
+        new Etc.CustomKey({
+                key_bind: ['s-o'],
+                func: CustomFuncs.jumpToLastCursor,
                 title: '最後のカーソルへ飛ぶ',
                 desc: {
                     ja: 'gg や G で移動した際に最後のカーソル位置へ戻ります',
                     en: 'Go back Last Cursor(when gg, G)'
                 },
-                shift: true,
                 usehelp: false,
                 group: 5,
                 grouporder: 3,
             }),
 
-            customkey('t', customfuncs.reblog, {
+        new Etc.CustomKey({
+                key_bind: ['t'],
+                func: CustomFuncs.reblog,
                 title: 'Reblog',
                 desc: {
                     ja: '通常のリブログを行います',
@@ -2079,7 +1970,9 @@
                 group: 2,
                 grouporder: 1,
             }),
-            customkey('h', customfuncs.fast_reblog, {
+        new Etc.CustomKey({
+                key_bind: ['h'],
+                func: CustomFuncs.fast_reblog,
                 title: 'fast Reblog',
                 desc: {
                     ja: '高速リブログを行います',
@@ -2088,7 +1981,9 @@
                 group: 2,
                 grouporder: 2,
             }),
-            customkey('d', customfuncs.draft, {
+        new Etc.CustomKey({
+                key_bind: ['d'],
+                func: CustomFuncs.draft,
                 title: 'Draft',
                 desc: {
                     ja: '下書きへ送ります',
@@ -2097,7 +1992,9 @@
                 group: 2,
                 grouporder: 3,
             }),
-            customkey('q', customfuncs.queue, {
+        new Etc.CustomKey({
+                key_bind: ['q'],
+                func: CustomFuncs.queue,
                 title: 'Queue',
                 desc: {
                     ja: 'キューへ送ります',
@@ -2106,7 +2003,9 @@
                 group: 2,
                 grouporder: 5,
             }),
-            customkey('p', customfuncs.private, {
+        new Etc.CustomKey({
+                key_bind: ['p'],
+                func: CustomFuncs.private,
                 title: 'Private',
                 desc: {
                     ja: 'プライベートなリブログを行います',
@@ -2115,8 +2014,11 @@
                 group: 2,
                 grouporder: 5,
             }),
-            
-            customkey(['1', '2', '3', '4', '5', '6', '7', '8', '9'], customfuncs.directReblogToChannel, {
+
+        /* FIXME */
+        new Etc.CustomKey({
+                key_bind: [/[1-9]/],
+                func: CustomFuncs.directReblogToChannel,
                 title: 'channel Reblog',
                 desc: 'channel へすぐにリブログします',
                 usehelp: 'hide',
@@ -2124,9 +2026,10 @@
                 grouporder: 5,
             }),
 
-            customkey('t', customfuncs.reblogToChannel, {
+        new Etc.CustomKey({
+                key_bind: ['g', 't'],
+                func: CustomFuncs.reblogToChannel,
                 title: 'channel Reblog',
-                follows: ['g'],
                 desc: {
                     ja: 'channel へリブログ',
                     en: 'Reblog to channel',
@@ -2134,9 +2037,10 @@
                 group: 3,
                 grouporder: 1,
             }),
-            customkey('d', customfuncs.draftToChannel, {
+        new Etc.CustomKey({
+                key_bind: ['g', 'd'],
+                func: CustomFuncs.draftToChannel,
                 title: 'channel Draft',
-                follows: ['g'],
                 desc: {
                     ja: 'channel へ下書き',
                     en: 'Save to channel as draft'
@@ -2144,9 +2048,10 @@
                 group: 3,
                 grouporder: 2,
             }),
-            customkey('q', customfuncs.queueToChannel, {
+        new Etc.CustomKey({
+                key_bind: ['g', 'q'],
+                func: CustomFuncs.queueToChannel,
                 title: 'channel Queue',
-                follows: ['g'],
                 desc: {
                     ja: 'channel のキューへ送る',
                     en: 'Add to channel to queue'
@@ -2154,9 +2059,10 @@
                 group: 3,
                 grouporder: 3,
             }),
-            customkey('p', customfuncs.privateToChannel, {
+        new Etc.CustomKey({
+                key_bind: ['g', 'p'],
+                func: CustomFuncs.privateToChannel,
                 title: 'channel Private',
-                follows: ['g'],
                 desc: {
                     ja: 'channel の private でリブログ',
                     en: 'Private reblog'
@@ -2165,7 +2071,9 @@
                 grouporder: 4,
             }),
 
-            customkey('i', customfuncs.scaleImage, {
+        new Etc.CustomKey({
+                key_bind: ['i'],
+                func: CustomFuncs.scaleImage,
                 title: 'photo, video 開閉',
                 desc: {
                     ja: '画像や動画ポストを拡縮、開閉します',
@@ -2173,7 +2081,9 @@
                 },
                 group: 0
             }),
-            customkey('m', customfuncs.rootInfo, {
+        new Etc.CustomKey({
+                key_bind: ['m'],
+                func: CustomFuncs.rootInfo,
                 title: 'Root 投稿者情報',
                 desc: {
                     ja: 'Root 投稿者情報を取得します',
@@ -2181,7 +2091,9 @@
                 },
                 group: 0
             }),
-            customkey('v', customfuncs.viewPostPageInBackground, {
+        new Etc.CustomKey({
+                key_bind: ['v'],
+                func: CustomFuncs.viewPostPageInBackground,
                 title: 'ポストを開く',
                 desc: {
                     ja: '現在のポストを新タブで開きます',
@@ -2191,7 +2103,9 @@
                 group: 5
             }),
 
-            customkey('c', customfuncs.cleanPosts, {
+        new Etc.CustomKey({
+                key_bind: ['c'],
+                func: CustomFuncs.cleanPosts,
                 title: '上ポストを空白',
                 usehelp: 'hide',
                 desc: {
@@ -2201,9 +2115,10 @@
                 group: 6,
                 grouporder: 1,
             }),
-            customkey('c', customfuncs.removePosts, {
+        new Etc.CustomKey({
+                key_bind: ['s-c'],
+                func: CustomFuncs.removePosts,
                 title: '上ポストを削除',
-                shift: true,
                 usehelp: 'hide',
                 desc: {
                     ja: '現在より上のポストを画面から削除します',
@@ -2212,10 +2127,10 @@
                 group: 6,
                 grouporder: 2,
             }),
-            customkey('c', customfuncs.removeBottomPosts, {
+        new Etc.CustomKey({
+                key_bind: ['g', 's-c'],
+                func: CustomFuncs.removeBottomPosts,
                 title: '下ポストを削除',
-                shift: true,
-                follows: ['g'],
                 usehelp: 'hide',
                 desc: {
                     ja: '現在より下のポストを画面から削除します',
@@ -2225,7 +2140,9 @@
                 grouporder: 3,
             }),
 
-            customkey('n', customfuncs.default, {
+        new Etc.CustomKey({
+                key_bind: ['n'],
+                func: CustomFuncs.default,
                 title: 'Notes',
                 usehelp: 'hide',
                 desc: {
@@ -2235,21 +2152,26 @@
                 group: 1,
                 grouporder: 4,
             }),
-            customkey('r', customfuncs.topReload, {
-                shift: true,
+        new Etc.CustomKey({
+                key_bind: ['s-r'],
+                func: CustomFuncs.topReload,
                 usehelp: 'hide',
                 group: 0
             }),
-            customkey('s', customfuncs.endlessSummer, {
+        new Etc.CustomKey({
+                key_bind: ['s-s'],
+                func: CustomFuncs.endlessSummer,
                 title: 'Endless Summer',
-                shift: true,
                 desc: {
                     ja: 'ダッシュボードの下降をランダムにします',
                 },
                 group: 0
             }),
 
-            customkey('d', customfuncs.delete, {
+        /* FIXME */
+        new Etc.CustomKey({
+                key_bind: ['d'],
+                func: CustomFuncs.delete,
                 title: '自ポストを削除',
                 desc: {
                     ja: 'Post が自分のものならばポストを削除します',
@@ -2259,18 +2181,21 @@
                 usehelp: 'hide',
                 group: 4
             }),
-            customkey('d', customfuncs.forceDelete, {
+        new Etc.CustomKey({
+                key_bind: ['s-d'],
+                func: CustomFuncs.forceDelete,
                 title: '自ポストを強制削除',
                 desc: {
                     ja: '確認ボックスを表示することなくポストを削除します',
                     en: 'Force delete my post',
                 },
-                shift: true,
                 has_selector: 'form[id^=delete]',
                 usehelp: 'hide',
                 group: 4
             }),
-            customkey('p', customfuncs.publish, {
+        new Etc.CustomKey({
+                key_bind: ['p'],
+                func: CustomFuncs.publish,
                 title: '自ポストを公開',
                 desc: {
                     ja: 'Drafts か Queue のポストを公開します',
@@ -2280,7 +2205,9 @@
                 usehelp: 'hide',
                 group: 4
             }),
-            customkey('q', customfuncs.enqueue, {
+        new Etc.CustomKey({
+                key_bind: ['q'],
+                func: CustomFuncs.enqueue,
                 title: '下書きをキューに',
                 desc: {
                     ja: 'Drafts を Queue へ納めます',
@@ -2290,8 +2217,7 @@
                 usehelp: 'hide',
                 group: 4
             })
-        ]
-    })();
+    ];
     
     Tornado._shortcuts = Tornado.shortcuts.slice();
     Tornado._shortcuts.sort(function(a, b){
@@ -2300,8 +2226,14 @@
     });
 
     Tornado.shortcuts.sort(function(a, b) {
-        return ((b.follows.length - a.follows.length) ||
-                (b.has_selector.length - a.has_selector.length) ||
+        function nullToLength(str) {
+            if (str === null) {
+                return 0;
+            }
+            return str.length;
+        }
+        return ((b.key_bind.length - a.key_bind.length) ||
+                (nullToLength(b.has_selector) - nullToLength(a.has_selector)) ||
                 ((b.url || '').length - ((a.url || '').length)));
     });
 
@@ -2622,6 +2554,7 @@
      * 右カラムにヘルプを表示します
      */
     function showShortcutHelp() {
+        return;
         var rightcolumn_help, header_help, helps;
     
         var rightcolumn_help = Etc.buildElement('div',
