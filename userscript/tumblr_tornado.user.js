@@ -505,6 +505,9 @@
         cache_length: 3,
         expire_time: 2000,
         last_time: 0,
+        clear: function() {
+            this.cache.length = 0;
+        },
         add: function(e) {
             var ch,
                 key_with = "",
@@ -526,13 +529,13 @@
             }
 
             ch = String.fromCharCode(e.keyCode);
-            if (e.shift_key) {
+            if (e.shiftKey) {
                 key_with += "s";
             }
-            if (e.ctrl_key) {
+            if (e.ctrlKey) {
                 key_with += "c";
             }
-            if (e.alt_key) {
+            if (e.altKey) {
                 key_with += "a";
             }
 
@@ -540,15 +543,15 @@
             if (key_with.length) {
                 key = key_with + '-';
             }
-            key += ch;
+            key += ch.toLowerCase();
 
             if (this.last_time + this.expire_time < new Date()) {
                 this.cache.length = 0;
             }
             this.last_time = (new Date() * 1);
 
-            this.cache.push(ch);
-            this.cache = this.cache.slice(this.cache_length);
+            this.cache.push(key);
+            this.cache = this.cache.slice(-this.cache_length);
         },
     };
 
@@ -709,25 +712,49 @@
     };
 
     Etc.CustomKey = function(options) {
-        this.options = options;
+        this.url          = options.url;
+        this.expr         = (options.expr && typeof options.expr === 'function') || function() {return true;};
+        this.title        = options.title || func.name || func;
+        this.group        = options.group || 0;
+        this.grouporder   = options.grouporder;
+        this.has_selector = options.has_selector || null;
+        this.url          = options.url || null;
+        this.usehelp      = (typeof options.usehelp == 'undefined') ? true : options.usehelp;
+        this.desc         = options.desc || '';
+
+        this.key_bind     = options.key_bind;
+        this.func         = options.func;
     };
 
     Etc.CustomKey.prototype = {
         urlTest: function() {
             return true; /* TODO */
-            if (shortcut.url !== null &&
-                shortcut.url.test(location) === false) {
+            if (this.url !== null &&
+                this.url.test(location) === false) {
                 return false;
             }
         },
-        keyTest: function() {
-            return true; /* TODO */
+        keyTest: function(key_event_cache) {
+            var cache = key_event_cache.cache;
+            if (cache.slice(-(this.key_bind.length)).cmp(this.key_bind)) {
+                return true;
+            }
+            return false;
         },
-        hasSelectorTest: function() {
-            return true; /* TODO */
+        hasSelectorTest: function(post) {
+            if (this.has_selector === null) {
+                return true;
+            }
+            if (post && post.querySelector(this.has_selector)) {
+                return true;
+            }
+            return false;
         },
-        exprTest: function() {
-            return true; /* TODO */
+        exprTest: function(post) {
+            if (typeof this.expr === 'function') {
+                return this.expr(post);
+            }
+            return true;
         },
     };
     
@@ -1179,7 +1206,7 @@
             console.info('Post not found');
         }
 
-        Tornado.shortcuts.some(function(shortcut) {
+        Tornado.newshortcuts.some(function(shortcut) {
             /*
              優先順位
              1. URL マッチ
@@ -1187,21 +1214,24 @@
              3, 前項入力キー
              4. Ctrl, Alt, Shift 組み合わせキー
             */
-            if (shortcut.url !== null &&
-                shortcut.url.test(location) === false) {
+            if (!shortcut.urlTest()) {
                 return false;
             }
-            else if (e.shiftKey != shortcut.shift ||
-                     e.ctrlKey  != shortcut.ctrl ||
-                     e.altKey   != shortcut.alt) {
+            if (!shortcut.hasSelectorTest(post)) {
                 return false;
             }
-            else if (shortcut.has_selector &&
-                     post &&
-                     post.querySelector(shortcut.has_selector) === null) {
+            if (!shortcut.exprTest(post)) {
                 return false;
             }
-            else if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
+            if (!shortcut.keyTest(Etc.KeyEventCache)) {
+                return false;
+            }
+
+            shortcut.func(post, e);
+            Etc.KeyEventCache.clear();
+            return true;
+
+            if (!(shortcut.follows.cmp(Tornado.vals.key_follows.slice(-shortcut.follows.length + 1).slice(0, -1)) &&
                       (typeof shortcut.match == 'string' ? ((shortcut.shift ? shortcut.match.toUpperCase()
                                                                             : shortcut.match.toLowerCase()) == Tornado.vals.key_follows.slice(-1)[0])
                                                          : shortcut.match.indexOf(Tornado.vals.key_follows.slice(-1)[0]) >= 0))) {
@@ -1211,7 +1241,8 @@
             shortcut.func(post, e);
             Tornado.vals.key_follows = [];
             return true;
-        })
+        });
+        return;
 
         var post,
             margin_top = 7,  /* post 上部に 7px の余白が設けられます */
@@ -1923,6 +1954,34 @@
      * 5: scroll
      * 6: decorating post element
      */
+    Tornado.newshortcuts = [
+        new Etc.CustomKey({
+                key_bind: ['s-g'],
+                func: Tornado.customfuncs.goBottom,
+                title: '一番下へ',
+                shift: true,
+                usehelp: 'hide',
+                desc: {
+                    ja: '一番下へスクロールします',
+                    en: 'Go Bottom',
+                },
+                group: 5,
+                grouporder: 2,
+        }),
+        new Etc.CustomKey({
+                key_bind: ['g', 'g'],
+                func: Tornado.customfuncs.goTop,
+                title: '一番上へ',
+                usehelp: 'hide',
+                desc: {
+                    ja: '一番上へスクロールします',
+                    en: 'Go Top',
+                },
+                group: 5,
+                grouporder: 1,
+        }),
+    ];
+
     Tornado.shortcuts = (function letit(){
         var customfuncs = Tornado.customfuncs;
 
