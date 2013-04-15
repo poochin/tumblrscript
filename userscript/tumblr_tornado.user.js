@@ -663,6 +663,7 @@
             }
         },
         keyTest: function(key_event_cache) {
+            /* FIXME: 正規表現に対応 */
             var cache = key_event_cache.cache;
             if (cache.slice(-(this.key_bind.length)).cmp(this.key_bind)) {
                 return true;
@@ -1867,7 +1868,7 @@
                 grouporder: 1,
             }),
         new Etc.CustomKey({
-                key_bind: 's-j',
+                key_bind: ['s-j'],
                 func: CustomFuncs.halfdown,
                 title: '下へ半スクロール',
                 usehelp: 'hide',
