@@ -1246,7 +1246,6 @@
                 }
             }
 
-
             shortcut.func(post, e, shortcut.options);
             Etc.KeyEventCache.clear();
             return true;
@@ -1587,28 +1586,12 @@
                 onFailure: onFailure});
         },
         shutterEffect: function shutterEffect(post) {
-            /*
-            // TODO: 後でコメントアウトして追加した事にします
-
             post.classList.remove('shutter_base');
             post.classList.remove('shuttering');
 
             post.classList.add('shutter_base');
             post.offsetHeight;
             post.classList.add('shuttering');
-            */
-            post.classList.remove('shuttering');
-            post.classList.add('shutter_base');
-    
-            var delay_shutter = 0;
-            if (/Firefox/.test(navigator.userAgent) ||
-                /Opera/.test(navigator.userAgent)) {
-                delay_shutter = 50;
-            }
-    
-            setTimeout(
-                function() { post.classList.add('shuttering'); },
-                delay_shutter);
          },
          i18n: function i18n(message) {
             if (typeof message == 'string') {
