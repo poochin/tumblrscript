@@ -22,7 +22,7 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-// TODO: customkey を class 化します
+// TODO: テンプレートエンジンを借りるか作るかします
 // TODO: customkey に expr を定義します
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
 /**
@@ -33,6 +33,9 @@
 
     var Tornado = {};
     var Etc; /* Tornado.etc へのショートハンドです */
+    // var Vals;
+    // var Funcs;
+    // var CustomFuncs;
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
@@ -72,6 +75,19 @@
     Tornado.oauth = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
 
+    /*---------------------------------
+     * Fix
+     *-------------------------------*/
+
+    /* console が存在しない環境でもエラーで止まらないようにします */
+    if (typeof console == 'undefined') {
+        console = {log: function(){}};
+    }
+
+    /*---------------------------------
+     * Const
+     *-------------------------------*/
+
     Tornado.lang = window.navigator.language.split('-')[0];
     Tornado.gm_api = (typeof GM_info != 'undefined' ? true : false);
 
@@ -99,8 +115,12 @@
     Tornado.vals.key_follows = []
     
 
+    /*---------------------------------
+     * Variable
+     *-------------------------------*/
+
     Tornado.css = "";
-    
+
     /* Pin Notification */
     Tornado.css += [
         "#pin_notification_board {",
@@ -408,10 +428,6 @@
         "}",
     ].join('\n');
 
-    /* console が存在しない環境でもエラーで止まらないようにします */
-    if (typeof console == 'undefined') {
-        console = {log: function(){}};
-    }
 
     /**
      * Tornado で使用できる左クリックイベントです。
@@ -497,8 +513,12 @@
               ));
     };
 
+    /*---------------------------------
+     * Class or Object
+     *-------------------------------*/
+
     /**
-     * KeyEventCache
+     * KeyEventCache オブジェクト
      */
     Etc.KeyEventCache = {
         cache: [],
@@ -556,7 +576,7 @@
     };
 
     /**
-     * ShareValue
+     * ShareValue オブジェクト
      */
     Etc.ShareValue = {
         buildId: function(name) {
@@ -610,108 +630,12 @@
     };
 
     /**
-     * ビデオの開閉トグル関数です。
-     * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
-     * @param {Node} post 対象のビデオポスト要素
+     * CustomKey クラス
      */
-    Etc.toggleVideoEmbed =  function toggleVideoEmbed(post) {
-        var post_id = post.id.match(/\d+/)[0],
-            toggle = post.querySelector('.video_thumbnail'),
-            embed = post.querySelector('.video_embed'),
-            watch = post.querySelector('.video');
-        if (watch.style.display == 'none') {
-            embed.innerHTML = post.querySelector('input[id^="video_"]').value;
-            toggle.style.display = 'none';
-            watch.style.display = 'block';
-        }
-        else {
-            embed.innerHTML = '';
-            toggle.style.display = 'block';
-            watch.style.display = 'none';
-        }
-    };
-    
-    /**
-     * HTML 文字列から Node 群を返します
-     * @param {String} html 作成した HTML 文字列.
-     * @return {Object} HTML を元に作成した要素を持つ DocumentFragment.
-     */
-    Etc.buildElementBySource = function buildElementBySource(html) {
-        var range = document.createRange();
-        range.selectNodeContents(document.body);
-        return range.createContextualFragment(html);
-    };
-    
-    /**
-     * Node を作成し各種データを同時にセットします
-     * @param {String} tag_name タグ名.
-     * @param {Object} propaties 辞書型のデータ.
-     * @param {String} HTML 文字列.
-     * @return {Object} 作成した Node を返します.
-     */
-    Etc.buildElement = function buildElement(tag_name, propaties, innerHTML) {
-        var elm = document.createElement(tag_name);
-    
-        for (var key in (propaties || {})) {
-            elm.setAttribute(key, propaties[key]);
-        }
-    
-        elm.innerHTML = innerHTML || '';
-        return elm;
-    };
-    
-    /**
-     * document.querySelectorAll へのショートハンド
-     * @param {String} selector CSS Selector
-     * @return {Array} NodeList の Array に変換したもの
-     */
-    var $$ = Etc.$$ = function $$(selector) {
-        /* || [] を用いるのは、querySelector は要素を見つけられなかった際に null を返します */
-        return Array.prototype.slice.call(document.querySelectorAll(selector) || []); 
-    };
-    
-    /**
-     * クライアント領域で Script を実行します
-     * @param {String} code 実行したいコード
-     */
-    Etc.execScript = function execScript(code) {
-        var script = document.createElement('script');
-        script.setAttribute('type', 'text/javascript');
-        script.innerHTML = code;
-        script.addEventListener('onload', function(e) {
-            (function letit(elm) {
-                elm.parentNode.removeChild(elm);
-            })(e.target);
-        });
-        document.body.appendChild(script);
-    };
-    
-    /**
-     * クライアントエリアのスクロール位置、画面サイズを取得します
-     * @return {Object} left, top, width, height を備えた辞書を返します
-     */
-    Etc.viewportRect = function viewportRect() {
-        return {
-            left: document.documentElement.scrollLeft || document.body.scrollLeft,
-            top: document.documentElement.scrollTop || document.body.scrollTop,
-            width: document.documentElement.clientWidth,
-            height: document.documentElement.clientHeight};
-    };
-    
-    /**
-     * 要素の位置、サイズを取得します
-     * @TODO absolute, fixed な要素の子要素などは再帰的に親へ辿る必要があります
-     * @return {Object} 要素の left, top, width, height を備えた辞書を返します
-     */
-    Etc.nodeRect = function nodeRect (elm) {
-        return {
-            left: elm.offsetLeft,
-            top: elm.offsetTop,
-            width: elm.offsetWidth,
-            height: elm.offsetHeight};
-    };
-
     Etc.CustomKey = function(options) {
+        this.key_bind     = options.key_bind;
+        this.func         = options.func;
+
         this.url          = options.url;
         this.expr         = (options.expr && typeof options.expr === 'function') || function() {return true;};
         this.title        = options.title || options.func.name || options.func;
@@ -721,9 +645,7 @@
         this.url          = options.url || null;
         this.usehelp      = (typeof options.usehelp == 'undefined') ? true : options.usehelp;
         this.desc         = options.desc || '';
-
-        this.key_bind     = options.key_bind;
-        this.func         = options.func;
+        this.options      = options.options || {};
     };
 
     Etc.CustomKey.prototype = {
@@ -757,159 +679,11 @@
             return true;
         },
     };
-    
-    /**
-     * キーイベント用の辞書を生成して返します
-     * @TODO needpost オプションを設定
-     * @TODO class 化する
-     * @param {String} match 最後に発火させる時のキー文字
-     * @param {String}   func Tornado.commands の関数名
-     * @param {Function} func 実行させたい関数
-     * @param {Object} options 各種オプション
-     * @returns {Object} キーイベント用の辞書型を返します
-     */
-    function customkey(match, func, options) {
-        if (typeof options == 'undefined') {
-            options = {};
-        }
-        return {
-            match: match,
-            func: func,
-            expr: (options.expr && typeof options.expr === 'function') || function() {return true;},
-            title: options.title || func.name || func,
-            group: options.group || 0,
-            grouporder: options.grouporder,
-            follows: options.follows || [],
-            has_selector: options.has_selector || '',
-            url: options.url || null,
-            shift: options.shift || false,
-            ctrl: options.ctrl || false,
-            alt: options.alt || false,
-            usehelp: (typeof options.usehelp == 'undefined') ? true : options.usehelp,
-            desc: options.desc || ''};
-    }
-    
-    /**
-     * ショートカットの一行ヘルプを作成して返します
-     * @param {Object} shortcut customkey で作成したオブジェクト
-     * @returns HTML 文字列を返します
-     */
-    Etc.buildShortcutLineHelp = function buildShortcutLineHelp(shortcut) {
-        var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'],
-            key = [];
-    
-        key.push((shortcut.follows && shortcut.follows.join(' ')) || '');
-        key.push((shortcut.shift && 's-') || '');
-        key.push(shortcut.match.toUpperCase());
-    
-        key = key.join('');
-        key = pre_spacing.slice(key.length).join('') + key;
-    
-        return [
-            '<code>',
-            key,
-            '</code>',
-            (shortcut.title || shortcut.desc || shortcut.func.name)].join('');
-    };
-    
-    /**
-     * 特定の関数は this があるオブジェクトを指している事を想定しています。
-     * そのような関数を呼び出す際に self を指定すると func の this が self になったまま呼び出されます。
-     * 使用目的として EventListener や setTimeout を想定しています。
-     * @param {Object}   self func を呼び出した際 this にしたい変数
-     * @param {Function} func 実行したい関数
-     * @param {args}     デフォルトの引数
-     * @returns 上記の目的を満たすクロージャ
-     */
-    Etc.preapply = function preapply(self, func, args) {
-        return function() {
-            func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
-        };
-    };
-    
-    /**
-     * 辞書型オブジェクトをクエリ文字列に変換します
-     * @param {Object} dict 辞書型オブジェクト
-     * @return {String} クエリ文字列
-     */
-    Etc.buildQueryString = function buildQueryString(dict) {
-        if (typeof dict == 'undefined') {
-            return '';
-        }
-        var queries = [];
-        for (var key in dict) {
-            queries.push([encodeURIComponent(key),
-                          encodeURIComponent(dict[key])].join('='));
-        }
-        return queries.join('&');
-    };
-    
-    /**
-     * prototype.js 風な Ajax 関数
-     * @param {String} url URL.
-     * @param {Object} options 各オプションを持った辞書型オブジェクト.
-     * @todo Ajax.Request では parameters は文字列ではなく辞書型オブジェクトで入ってくるかどうか
-     */
-    function Ajax(url, options) {
-        var xhr = this.xhr = new XMLHttpRequest(),
-            async = (options.asynchronous === undefined) || options.asynchronous;
-    
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4) {
-                var status = parseInt(xhr.status);
-                if ((status / 100) == 2) {
-                    if (options.onSuccess) {
-                        options.onSuccess(xhr);
-                    }
-                }
-                else if ((status / 100) >= 4) {
-                    if (options.onFailure) {
-                        options.onFailure(xhr);
-                    }
-                }
-                if (options.onComplete) {
-                    options.onComplete(xhr);
-                }
-            }
-        }
 
-        if (options.parameters && (typeof options.parameters != 'string')) {
-            options.parameters = Etc.buildQueryString(options.parameters);
-        }
-    
-        if (options.method == undefined && options.parameters) {
-            options.method = 'POST';
-        }
-        else if (options.method == undefined) {
-            options.method = 'GET';
-        }
-    
-        /* FIXME: PUT や DELETE にも対応 */
-        if ('POST' != options.method.toUpperCase() && options.parameters) {
-            url = [url, options.parameters].join('?');
-            options.parameters = null;
-        }
-        else {
-            if (options.requestHeaders == undefined ||
-                options.requestHeaders.indexOf('Content-Type') < 0 ||
-                options.requestHeaders.indexOf('Content-type') < 0 ||
-                options.requestHeaders.indexOf('content-type') < 0) {
-                options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
-                // FIXME: ここ Content-Type 設定してても入っちゃいます
-            }
-        }
-    
-        xhr.open(options.method, url, async);
-        for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i += 2) {
-            xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i + 1]);
-        }
-        xhr.send(options.parameters);
-    }
-    
     /**
      * クライアントエリアの右下にピンバルーンメッセージを表示します
      */
-    function PinNotification (message) {
+    Etc.PinNotification = function PinNotification (message) {
         var board = document.querySelector('#pin_notification_board');
         if (!board) {
             board = document.body.appendChild(document.createElement('div'));
@@ -923,33 +697,6 @@
         setTimeout(function() { board.removeChild(elm); }, 3000);
     }
 
-    /**
-     * Object(dst) の名と値を Object(dict) へ更新します
-     */    
-    Etc.dictUpdate = function dictUpdate(dict, dst) {
-        /* TODO: あとで外に出します */
-        var name;
-        for (name in (dst || {})) {
-            dict[name] = dst[name];
-        }
-    };
-
-    /**
-     * form の有効な値を集めます
-     */
-    Etc.gatherFormValues = function gatherFormValues(form) {
-        var values = {},
-            items = form.querySelectorAll('input, textarea, select');
-        Array.prototype.slice.call(items).filter(function(elm) {
-            return (['checkbox', 'radio'].indexOf(elm.type) >= 0)
-                ? elm.checked
-                : !elm.disabled;
-        }).map(function(elm){
-            values[elm.name] = elm.value;
-        });
-        return values;
-    };
-    
     /**
      * 軽量なダイアログボックスを表示します
      * @class
@@ -1068,6 +815,258 @@
         resize: function() {
         },
     };
+
+    /*---------------------------------
+     * Functions
+     *-------------------------------*/
+
+    /**
+     * ビデオの開閉トグル関数です。
+     * Tumblr application.js を元に Tumblr Tornado でも動くように移植しました
+     * @param {Node} post 対象のビデオポスト要素
+     */
+    Etc.toggleVideoEmbed =  function toggleVideoEmbed(post) {
+        var post_id = post.id.match(/\d+/)[0],
+            toggle = post.querySelector('.video_thumbnail'),
+            embed = post.querySelector('.video_embed'),
+            watch = post.querySelector('.video');
+        if (watch.style.display == 'none') {
+            embed.innerHTML = post.querySelector('input[id^="video_"]').value;
+            toggle.style.display = 'none';
+            watch.style.display = 'block';
+        }
+        else {
+            embed.innerHTML = '';
+            toggle.style.display = 'block';
+            watch.style.display = 'none';
+        }
+    };
+    
+    /**
+     * HTML 文字列から Node 群を返します
+     * @param {String} html 作成した HTML 文字列.
+     * @return {Object} HTML を元に作成した要素を持つ DocumentFragment.
+     */
+    Etc.buildElementBySource = function buildElementBySource(html) {
+        var range = document.createRange();
+        range.selectNodeContents(document.body);
+        return range.createContextualFragment(html);
+    };
+    
+    /**
+     * Node を作成し各種データを同時にセットします
+     * @param {String} tag_name タグ名.
+     * @param {Object} propaties 辞書型のデータ.
+     * @param {String} HTML 文字列.
+     * @return {Object} 作成した Node を返します.
+     */
+    Etc.buildElement = function buildElement(tag_name, propaties, innerHTML) {
+        var elm = document.createElement(tag_name);
+    
+        for (var key in (propaties || {})) {
+            elm.setAttribute(key, propaties[key]);
+        }
+    
+        elm.innerHTML = innerHTML || '';
+        return elm;
+    };
+    
+    /**
+     * document.querySelectorAll へのショートハンド
+     * @param {String} selector CSS Selector
+     * @return {Array} NodeList の Array に変換したもの
+     */
+    var $$ = Etc.$$ = function $$(selector) {
+        /* || [] を用いるのは、querySelector は要素を見つけられなかった際に null を返します */
+        return Array.prototype.slice.call(document.querySelectorAll(selector) || []); 
+    };
+    
+    /**
+     * クライアント領域で Script を実行します
+     * @param {String} code 実行したいコード
+     */
+    Etc.execScript = function execScript(code) {
+        var script = document.createElement('script');
+        script.setAttribute('type', 'text/javascript');
+        script.innerHTML = code;
+        script.addEventListener('onload', function(e) {
+            (function letit(elm) {
+                elm.parentNode.removeChild(elm);
+            })(e.target);
+        });
+        document.body.appendChild(script);
+    };
+    
+    /**
+     * クライアントエリアのスクロール位置、画面サイズを取得します
+     * @return {Object} left, top, width, height を備えた辞書を返します
+     */
+    Etc.viewportRect = function viewportRect() {
+        return {
+            left: document.documentElement.scrollLeft || document.body.scrollLeft,
+            top: document.documentElement.scrollTop || document.body.scrollTop,
+            width: document.documentElement.clientWidth,
+            height: document.documentElement.clientHeight};
+    };
+    
+    /**
+     * 要素の位置、サイズを取得します
+     * @TODO absolute, fixed な要素の子要素などは再帰的に親へ辿る必要があります
+     * @return {Object} 要素の left, top, width, height を備えた辞書を返します
+     */
+    Etc.nodeRect = function nodeRect (elm) {
+        return {
+            left: elm.offsetLeft,
+            top: elm.offsetTop,
+            width: elm.offsetWidth,
+            height: elm.offsetHeight};
+    };
+
+    /**
+     * ショートカットの一行ヘルプを作成して返します
+     * @param {Object} shortcut customkey で作成したオブジェクト
+     * @returns HTML 文字列を返します
+     */
+    Etc.buildShortcutLineHelp = function buildShortcutLineHelp(shortcut) {
+        var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'],
+            key = [];
+    
+        key.push((shortcut.follows && shortcut.follows.join(' ')) || '');
+        key.push((shortcut.shift && 's-') || '');
+        key.push(shortcut.match.toUpperCase());
+    
+        key = key.join('');
+        key = pre_spacing.slice(key.length).join('') + key;
+    
+        return [
+            '<code>',
+            key,
+            '</code>',
+            (shortcut.title || shortcut.desc || shortcut.func.name)].join('');
+    };
+    
+    /**
+     * 特定の関数は this があるオブジェクトを指している事を想定しています。
+     * そのような関数を呼び出す際に self を指定すると func の this が self になったまま呼び出されます。
+     * 使用目的として EventListener や setTimeout を想定しています。
+     * @param {Object}   self func を呼び出した際 this にしたい変数
+     * @param {Function} func 実行したい関数
+     * @param {args}     デフォルトの引数
+     * @returns 上記の目的を満たすクロージャ
+     */
+    Etc.preapply = function preapply(self, func, args) {
+        return function() {
+            func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
+        };
+    };
+    
+    /**
+     * 辞書型オブジェクトをクエリ文字列に変換します
+     * @param {Object} dict 辞書型オブジェクト
+     * @return {String} クエリ文字列
+     */
+    Etc.buildQueryString = function buildQueryString(dict) {
+        if (typeof dict == 'undefined') {
+            return '';
+        }
+        var queries = [];
+        for (var key in dict) {
+            queries.push([encodeURIComponent(key),
+                          encodeURIComponent(dict[key])].join('='));
+        }
+        return queries.join('&');
+    };
+    
+    /**
+     * prototype.js 風な Ajax 関数
+     * @param {String} url URL.
+     * @param {Object} options 各オプションを持った辞書型オブジェクト.
+     * @todo Ajax.Request では parameters は文字列ではなく辞書型オブジェクトで入ってくるかどうか
+     */
+    function Ajax(url, options) {
+        var xhr = this.xhr = new XMLHttpRequest(),
+            async = (options.asynchronous === undefined) || options.asynchronous;
+    
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                var status = parseInt(xhr.status);
+                if ((status / 100) == 2) {
+                    if (options.onSuccess) {
+                        options.onSuccess(xhr);
+                    }
+                }
+                else if ((status / 100) >= 4) {
+                    if (options.onFailure) {
+                        options.onFailure(xhr);
+                    }
+                }
+                if (options.onComplete) {
+                    options.onComplete(xhr);
+                }
+            }
+        }
+
+        if (options.parameters && (typeof options.parameters != 'string')) {
+            options.parameters = Etc.buildQueryString(options.parameters);
+        }
+    
+        if (options.method == undefined && options.parameters) {
+            options.method = 'POST';
+        }
+        else if (options.method == undefined) {
+            options.method = 'GET';
+        }
+    
+        /* FIXME: PUT や DELETE にも対応 */
+        if ('POST' != options.method.toUpperCase() && options.parameters) {
+            url = [url, options.parameters].join('?');
+            options.parameters = null;
+        }
+        else {
+            if (options.requestHeaders == undefined ||
+                options.requestHeaders.indexOf('Content-Type') < 0 ||
+                options.requestHeaders.indexOf('Content-type') < 0 ||
+                options.requestHeaders.indexOf('content-type') < 0) {
+                options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+                // FIXME: ここ Content-Type 設定してても入っちゃいます
+            }
+        }
+    
+        xhr.open(options.method, url, async);
+        for (var i = 0; options.requestHeaders && i < options.requestHeaders.length; i += 2) {
+            xhr.setRequestHeader(options.requestHeaders[i], options.requestHeaders[i + 1]);
+        }
+        xhr.send(options.parameters);
+    }
+    
+
+    /**
+     * Object(dst) の名と値を Object(dict) へ更新します
+     */    
+    Etc.dictUpdate = function dictUpdate(dict, dst) {
+        /* TODO: あとで外に出します */
+        var name;
+        for (name in (dst || {})) {
+            dict[name] = dst[name];
+        }
+    };
+
+    /**
+     * form の有効な値を集めます
+     */
+    Etc.gatherFormValues = function gatherFormValues(form) {
+        var values = {},
+            items = form.querySelectorAll('input, textarea, select');
+        Array.prototype.slice.call(items).filter(function(elm) {
+            return (['checkbox', 'radio'].indexOf(elm.type) >= 0)
+                ? elm.checked
+                : !elm.disabled;
+        }).map(function(elm){
+            values[elm.name] = elm.value;
+        });
+        return values;
+    };
+    
 
     
     /**
@@ -1227,7 +1226,7 @@
                 return false;
             }
 
-            shortcut.func(post, e);
+            shortcut.func(post, e, shortcut.options);
             Etc.KeyEventCache.clear();
             return true;
         });
@@ -1338,7 +1337,7 @@
                                 }
                                 else {
                                     var dp = default_postdata;
-                                    new PinNotification([
+                                    new Etc.PinNotification([
                                         'Success: Reblogged',
                                         (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
                                         (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
@@ -1378,7 +1377,7 @@
                                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
             
                                     var dp = default_postdata;
-                                    new PinNotification([
+                                    new Etc.PinNotification([
                                         'Success: Reblogged',
                                         (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
                                         (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
@@ -1426,11 +1425,11 @@
             function receiveRequestToken(xhr) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 201) {
-                        new PinNotification('Success: ' + (state || 'reblog') + ' to ' + hostname);
+                        new Etc.PinNotification('Success: ' + (state || 'reblog') + ' to ' + hostname);
                     }
                     else {
                         var json = JSON.parse(xhr.responseText);
-                        new PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
+                        new Etc.PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
                     }
                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
                 }
@@ -1452,7 +1451,7 @@
                 onload: receiveRequestToken,
             });
 
-            new PinNotification('Reblog ...');
+            new Etc.PinNotification('Reblog ...');
         },
         channelDialog: function channelDialog(post, postdata) {
 
@@ -1567,6 +1566,16 @@
                 onFailure: onFailure});
         },
         shutterEffect: function shutterEffect(post) {
+            /*
+            // TODO: 後でコメントアウトして追加した事にします
+
+            post.classList.remove('shutter_base');
+            post.classList.remove('shuttering');
+
+            post.classList.add('shutter_base');
+            post.offsetHeight;
+            post.classList.add('shuttering');
+            */
             post.classList.remove('shuttering');
             post.classList.add('shutter_base');
     
@@ -1593,38 +1602,25 @@
     };
 
     var CustomFuncs = Tornado.customfuncs = {
-        reblog: function reblog(post) {
+        reblog: function reblog(post, e, options) {
+            var params = {};
+
             var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
-            Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
+
+            Etc.dictUpdate(params, options.default_values);
+            Etc.dictUpdate(params, {
+                channel_id: channel_id
+            });
+
+            Tornado.funcs.reblog(post, params);
         },
-        reblogToChannel: function reblogToChannel(post) {
-            Tornado.funcs.channelDialog(post, {'post[state]': '0', 'channel_id': '0'});
+        reblogToChannel: function reblogToChannel(post, e, options) {
+            Tornado.funcs.channelDialog(post, options.default_values);
         },
         directReblogToChannel: function directReblogToChannel(post, e) {
             var channel_num = parseInt(String.fromCharCode(e.keyCode)) - 1;
             var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[channel_num].id.slice(9);
             Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
-        },
-        draft: function draft(post) {
-            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
-            Tornado.funcs.reblog(post, {'post[state]': '1', 'channel_id': channel_id});
-        },
-        draftToChannel: function draftToChannel(post) {
-            Tornado.funcs.channelDialog(post, {'post[state]': '1'});
-        },
-        queue: function queue(post) {
-            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
-            Tornado.funcs.reblog(post, {'post[state]': '2', 'channel_id': channel_id});
-        },
-        queueToChannel: function queueToChannel(post) {
-            Tornado.funcs.channelDialog(post, {'post[state]': '2'});
-        },
-        private: function _private(post) {
-            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
-            Tornado.funcs.reblog(post, {'post[state]': 'private', 'channel_id': channel_id});
-        },
-        privateToChannel: function privateToChannel(post) {
-            Tornado.funcs.channelDialog(post, {'post[state]': 'private'});
         },
         halfdown: function halfdown() {
             var view_height = window.innerHeight;
@@ -1660,7 +1656,7 @@
                 parameters: Etc.buildQueryString({reblog_key: reblog_key, reblog_post_id: reblog_id, form_key: form_key}),
                 onSuccess: function(_xhr) {
                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-                    new PinNotification('Success: fast Reblogged');
+                    new Etc.PinNotification('Success: fast Reblogged');
                 },
                 onFailure: function(_xhr) {
                     alert('Error: ' + _xhr.responseText);
@@ -1676,7 +1672,7 @@
             var name = 'endless_summer';
             var value = Etc.ShareValue.toggle(name, true);
 
-            new PinNotification('Endless summer was turned ' + ({'true': 'On', 'false': 'Off'}[value]));
+            new Etc.PinNotification('Endless summer was turned ' + ({'true': 'On', 'false': 'Off'}[value]));
         },
         scaleImage: function scaleImage(post) {
             var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
@@ -1718,7 +1714,7 @@
                 i++;
             });
     
-            new PinNotification(i + '件のポストを空にしました。');
+            new Etc.PinNotification(i + '件のポストを空にしました。');
         },
         removePosts: function removePosts(/* posts */) {
             var dsbd = document.querySelector('#posts'),
@@ -1737,7 +1733,7 @@
     
             window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
     
-            new PinNotification(del_count + '件のポストを削除しました。');
+            new Etc.PinNotification(del_count + '件のポストを削除しました。');
         },
         removeBottomPosts: function removeBottomPosts(/* post */) {
             var dsbd = document.querySelector('#posts'),
@@ -1754,7 +1750,7 @@
                 dsbd.removeChild(post);
             });
     
-            new PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
+            new Etc.PinNotification('現在より下のポストを' + del_count + '件のポストを削除しました。');
         },
         viewPostPageInBackground: function viewPostPageInBackground(post) {
             var permalink;
@@ -1801,11 +1797,11 @@
         forceDelete: function forceDelete(post) {
             Tornado.funcs.shutterEffect(post);
     
-            new PinNotification('Deleting... ' + post.id);
+            new Etc.PinNotification('Deleting... ' + post.id);
             Tornado.funcs.submitPublish(
                 post.querySelector('form#delete_' + post.id),
                 function(_xhr) {
-                    new PinNotification('Deleted ' + post.id);
+                    new Etc.PinNotification('Deleted ' + post.id);
                 },
                 function(_xhr) {
                     alert('fail to delete');
@@ -1819,11 +1815,11 @@
                 return;
             }
     
-            new PinNotification('Deleting... ' + post.id);
+            new Etc.PinNotification('Deleting... ' + post.id);
             Tornado.funcs.submitPublish(
                 post.querySelector('form#delete_' + post.id),
                 function(_xhr) {
-                    new PinNotification('Deleted ' + post.id);
+                    new Etc.PinNotification('Deleted ' + post.id);
                 },
                 function(_xhr) {
                     alert('fail to delete');
@@ -1833,11 +1829,11 @@
         publish: function publish(post) {
             Tornado.funcs.shutterEffect(post);
     
-            new PinNotification('Publishing... ' + post.id);
+            new Etc.PinNotification('Publishing... ' + post.id);
             Tornado.funcs.submitPublish(
                 post.querySelector('form#publish_' + post.id),
                 function(_xhr) {
-                    new PinNotification('Published ' + post.id);
+                    new Etc.PinNotification('Published ' + post.id);
                 },
                 function(_xhr) {
                     alert('fail to publish');
@@ -1847,11 +1843,11 @@
         enqueue: function enqueue(post) {
             Tornado.funcs.shutterEffect(post);
     
-            new PinNotification('Enqueueing... ' + post.id);
+            new Etc.PinNotification('Enqueueing... ' + post.id);
             Tornado.funcs.submitPublish(
                 post.querySelector('form#queue_' + post.id),
                 function(_xhr) {
-                    new PinNotification('Enqueued ' + post.id);
+                    new Etc.PinNotification('Enqueued ' + post.id);
                 },
                 function(_xhr) {
                     alert('fail to enqueue');
@@ -1960,9 +1956,14 @@
             }),
 
         new Etc.CustomKey({
+                title: 'Reblog',
                 key_bind: ['t'],
                 func: CustomFuncs.reblog,
-                title: 'Reblog',
+                options: {
+                    default_values: {
+                        'post[state]': '0'
+                    },
+                },
                 desc: {
                     ja: '通常のリブログを行います',
                     en: 'Reblog'
@@ -1982,9 +1983,14 @@
                 grouporder: 2,
             }),
         new Etc.CustomKey({
-                key_bind: ['d'],
-                func: CustomFuncs.draft,
                 title: 'Draft',
+                key_bind: ['d'],
+                func: CustomFuncs.reblog,
+                options: {
+                    default_values: {
+                        'post[state]': '1'
+                    }
+                },
                 desc: {
                     ja: '下書きへ送ります',
                     en: 'Save as draft'
@@ -1994,8 +2000,13 @@
             }),
         new Etc.CustomKey({
                 key_bind: ['q'],
-                func: CustomFuncs.queue,
+                func: CustomFuncs.reblog,
                 title: 'Queue',
+                options: {
+                    default_values: {
+                        'post[state]': '2'
+                    }
+                },
                 desc: {
                     ja: 'キューへ送ります',
                     en: 'Add to queue'
@@ -2005,8 +2016,13 @@
             }),
         new Etc.CustomKey({
                 key_bind: ['p'],
-                func: CustomFuncs.private,
+                func: CustomFuncs.reblog,
                 title: 'Private',
+                options: {
+                    default_values: {
+                        'post[state]': 'private'
+                    }
+                },
                 desc: {
                     ja: 'プライベートなリブログを行います',
                     en: 'Private reblog'
@@ -2030,6 +2046,11 @@
                 key_bind: ['g', 't'],
                 func: CustomFuncs.reblogToChannel,
                 title: 'channel Reblog',
+                options: {
+                    default_values: {
+                        'post[state]': '0',
+                    },
+                },
                 desc: {
                     ja: 'channel へリブログ',
                     en: 'Reblog to channel',
@@ -2039,8 +2060,13 @@
             }),
         new Etc.CustomKey({
                 key_bind: ['g', 'd'],
-                func: CustomFuncs.draftToChannel,
+                func: CustomFuncs.reblogToChannel,
                 title: 'channel Draft',
+                options: {
+                    default_values: {
+                        'post[state]': '1',
+                    },
+                },
                 desc: {
                     ja: 'channel へ下書き',
                     en: 'Save to channel as draft'
@@ -2050,8 +2076,13 @@
             }),
         new Etc.CustomKey({
                 key_bind: ['g', 'q'],
-                func: CustomFuncs.queueToChannel,
+                func: CustomFuncs.reblogToChannel,
                 title: 'channel Queue',
+                options: {
+                    default_values: {
+                        'post[state]': '2',
+                    },
+                },
                 desc: {
                     ja: 'channel のキューへ送る',
                     en: 'Add to channel to queue'
@@ -2061,8 +2092,13 @@
             }),
         new Etc.CustomKey({
                 key_bind: ['g', 'p'],
-                func: CustomFuncs.privateToChannel,
+                func: CustomFuncs.reblogToChannel,
                 title: 'channel Private',
+                options: {
+                    default_values: {
+                        'post[state]': 'private',
+                    },
+                },
                 desc: {
                     ja: 'channel の private でリブログ',
                     en: 'Private reblog'
@@ -2262,6 +2298,138 @@
             }
         });
     };
+
+    Tornado.oauth.getRequestToken = function getRequestToken() {
+        var url = 'http://www.tumblr.com/oauth/request_token';
+        var accessor = {
+            consumerKey: Tornado.vals.CONSUMER_KEY,
+            consumerSecret: Tornado.vals.CONSUMER_SECRET
+        };
+
+        var message = { method: 'GET', action: url};
+        var request_body = OAuth.formEncode(message.parameters);
+        OAuth.completeRequest(message, accessor);
+
+        var a = new Ajax(message.action, {
+            method: message.method, 
+            asynchronous: false,
+            parameters: request_body,
+            requestHeaders: [
+                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
+            ],
+        })
+
+        var response = OAuth.decodeForm(a.xhr.responseText);
+        var result = {};
+
+        result[response[0][0]] = response[0][1];
+        result[response[1][0]] = response[1][1];
+        result[response[2][0]] = response[2][1];
+
+        return result;
+    };
+
+    Tornado.oauth.getAccessToken = function getAccessToken() {
+        var tokens = OAuth.decodeForm(location.search.slice(1));
+        var tokenSecret = GM_getValue('oauth_token_secret');
+
+        var url = 'http://www.tumblr.com/oauth/access_token';
+
+        var accessor = {
+            consumerKey: Tornado.vals.CONSUMER_KEY,
+            consumerSecret: Tornado.vals.CONSUMER_SECRET,
+            token: tokens[0][1],
+            tokenSecret: tokenSecret,
+        };
+
+        var parameters = {
+            oauth_verifier: tokens[1][1],
+        };
+
+        var message = {
+            method: 'POST',
+            action: url,
+            parameters: parameters,
+        };
+
+        var request_body = OAuth.formEncode(message.parameters);
+        OAuth.completeRequest(message, accessor);
+
+        var a = new Ajax(message.action, {
+            method: message.method,
+            parameters: message.parameters,
+            asynchronous: false,
+            requestHeaders: [
+                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
+            ],
+        });
+
+        var response = OAuth.decodeForm(a.xhr.responseText);
+        var access_tokens = {};
+
+        access_tokens[response[0][0]] = response[0][1];
+        access_tokens[response[1][0]] = response[1][1];
+
+        return access_tokens;
+    };
+
+    Tornado.oauth.verifyAccessToken = function verifyAccessToken() {
+        var access_tokens = Tornado.oauth.getAccessToken();
+
+        var base_name = document.querySelector('#search_field [name=t]').value;
+
+        var tumblelogs =  $$('#popover_blogs .item a').map(function(item){
+            return {
+                name: item.text.trim(),
+                hostname: item.href.split('/').slice(-1)[0] + '.tumblr.com'
+            }
+        });
+
+        var oauth_config = {
+            id: base_name,
+            token: access_tokens.oauth_token,
+            token_secret: access_tokens.oauth_token_secret,
+            tumblelogs: tumblelogs,
+        };
+
+        var new_setting = new LiteDialog('New OAuth Settings');
+        var setting_body = new_setting.dialog.querySelector('.lite_dialog_body');
+
+        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
+        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
+
+        var tumblelog_list = setting_body.appendChild(Etc.buildElement('ul'));
+
+        tumblelogs.map(function(tumblelog) {
+            tumblelog_list.appendChild(Etc.buildElement('li', {},
+                'Name: ' + tumblelog.name + '<br />' +
+                'Host name: ' + tumblelog.hostname + '<br />'));
+        });
+
+        var ok = setting_body.appendChild(Etc.buildElement('button', {}, 'この設定を保存します'));
+
+        ok.addEventListener('click', function() {
+            Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
+            Tornado.oauthconfigs.push(oauth_config);
+
+            GM_setValue('oauthconfigs', JSON.stringify(Tornado.oauthconfigs));
+            GM_deleteValue('oauth_token_secret');
+
+            new_setting.dialog.parentNode.removeChild(new_setting.dialog);
+
+            new Etc.PinNotification('認証情報を保存しました。');
+            new Etc.PinNotification('3 秒後にリロードします。');
+            new Etc.PinNotification('設定は [conf] から確認できます。');
+
+            setTimeout(function(){location.href = '/dashboard'}, 3000);
+        }, false);
+
+        new_setting.centering();
+    };
+
+    /*---------------------------------
+     * Variable (2nd)
+     *-------------------------------*/
 
     /**
      * クライアントページ領域に関数を定義させます
@@ -2599,133 +2767,9 @@
         })(document.querySelector('#right_column'));
     }
 
-    Tornado.oauth.getRequestToken = function getRequestToken() {
-        var url = 'http://www.tumblr.com/oauth/request_token';
-        var accessor = {
-            consumerKey: Tornado.vals.CONSUMER_KEY,
-            consumerSecret: Tornado.vals.CONSUMER_SECRET
-        };
-
-        var message = { method: 'GET', action: url};
-        var request_body = OAuth.formEncode(message.parameters);
-        OAuth.completeRequest(message, accessor);
-
-        var a = new Ajax(message.action, {
-            method: message.method, 
-            asynchronous: false,
-            parameters: request_body,
-            requestHeaders: [
-                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
-            ],
-        })
-
-        var response = OAuth.decodeForm(a.xhr.responseText);
-        var result = {};
-
-        result[response[0][0]] = response[0][1];
-        result[response[1][0]] = response[1][1];
-        result[response[2][0]] = response[2][1];
-
-        return result;
-    };
-
-    Tornado.oauth.getAccessToken = function getAccessToken() {
-        var tokens = OAuth.decodeForm(location.search.slice(1));
-        var tokenSecret = GM_getValue('oauth_token_secret');
-
-        var url = 'http://www.tumblr.com/oauth/access_token';
-
-        var accessor = {
-            consumerKey: Tornado.vals.CONSUMER_KEY,
-            consumerSecret: Tornado.vals.CONSUMER_SECRET,
-            token: tokens[0][1],
-            tokenSecret: tokenSecret,
-        };
-
-        var parameters = {
-            oauth_verifier: tokens[1][1],
-        };
-
-        var message = {
-            method: 'POST',
-            action: url,
-            parameters: parameters,
-        };
-
-        var request_body = OAuth.formEncode(message.parameters);
-        OAuth.completeRequest(message, accessor);
-
-        var a = new Ajax(message.action, {
-            method: message.method,
-            parameters: message.parameters,
-            asynchronous: false,
-            requestHeaders: [
-                'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
-            ],
-        });
-
-        var response = OAuth.decodeForm(a.xhr.responseText);
-        var access_tokens = {};
-
-        access_tokens[response[0][0]] = response[0][1];
-        access_tokens[response[1][0]] = response[1][1];
-
-        return access_tokens;
-    };
-
-    Tornado.oauth.verifyAccessToken = function verifyAccessToken() {
-        var access_tokens = Tornado.oauth.getAccessToken();
-
-        var base_name = document.querySelector('#search_field [name=t]').value;
-
-        var tumblelogs =  $$('#popover_blogs .item a').map(function(item){
-            return {
-                name: item.text.trim(),
-                hostname: item.href.split('/').slice(-1)[0] + '.tumblr.com'
-            }
-        });
-
-        var oauth_config = {
-            id: base_name,
-            token: access_tokens.oauth_token,
-            token_secret: access_tokens.oauth_token_secret,
-            tumblelogs: tumblelogs,
-        };
-
-        var new_setting = new LiteDialog('New OAuth Settings');
-        var setting_body = new_setting.dialog.querySelector('.lite_dialog_body');
-
-        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
-        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
-
-        var tumblelog_list = setting_body.appendChild(Etc.buildElement('ul'));
-
-        tumblelogs.map(function(tumblelog) {
-            tumblelog_list.appendChild(Etc.buildElement('li', {},
-                'Name: ' + tumblelog.name + '<br />' +
-                'Host name: ' + tumblelog.hostname + '<br />'));
-        });
-
-        var ok = setting_body.appendChild(Etc.buildElement('button', {}, 'この設定を保存します'));
-
-        ok.addEventListener('click', function() {
-            Tornado.oauthconfigs = JSON.parse(GM_getValue('oauthconfigs', '[]'));
-            Tornado.oauthconfigs.push(oauth_config);
-
-            GM_setValue('oauthconfigs', JSON.stringify(Tornado.oauthconfigs));
-            GM_deleteValue('oauth_token_secret');
-
-            new_setting.dialog.parentNode.removeChild(new_setting.dialog);
-
-            new PinNotification('認証情報を保存しました。');
-            new PinNotification('3 秒後にリロードします。');
-            new PinNotification('設定は [conf] から確認できます。');
-
-            setTimeout(function(){location.href = '/dashboard'}, 3000);
-        }, false);
-
-        new_setting.centering();
-    };
+    /*---------------------------------
+     * Boot
+     *-------------------------------*/
 
     /**
      * ページロード時に一度だけ呼び出されます
