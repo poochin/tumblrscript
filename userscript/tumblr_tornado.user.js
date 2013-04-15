@@ -663,12 +663,21 @@
             }
         },
         keyTest: function(key_event_cache) {
-            /* FIXME: 正規表現に対応 */
             var cache = key_event_cache.cache;
-            if (cache.slice(-(this.key_bind.length)).cmp(this.key_bind)) {
-                return true;
+            var self = this;
+
+            if (cache.length === 0) {
+                return false;
             }
-            return false;
+
+            var r = cache.slice(-(this.key_bind.length)).every(function(v, i) {
+                var key = self.key_bind[i];
+                var key_reg = RegExp('^' + RegExp(key).source + '$');
+
+                console.log(key_reg, v);
+                return key_reg.test(v);
+            });
+            return r;
         },
         hasSelectorTest: function(post) {
             if (this.has_selector === null) {
@@ -1601,7 +1610,8 @@
         reblog: function reblog(post, e, options) {
             var params = {};
 
-            var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[0].id.slice(9);
+            var first_channel = document.querySelector('#popover_blogs .popover_menu_item:not(#button_new_blog)');
+            var channel_id = first_channel.id.slice(9);
 
             Etc.dictUpdate(params, options.default_values);
             Etc.dictUpdate(params, {
