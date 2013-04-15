@@ -652,7 +652,7 @@
         this.func         = options.func;
 
         this.url          = options.url;
-        this.expr         = (options.expr && typeof options.expr === 'function') || function() {return true;};
+        this.expr         = (options.expr && typeof options.expr === 'function') ? options.expr : function() {return true;};
         this.title        = options.title || options.func.name || options.func;
         this.group        = options.group || 0;
         this.grouporder   = options.grouporder;
@@ -2219,9 +2219,6 @@
                 key_bind: ['s-s'],
                 func: CustomFuncs.endlessSummer,
                 title: 'Endless Summer',
-                expr: function(post, e) {
-                    console.log(post);
-                },
                 desc: {
                     ja: 'ダッシュボードの下降をランダムにします',
                 },
