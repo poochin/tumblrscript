@@ -23,7 +23,6 @@
 // ==/UserScript==
 
 // TODO: テンプレートエンジンを借りるか作るかします
-// TODO: customkey に expr を定義します
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
 /**
  * @namespace TumblrTornado
@@ -583,14 +582,30 @@
             return 'tornado_share_value_' + name;
         },
         addElement: function(name, value) {
+            var root_elm;
+
+            if ((root_elm = document.querySelector('#share_value')) === null) {
+                root_elm = document.body.appendChild(Etc.buildElement('div', {id: 'share_value'}));
+            }
+
+
             var id = this.buildId(name);
+            var elm;
 
-            var elm = (window.Etc || window).buildElement('inpug', {
-                    type: 'hidden',
-                    id: id,
-                    value: value});
+            if (typeof Etc !== 'undefined') {
+                elm = Etc.buildElement('inpug', {
+                        type: 'hidden',
+                        id: id,
+                        value: value});
+            }
+            else {
+                elm = window.buildElement('inpug', {
+                        type: 'hidden',
+                        id: id,
+                        value: value});
+            }
 
-            return document.querySelectorAll('#tornado_rightcolumn_help')[0].appendChild(elm);
+            return root_elm.appendChild(elm);
         },
         set: function(name, value) {
             var id = this.buildId(name);
@@ -1225,6 +1240,12 @@
             if (!shortcut.keyTest(Etc.KeyEventCache)) {
                 return false;
             }
+            if (typeof shortcut.expr === 'function') {
+                if (!shortcut.expr(post, e)) {
+                    return false;
+                }
+            }
+
 
             shortcut.func(post, e, shortcut.options);
             Etc.KeyEventCache.clear();
@@ -2198,6 +2219,9 @@
                 key_bind: ['s-s'],
                 func: CustomFuncs.endlessSummer,
                 title: 'Endless Summer',
+                expr: function(post, e) {
+                    console.log(post);
+                },
                 desc: {
                     ja: 'ダッシュボードの下降をランダムにします',
                 },
