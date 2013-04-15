@@ -585,25 +585,16 @@
             var root_elm;
 
             if ((root_elm = document.querySelector('#share_value')) === null) {
-                root_elm = document.body.appendChild(Etc.buildElement('div', {id: 'share_value'}));
+                root_elm = document.body.appendChild((window.Etc || window).buildElement('div', {id: 'share_value'}));
             }
-
 
             var id = this.buildId(name);
             var elm;
 
-            if (typeof Etc !== 'undefined') {
-                elm = Etc.buildElement('inpug', {
-                        type: 'hidden',
-                        id: id,
-                        value: value});
-            }
-            else {
-                elm = window.buildElement('inpug', {
-                        type: 'hidden',
-                        id: id,
-                        value: value});
-            }
+            elm = (window.Etc || window).buildElement('inpug', {
+                    type: 'hidden',
+                    id: id,
+                    value: value});
 
             return root_elm.appendChild(elm);
         },
