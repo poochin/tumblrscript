@@ -666,7 +666,7 @@
             var cache = key_event_cache.cache;
             var self = this;
 
-            if (cache.length === 0) {
+            if (cache.length === 0 || cache.length < this.key_bind.length) {
                 return false;
             }
 
