@@ -1869,7 +1869,15 @@
     Tornado.shortcuts = [
         new Etc.CustomKey({
                 key_bind: ['j'],
-                func: CustomFuncs.default, 
+                // func: CustomFuncs.default, 
+                func: function(post, e, options) {
+                    var next_post = post;
+                    while (next_post = next_post.nextSibling) {
+                        if (next_post.nodeType === 1 && next_post.tagName === 'LI' && /\bpost\b/.test(next_post.className)) {
+                            break;
+                        }
+                    }
+                },
                 title: 'Next',
                 desc: {
                     ja: '次ポストへ移動',
@@ -1877,7 +1885,7 @@
                 },
                 group: 1,
                 grouporder: 1,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-j'],
                 func: CustomFuncs.halfdown,
@@ -1888,7 +1896,7 @@
                     en: 'Half scroll down'
                 },
                 group: 5
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['k'],
@@ -1900,7 +1908,7 @@
                 },
                 group: 1,
                 grouporder: 2,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-k'],
                 func: CustomFuncs.halfup,
@@ -1911,7 +1919,7 @@
                     en: 'Half scroll up'
                 },
                 group: 5
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['l'],
@@ -1923,7 +1931,7 @@
                 },
                 group: 1,
                 grouporder: 3,
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['g', 'g'],
@@ -1936,7 +1944,7 @@
                 },
                 group: 5,
                 grouporder: 1,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-g'],
                 func: CustomFuncs.goBottom, 
@@ -1948,7 +1956,7 @@
                 },
                 group: 5,
                 grouporder: 2,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-o'],
                 func: CustomFuncs.jumpToLastCursor,
@@ -1960,7 +1968,7 @@
                 usehelp: false,
                 group: 5,
                 grouporder: 3,
-            }),
+        }),
 
         new Etc.CustomKey({
                 title: 'Reblog',
@@ -1977,7 +1985,7 @@
                 },
                 group: 2,
                 grouporder: 1,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['h'],
                 func: CustomFuncs.fast_reblog,
@@ -1988,7 +1996,7 @@
                 },
                 group: 2,
                 grouporder: 2,
-            }),
+        }),
         new Etc.CustomKey({
                 title: 'Draft',
                 key_bind: ['d'],
@@ -2004,7 +2012,7 @@
                 },
                 group: 2,
                 grouporder: 3,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['q'],
                 func: CustomFuncs.reblog,
@@ -2020,7 +2028,7 @@
                 },
                 group: 2,
                 grouporder: 5,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['p'],
                 func: CustomFuncs.reblog,
@@ -2036,7 +2044,7 @@
                 },
                 group: 2,
                 grouporder: 5,
-            }),
+        }),
 
         /* FIXME */
         new Etc.CustomKey({
@@ -2047,7 +2055,7 @@
                 usehelp: 'hide',
                 group: 3,
                 grouporder: 5,
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['g', 't'],
@@ -2064,7 +2072,7 @@
                 },
                 group: 3,
                 grouporder: 1,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['g', 'd'],
                 func: CustomFuncs.reblogToChannel,
@@ -2080,7 +2088,7 @@
                 },
                 group: 3,
                 grouporder: 2,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['g', 'q'],
                 func: CustomFuncs.reblogToChannel,
@@ -2096,7 +2104,7 @@
                 },
                 group: 3,
                 grouporder: 3,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['g', 'p'],
                 func: CustomFuncs.reblogToChannel,
@@ -2112,7 +2120,7 @@
                 },
                 group: 3,
                 grouporder: 4,
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['i'],
@@ -2123,7 +2131,7 @@
                     en: 'Scale image or Open video'
                 },
                 group: 0
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['m'],
                 func: CustomFuncs.rootInfo,
@@ -2133,7 +2141,7 @@
                     en: 'Get root post user',
                 },
                 group: 0
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['v'],
                 func: CustomFuncs.viewPostPageInBackground,
@@ -2144,7 +2152,7 @@
                 },
                 usehelp: 'hide',
                 group: 5
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['c'],
@@ -2157,7 +2165,7 @@
                 },
                 group: 6,
                 grouporder: 1,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-c'],
                 func: CustomFuncs.removePosts,
@@ -2169,7 +2177,7 @@
                 },
                 group: 6,
                 grouporder: 2,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['g', 's-c'],
                 func: CustomFuncs.removeBottomPosts,
@@ -2181,7 +2189,7 @@
                 },
                 group: 6,
                 grouporder: 3,
-            }),
+        }),
 
         new Etc.CustomKey({
                 key_bind: ['n'],
@@ -2194,13 +2202,13 @@
                 },
                 group: 1,
                 grouporder: 4,
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-r'],
                 func: CustomFuncs.topReload,
                 usehelp: 'hide',
                 group: 0
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-s'],
                 func: CustomFuncs.endlessSummer,
@@ -2209,7 +2217,7 @@
                     ja: 'ダッシュボードの下降をランダムにします',
                 },
                 group: 0
-            }),
+        }),
 
         /* FIXME */
         new Etc.CustomKey({
@@ -2223,7 +2231,7 @@
                 has_selector: 'form[id^=delete]',
                 usehelp: 'hide',
                 group: 4
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['s-d'],
                 func: CustomFuncs.forceDelete,
@@ -2235,7 +2243,7 @@
                 has_selector: 'form[id^=delete]',
                 usehelp: 'hide',
                 group: 4
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['p'],
                 func: CustomFuncs.publish,
@@ -2247,7 +2255,7 @@
                 has_selector: 'form[id^=publish]',
                 usehelp: 'hide',
                 group: 4
-            }),
+        }),
         new Etc.CustomKey({
                 key_bind: ['q'],
                 func: CustomFuncs.enqueue,
@@ -2259,7 +2267,7 @@
                 has_selector: 'form[id^=queue]',
                 usehelp: 'hide',
                 group: 4
-            })
+        })
     ];
     
     Tornado._shortcuts = Tornado.shortcuts.slice();
@@ -2782,6 +2790,10 @@
      * ページロード時に一度だけ呼び出されます
      */
     function main() {
+        if (document.body.id === 'tinymce') {
+            /* リッチテキストエディタで起動されています */
+            return;
+        }
         Tornado.initTumblelogConfigs();
 
         document.addEventListener('keydown', Tornado.keyevent, true);
