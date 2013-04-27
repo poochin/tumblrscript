@@ -51,7 +51,7 @@
     /**
      *
      */
-    function ObserverList(names, options) {
+    function ListObserver(names, options) {
         var self = this;
 
         this.namelist = names;
@@ -64,29 +64,47 @@
         setInterval(Etc.preapply(this, this.timer), 1000);
     };
 
-    ObserverList.prototype = {
+    ListObserver.prototype = {
         timer: function() {
-            console.log(this.items);
+            this.items.map(function(item) {
+            });
         },
     };
 
     /**
      *
      */
-    function TumblelogItem(observer, name, options) {
+    function TumblelogItem(list_observer, name, options) {
         this.name   = name;
         this.tag    = options.tag;
         this.type   = options.type;
         this.random = options.random;
         this.offset = options.offset;
 
-        this.observer = observer;
+        this.posts = [];
+
+        this.list_observer = list_observer;
     };
 
     TumblelogItem.prototype = {
         getNextPosts: function() {
+            if (this.posts <= 10) {
+                var url = "";
+            };
         },
     };
+
+    /**
+     *
+     */
+    function CacheObserver(list_observer) {
+        this.list_observer = list_observer;
+    };
+
+
+    CacheObserver.prototype = {
+    };
+
 
 
     Etc.preapply = function preapply(self, func, args) {
@@ -1224,111 +1242,144 @@
         document.body.appendChild(script);
     }
 
-    /**
-     * ユーザスクリプトが実行された際に呼び出される関数です
-     */
-    function necromancyInitialize() {
-        if (document.querySelector('#posts')) {
-            return;
-        }
-
-        var lists = location.pathname.match(Val.LIST_PARSER).slice(1);
-        new ObserverList(lists);
+    function rebuildDocumentPage() {
+        /**
+         * http://www.tumblr.com/dashboard から HTML を取得して差し替えます
+         * そのままだと有効にならない CSS や JavaScript を埋め込み直して有効になるようにします
+         */
 
         var tumblr_scripts  = [
             'http://assets.tumblr.com/languages/strings/en_US.js?838',
             'http://assets.tumblr.com/javascript/jquery_with_plugins.js?55d600b2029041781b32956f270dc4a7',
+            'http://assets.tumblr.com/assets/scripts/dashboard.js?56ba83a724097cfa925f3947d923f6bf',
+
             'http://assets.tumblr.com/javascript/prototype_and_effects.js?6d9a669b8f64150cfcbe643e4596e1e9',
-            // 'http://assets.tumblr.com/javascript/application_tumblelog_jquery.js?0ce45b99ef61b02d5a4754c7c5aa36ff',
             'http://assets.tumblr.com/javascript/application.js',
             'http://assets.tumblr.com/javascript/tumblelog.js',
             'http://assets.tumblr.com/javascript/spin.js',
             'http://assets.tumblr.com/javascript/sortable.js',
-            // 'http://assets.tumblr.com/javascript/shadowybox.js',
             'http://assets.tumblr.com/javascript/jquery.pano.js',
             'http://assets.tumblr.com/javascript/jquery.application.js',
         ];
 
+        new Ajax(
+            '/dashboard',
+            {
+                method: 'GET',
+                asynchronous: false,
+                onSuccess: function(xhr) {
+                    /* TODO: style タグの移植はまだ行なっていません */
 
-        new Ajax('/dashboard', {
-            method: 'GET',
-            onSuccess: function(xhr) {
-                var userscript_styles = $$('head>.tumblr_userscript');
-                var stylish_styles = $$('head>.stylish');
+                    var head = xhr.responseText.match(/<head>([\s\S]*)<\/head>/)[1];
+                    var body = xhr.responseText.match(/<body[^>]+>([\s\S]*)<\/body>/)[1];
 
-                var head = xhr.responseText.match(/<head>([\s\S]*)<\/head>/)[1];
-                var body = xhr.responseText.match(/<body[^>]+>([\s\S]*)<\/body>/)[1];
+                    document.head.innerHTML = head;
+                    document.body.innerHTML = body;
 
-                var elm_head = document.createElement('head');
-                var elm_body = document.createElement('body');
+                    var scripts = tumblr_scripts.map(function(src) {
+                        var script = document.createElement('script');
 
-                // document.documentElement.replaceChild(elm_head, document.head);
-                document.documentElement.replaceChild(elm_body, document.body);
+                        script.setAttribute('src', src);
+                        script.setAttribute('type', 'text/javascript');
 
-                elm_body.innerHTML = body;
-                var like_key = elm_body.querySelector('form[id^=like_form] #form_key').value;
-                var posts = elm_body.querySelectorAll('#posts>li:not(.new_post)');
-                Array.prototype.slice.call(posts).map(function(elm) {
-                    elm.parentNode.removeChild(elm);
-                });
-
-                elm_head.innerHTML = head;
-                userscript_styles.concat(stylish_styles).map(function(node) {
-                    elm_head.appendChild(node);
-                });
-                document.head.innerHTML = elm_head.innerHTML;
-
-                /* Tumblr のスクリプトを挿入します */
-                var tumblr_script_elements = tumblr_scripts.map(function(script_url) {
-                    return buildElement('script', {
-                        src: script_url});
-                });
-
-                var myscript = [
-                    'window.Tumblr.enable_dashboard_key_commands = true;',
-                    'window.Tumblr.KeyCommands = new window.Tumblr.KeyCommandsConstructor();',
-                    'window.next_page = location.pathname;',
-                    'window.prev_json = window.new_json = null;',
-                    'window.TOTAL_POST = null;',
-                    'window.Val = ' + (serialize(Val)) + ';',
-                    'window.LIKE_KEY = "' + (like_key) + '";',
-                    'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
-                    cloneChildren,
-                    escapeHtmlScript,
-                    trimNodeEtc,
-                    trimNodeEvent,
-                    trimNodeStyle,
-                    trimNodeClass,
-                    necromancyPaginator,
-                    necromancyObserver,
-                    necromancyCallback,
-                    buildQueryString,
-                    buildElement,
-                    buildElementBySource,
-                    buildNecromancyURL,
-                    '(', getTotalPost, ')();',
-                    'new PeriodicalExecuter(necromancyPaginator, 0.2);',
-                    'new PeriodicalExecuter(necromancyObserver, 0.02);',
-                ].join('\n');
-
-                var myscript_element = document.createElement('script');
-                myscript_element.innerHTML = myscript;
-
-                tumblr_script_elements.concat([myscript_element]).map(function(elm, index, array) {
-                    elm.addEventListener('load', function() {
-                        if(array[index+1]) {
-                            document.body.appendChild(array[index+1]);
-                        }
+                        return script;
                     });
-                });
 
-                document.body.appendChild(tumblr_script_elements[0]);
+                    var run_script = [
+                        'window.Tumblr.enable_dashboard_key_commands = true;',
+                        'window.Tumblr.KeyCommands = new window.Tumblr.KeyCommandsConstructor();',
+                        'window.next_page = location.pathname;',
+                        'window.prev_json = window.new_json = null;',
+                        'window.TOTAL_POST = null;',
+                        'window.Val = ' + (serialize(Val)) + ';',
+                        'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
+                        cloneChildren,
+                        escapeHtmlScript,
+                        trimNodeEtc,
+                        trimNodeEvent,
+                        trimNodeStyle,
+                        trimNodeClass,
+                        necromancyPaginator,
+                        necromancyObserver,
+                        necromancyCallback,
+                        buildQueryString,
+                        buildElement,
+                        buildElementBySource,
+                        buildNecromancyURL,
+                        '(', getTotalPost, ')();',
+                        'new PeriodicalExecuter(necromancyPaginator, 0.2);',
+                        'new PeriodicalExecuter(necromancyObserver, 0.02);',
+                    ].join('\n');
+
+                    var script = document.createElement('script');
+                    script.innerHTML = run_script;
+                    script.setAttribute('type', 'text/javascript');
+
+                    scripts.push(script);
+
+                    scripts.map(function(elm, index, array) {
+                        elm.addEventListener('load', function() {
+                            if(array[index+1]) {
+                                document.body.appendChild(array[index+1]);
+                            }
+                        });
+                    });
+
+                    document.head.appendChild(scripts[0]);
+                },
             }
-        });
+        );
+    }
+
+    /**
+     * ユーザスクリプトが実行された際に呼び出される関数です
+     */
+    function necromancyInitialize() {
+        /**
+         * 巡回するべきタンブルログを収集する
+         * タンブルログ名を取得したら巡回クラスのインスタンスに投げ巡回を開始させる
+         * ページを定義し直します
+         * 巡回から post を回収するクラスのインスタンスを生成して起動する
+         */
+
+        var tumblelog_names = [];
+
+
+        /**
+         * タンブルログ名を集めます
+         */
+        if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
+            var name, tag, type, offset, random;
+            var m = location.href.match(
+                /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/);
+            
+            name   = m[1];
+            tag    = m[2] || '';
+            type   = m[3] || '';
+            offset = m[4];
+            random = m[4];
+
+            /**
+             * ここでタンブルログ巡回クラスのインスタンスを生成します
+             */
+        }
+        else {
+            var lists = location.pathname.match(Val.LIST_PARSER).slice(1);
+            new ObserverList(lists);
+        }
+
+        rebuildDocumentPage();
+
+        var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
+
+        /**
+         * タンブルログ名から巡回クラスのインスタンスを生成します
+         */
     }
 
     /**
      * Tumblelog に Necromancy 用のリンクを貼り付けます
+     * TODO: 何の意味があってこれがあるのか分からないので調べる
      */
     function embedNecromancyLink() {
         var link = document.createElement('div'),
@@ -1365,6 +1416,13 @@
      * ユーザスクリプトが呼び出されたさいに呼び出されるメイン関数です
      */
     function main() {
+        if (/^https?:\/\/www\.tumblr\.com\/blog\/follower/.test(location)) {
+            return;
+        }
+        if (document.querySelector('#posts')) {
+            return;
+        }
+
         if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
             necromancyInitialize();
         }
