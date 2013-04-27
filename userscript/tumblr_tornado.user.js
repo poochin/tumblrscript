@@ -2511,6 +2511,11 @@
      * ページロード時に一度だけ呼び出されます
      */
     function main() {
+        if (document.body.id === 'tinymce') {
+            /* リッチテキストエディタでの起動です */
+            return;
+        }
+
         Tornado.initTumblelogConfigs();
 
         document.addEventListener('keydown', Tornado.keyevent, true);
