@@ -31,14 +31,14 @@
 
     var Tornado = {};
     var Etc; /* Tornado.etc へのショートハンドです */
-    // var Vals;
+    var Vals;
     // var Funcs;
     // var CustomFuncs;
 
     /*-- ここから Tornado オブジェクト の仮属性(ここ以外の場所で初期化されます) --*/
     Tornado.funcs = {};
-    Tornado.vals = {};
     Etc = Tornado.etc = {};
+    Vals = Tornado.vals = {};
 
     Tornado.customkeys = [];
     Tornado.customfuncs = {};
@@ -112,6 +112,15 @@
     Tornado.vals.key_input_time = 0;
     Tornado.vals.key_follows = []
     
+    Vals.SHORTCUT_GROUPS = {
+        OTHER: 0,
+        DEFAULT: 1,
+        REBLOG: 2,
+        CHANNEL_REBLOG: 3,
+        MINE_POST: 4,
+        SCROLL: 5,
+        VISIBLE: 6,
+    };
 
     /*---------------------------------
      * Variable
@@ -848,6 +857,7 @@
      *   {{ iter }} はインデックス番号を参照できません
      */
     Etc.tParser = function tParser(src) {
+      var a = arguments;
       var self = this;
       var reg = /(?:{{\s*([A-Za-z0-9._]+)\s*}}|{{\s*iter\s+([A-Za-z0-9._]+)@([A-Za-z0-9_]+)\s*}}([\s\S]*){{\s*\/iter\s*}})/gm;
       var last_index = 0;
@@ -867,7 +877,7 @@
             last_index += match_text.length;
           }
           else {
-            nodes.push(self.tNode(iter_text, 'iter', {iter_key: iter_key, iter_as: iter_as}));
+            nodes.push(self.tNode('', 'iter', {iter_key: iter_key, iter_as: iter_as, template: new Etc.tParser(iter_text)}));
             last_index += match_text.length;
           }
           next_str = all_text.slice(last_index);
@@ -920,10 +930,19 @@
               case "iter":
                 iter_array = self.digDict(dict, tnode.iter_options.iter_key.split('.'));
                 
-                iter_results = iter_array.map(function(src) {
-                  var iter_dict = {};
-                  iter_dict[tnode.iter_options.iter_as] = src;
-                  return self.textBuilder(tnode.text, dict, iter_dict);
+                iter_results = iter_array.map(function(src, index) {
+                  /* FIXME: iter_dict と dict が重複した際に値が消えます */
+                  var last_value, last_index, text;
+                  
+                  dict[tnode.iter_options.iter_as] = src;
+                  dict['index'] = index.toString();
+                  
+                  text = tnode.iter_options.template.assign(dict);
+                  
+                  dict[tnode.iter_options.iter_as] = last_value;
+                  dict['index'] = last_index;
+                  
+                  return text;
                 });
                 
                 return iter_results.join('');
@@ -2725,118 +2744,100 @@
         var dialog_body = help_dialog.dialog.querySelector('.lite_dialog_body');
     
         help_dialog.dialog.id = 'tornado_help_dialog';
-    
-        var helps_list = Etc.buildElement('table', {border: '1', class: 'tornado_help_list'});
-    
+
+        var shortcut_groups = [
+            {
+                name: 'その他のコマンド',
+                helps: [],
+            },
+            {
+                name: '標準のコマンド',
+                helps: [],
+            },
+            {
+                name: 'Reblog コマンド',
+                helps: [],
+            },
+            {
+                name: 'チャンネル Reblog コマンド',
+                helps: [],
+            },
+            {
+                name: '自ポストへの操作コマンド',
+                helps: [],
+            },
+            {
+                name: 'スクロールコマンド',
+                helps: [],
+            },
+            {
+                name: 'ポストの表示操作',
+                helps: [],
+            },
+        ];
+
         Tornado._shortcuts.map(function(shortcut, i, all) {
-            var label;
-    
-            if (i == 0 ||
-                all[i-1].group != all[i].group) {
-                var tr = Etc.buildElement('tr', {class: 'tornado_short_groupname', style: 'font-weight: bold; font-size: 20px; text-align: center;'});
-                label = Etc.buildElement('th', {colspan: '3'});
-                label.innerHTML = Tornado.funcs.i18n([
-                    {
-                        ja: 'その他のコマンド',
-                        en: 'Other Commands'
-                    },
-                    {
-                        ja: '標準のコマンド',
-                        en: 'Default Commands'
-                    },
-                    {
-                        ja: 'Reblog コマンド',
-                        en: 'Reblog Commands'
-                    },
-                    {
-                        ja: 'チャンネル Reblog コマンド',
-                        en: 'Channel Reblog Commands'
-                    },
-                    {
-                        ja: '自ポストへの操作コマンド',
-                        en: 'Operating your post'
-                    },
-                    {
-                        ja: 'スクロールコマンド',
-                        en: 'Scroll Commands'
-                    },
-                    {
-                        ja: 'ポストの表示操作',
-                        en: 'Operation post display'
-                    },
-                    ][shortcut.group]);
-                tr.appendChild(label);
-                helps_list.appendChild(tr);
+            var help = {};
+            var options = [];
 
-                tr = Etc.buildElement('tr', {},
-                       ["<td class=\"tornado_short_title\">Title</td>",
-                         "<td class=\"tornado_short_key\">Key</td>",
-                         "<td class=\"tornado_short_desc\">Description</td>"].join(''));
-                tr.style.cssText = "text-align: center;";
-                helps_list.appendChild(tr);
-            }
-    
-            /* TODO: title と key を一つの要素に納めます */
-            var li = Etc.buildElement('tr'),
-                title_box = Etc.buildElement('td', {class: 'tornado_short_title'}),
-                key_box = Etc.buildElement('td', {class: 'tornado_short_key', style: 'text-align: center;'}),
-                desc_box = Etc.buildElement('td', {class: 'tornado_short_desc'});
-    
-            var key = [], desc, options;
-    
-            title_box.innerHTML = (shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title"));
-    
-            if (shortcut.follows) {
-                key = key.concat(shortcut.follows);
-            }
-            key.push((shortcut.ctrl  ? 'Ctrl+'  : '') +
-                     (shortcut.alt   ? 'Alt+'   : '') +
-                     (shortcut.shift ? 'Shift+' : '') +
-                     shortcut.match);
-    
-            key_box.innerHTML = key.join(', ');
+            help['title'] = shortcut.title || shortcut.func.name || (typeof shortcut.func == "string" ? shortcut.func : "No Title");
+            help['key']   = shortcut.key_bind.join(', ');
+            help['desc']  = (shortcut.desc && Tornado.funcs.i18n(shortcut.desc)) ||
+                            shortcut.func.name;
 
-            var description = (shortcut.desc && (shortcut.desc[Tornado.lang] || shortcut.desc['en'] || shortcut.desc['ja'] || shortcut.desc)) ||
-                               shortcut.func.name;
-            var desc = Etc.buildElement('p', {}, description);
-    
-            desc_box.appendChild(desc);
-    
-            options = Etc.buildElement('ul', {class: 'tornado_help_options'});
             if (shortcut.has_selector) {
-                options.appendChild(Etc.buildElement('li', {}, 'Selector: ' + shortcut.has_selector.replace('<', '&lt;')));
+                options.push('<li>Selector: ' + shortcut.has_selector.replace('<', '&lt;') + '</li>');
             }
             if (shortcut.url) {
-                options.appendChild(Etc.buildElement('li', {}, 'URL: ' + shortcut.url.toString().replace('<', '&lt;')));
+                options.push('<li>URL: ' + shortcut.url.toString().replace('<', '&lt;') + '</li>');
             }
-    
-            desc_box.appendChild(options);
-    
-            li.appendChild(title_box);
-            li.appendChild(key_box);
-            li.appendChild(desc_box);
-    
-            helps_list.appendChild(li);
+            help['options'] = options.join('');
+
+            shortcut_groups[shortcut.group].helps.push(help);
         });
-    
-        dialog_body.appendChild(helps_list);
 
-        /* ソースへのリンク */
-        dialog_body.appendChild(document.createElement('hr'));
-        dialog_body.appendChild(Etc.buildElementBySource([
-                '<div style="text-align: right;">',
-                'Tumblr Tornado Repositories',
-                '(',
-                '<a href="https://userscripts.org/scripts/show/137667">stable</a>',
-                ', ',
-                '<a href="https://github.com/poochin/tumblrscript/blob/master/userscript/tumblr_tornado.user.js">beta</a>',
-                ', ',
-                '<a href="https://github.com/poochin/tumblrscript/blob/dev/userscript/tumblr_tornado.user.js">alpha</a>',
-                ')',
-                '</div>'
-                ].join('\n')));
+        var base_html = [
+            '<table border="1" class="tornado_help_list">',
+            ' {{ iter shortcut_groups@group }}',
+            ' <tr class="tornado_short_groupname" style="font-weight: bolc; font-size: 20px; text-align: center;">',
+            '  <th colspan="3">{{ group.name }}</th>',
+            ' </tr>',
+            ' <tr style="text-align: center;">',
+            '  <td class="tornado_short_title">Title</td>',
+            '  <td class="tornado_short_key">Key</td>',
+            '  <td class="tornado_short_desc">Description</td>',
+            ' </tr>',
+            ' {{ iter group.helps@help }}',
+            ' <tr>',
+            '  <td class="tornado_short_title">{{ help.title }}</td>',
+            '  <td clsss="tornado_short_key" style="text-align: center;">{{ help.key }}</td>',
+            '  <td class="tornado_short_desc">',
+            '   <p>{{ help.desc }}</p>',
+            '   <ul>{{ help.options }}</ul>',
+            '  </td>',
+            ' </tr>',
+            ' {{ /iter }}',
+            ' {{ /iter }}',
+            '</table>',
+            '<hr />',
+            '<div style="text-align: right;">',
+            'Tumblr Tornado Repositories',
+            '(',
+            '<a href="https://userscripts.org/scripts/show/137667">stable</a>',
+            ', ',
+            '<a href="https://github.com/poochin/tumblrscript/blob/master/userscript/tumblr_tornado.user.js">beta</a>',
+            ', ',
+            '<a href="https://github.com/poochin/tumblrscript/blob/dev/userscript/tumblr_tornado.user.js">alpha</a>',
+            ')',
+            '</div>',
+        ].join('\n');
 
-        
+        var t = new Etc.tParser(base_html);
+        var html = t.assign({shortcut_groups: shortcut_groups});
+
+        var elm = Etc.buildElementBySource(html);
+        dialog_body.appendChild(elm);
+
         help_dialog.centering();
     };
 
@@ -2856,7 +2857,7 @@
             '  {{ /iter }}',
             ' </ul>',
             '</div>',
-            ].join('\n');
+        ].join('\n');
 
         var linehelps = Tornado._shortcuts.filter(function(shortcut) {
             return shortcut.usehelp !== false && shortcut.usehelp !== 'hide';
