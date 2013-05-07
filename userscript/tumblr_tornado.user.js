@@ -22,7 +22,6 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
-// TODO: テンプレートエンジンを借りるか作るかします
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
 /**
  * @namespace TumblrTornado
@@ -833,6 +832,113 @@
         },
     };
 
+    /**
+     * tParser
+     * 構文:
+     *   {{ A }}: 変数の代入
+     *     ex: {{ A }}, {{A.B}}
+     *   {{ iter A@B }}: 配列 A に B という名前を付けてループ
+     *     ex: {{ iter A@B }} {{ B }} {{ /iter }}
+     *         {{ iter A.a@B }} ... {{/iter}}
+     * 
+     * 自由度と制約:
+     *   {{...}} で参照する際には、オブジェクトの階層を .(ドット) を用いて掘ることができます
+     *   {{...}} の中括弧の直内は空白を自由に取って構いません
+     *   {{ iter }} はネストできません
+     *   {{ iter }} はインデックス番号を参照できません
+     */
+    Etc.tParser = function tParser(src) {
+      var self = this;
+      var reg = /(?:{{\s*([A-Za-z0-9._]+)\s*}}|{{\s*iter\s+([A-Za-z0-9._]+)@([A-Za-z0-9_]+)\s*}}([\s\S]*){{\s*\/iter\s*}})/gm;
+      var last_index = 0;
+      var next_str = "";
+      var nodes = [];
+      
+      /* ここでは置換ではなく字句解析目的で replace 関数を用いています */
+      src.replace(reg,
+        function(match_text, assign_key, iter_key, iter_as, iter_text, index, all_text){
+          if (index !== 0) {
+            nodes.push(self.tNode(all_text.slice(last_index, index), 'text'));
+            last_index = index;
+          }
+          
+          if (assign_key !== undefined) {
+            nodes.push(self.tNode(assign_key, 'assign'));
+            last_index += match_text.length;
+          }
+          else {
+            nodes.push(self.tNode(iter_text, 'iter', {iter_key: iter_key, iter_as: iter_as}));
+            last_index += match_text.length;
+          }
+          next_str = all_text.slice(last_index);
+        }
+      );
+      
+      if (next_str.length) {
+        nodes.push(self.tNode(next_str, 'text'));
+      }
+      
+      this.nodes = nodes;
+    }
+     
+    Etc.tParser.prototype = {
+      digDict: function digDict(dict, keys) {
+        if (keys.length === 1) {
+          return dict[keys[0]];
+        }
+        
+        return ((dict[keys[0]] !== undefined)
+                ? (this.digDict(dict[keys[0]], keys.slice(1)))
+                : (undefined));
+      },
+      textBuilder: function textBuilder(text, dict, iter_dict) {
+        var self = this;
+        var reg = /{{\s*([A-Za-z0-9._]+)\s*}}/gm;
+        
+        function replacer(a,b,c,d) {
+          return self.digDict(iter_dict, b.split('.')) || self.digDict(dict, b.split('.')) || "";
+        }
+        
+        return text.replace(reg, replacer);
+      },
+      tNode: function tNode(text, type, iter_options) {
+        return {
+          text: text,
+          type: type, /* text, iter, assign */
+          iter_options: iter_options, /* iter_key, iter_as */
+        }
+      },
+      assign: function(dict) {
+        var self = this;
+        
+        return this.nodes.map(
+          function(tnode){
+            var iter_array;
+            var iter_results;
+            
+            switch(tnode.type) {
+              case "iter":
+                iter_array = self.digDict(dict, tnode.iter_options.iter_key.split('.'));
+                
+                iter_results = iter_array.map(function(src) {
+                  var iter_dict = {};
+                  iter_dict[tnode.iter_options.iter_as] = src;
+                  return self.textBuilder(tnode.text, dict, iter_dict);
+                });
+                
+                return iter_results.join('');
+                
+              case "assign":
+              
+                return self.digDict(dict, tnode.text.split('.')) || "";
+            }
+            
+            return tnode.text;
+          }
+        ).join('');
+      }
+    };
+
     /*---------------------------------
      * Functions
      *-------------------------------*/
@@ -945,12 +1051,13 @@
      * @returns HTML 文字列を返します
      */
     Etc.buildShortcutLineHelp = function buildShortcutLineHelp(shortcut) {
+        /* FIXME: shortcut の構造が変わった為このままだと動きません */
         var pre_spacing = ['&nbsp;', '&nbsp;', '&nbsp;'],
             key = [];
     
         key.push((shortcut.follows && shortcut.follows.join(' ')) || '');
         key.push((shortcut.shift && 's-') || '');
-        key.push(shortcut.match.toUpperCase());
+        // key.push(shortcut.match.toUpperCase());
     
         key = key.join('');
         key = pre_spacing.slice(key.length).join('') + key;
@@ -2737,49 +2844,37 @@
      * 右カラムにヘルプを表示します
      */
     function showShortcutHelp() {
-        return;
-        var rightcolumn_help, header_help, helps;
-    
-        var rightcolumn_help = Etc.buildElement('div',
-            {id: 'tornado_rightcolumn_help'});
-    
-        var header_help = Etc.buildElement('p',
-            {}, 
-            'Tumblr Tornado <span class="show_tornado_config">[conf]</span> <span class="show_tornado_help">[ ? ]</span>');
+        var base_html = [
+            '<div id="tornado_rightcolumn_help">',
+            ' <p>',
+            '  Tumblr Tornado',
+            '  <span class="show_tornado_config">[conf]</span> <span class="show_tornado_help">[ ? ]</span>',
+            ' </p>',
+            ' <ul id="tornado_shortcuts_help">',
+            '  {{ iter linehelps@linehelp }}',
+            '  <li>',
+            '   {{ linehelp }}',
+            '  </li>',
+            '  {{ /iter }}',
+            ' </ul>',
+            '</div>',
+            ].join('\n');
 
-        /* Tornado config ウィンドウを表示します */
-        header_help.querySelector('span.show_tornado_config').addEventListener('click', Tornado.windows.tornado_config);
-
-        /* ヘルプウィンドウを表示します */
-        header_help.querySelector('span.show_tornado_help').addEventListener('click', Tornado.windows.tornado_help);
-    
-        rightcolumn_help.appendChild(header_help);
-    
-        var helps = Etc.buildElement('ul',
-            {id: 'tornado_shortcuts_help'});
-    
-        Tornado._shortcuts.map(function(shortcut, i) {
-            if (shortcut.usehelp == false ||
-                shortcut.usehelp == 'hide') {
-                return;
-            }
-            var help = Etc.buildElement('li',
-                {},
-                Etc.buildShortcutLineHelp(shortcut));
-            helps.appendChild(help);
+        var linehelps = Tornado._shortcuts.filter(function(shortcut) {
+            return shortcut.usehelp !== false && shortcut.usehelp !== 'hide';
+        }).map(function(shortcut) {
+            return Etc.buildShortcutLineHelp(shortcut);
         });
-    
-        rightcolumn_help.appendChild(helps);
 
-        rightcolumn_help.appendChild(Etc.buildElement('fieldset', {
-                id: 'tornado_share_value',
-                style: "display:none;"}));
+        var t = new Etc.tParser(base_html);
+        var html = t.assign({linehelps: linehelps});
 
-        (function letit(right_column){
-            if (right_column) {
-                right_column.appendChild(rightcolumn_help);
-            }
-        })(document.querySelector('#right_column'));
+        var elm = Etc.buildElementBySource(html);
+
+        elm.querySelector('span.show_tornado_config').addEventListener('click', Tornado.windows.tornado_config);
+        elm.querySelector('span.show_tornado_help').addEventListener('click', Tornado.windows.tornado_help);
+
+        document.querySelector('#right_column').appendChild(elm);
     }
 
     /*---------------------------------
