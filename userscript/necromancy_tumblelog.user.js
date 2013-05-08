@@ -23,13 +23,15 @@
 (function NecromancyTumblelog() {
     var Necro = {};
 
-    var Val = Necro.val = {};
+    var Vals = Necro.vals = {};
     var Etc = Necro.etc = {};
 
-    Val.API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
-    Val.LOAD_SCROLL_OFFSET = 5000;
+    Vals.API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
+    Vals.LOAD_SCROLL_OFFSET = 5000;
 
-    Val.browser =
+    Vals.tumblelog_observers = [];
+
+    Vals.browser =
         ( window.opera                                ? 'opera'
         : window.navigator.userAgent.match(/Chrome/)  ? 'chrome'
         : window.navigator.userAgent.match(/Firefox/) ? 'firefox'
@@ -43,10 +45,10 @@
      *          random
      *          offset
      */
-    Val.PATH_PARSER = 
+    Vals.PATH_PARSER = 
         /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/;
 
-    Val.LIST_PARSER = /([a-z0-9\-]+(?:\.tumblr\.com)?)+/g;
+    Vals.LIST_PARSER = /([a-z0-9\-]+(?:\.tumblr\.com)?)+/g;
 
     /**
      *
@@ -122,7 +124,7 @@
     function serialize(_obj)
     {
        // Let Gecko browsers do this the easy way
-       if (Val.browser != 'chrome' && typeof _obj.toSource !== 'undefined' && typeof _obj.callee === 'undefined')
+       if (Vals.browser != 'chrome' && typeof _obj.toSource !== 'undefined' && typeof _obj.callee === 'undefined')
        {
           return _obj.toSource();
        }
@@ -173,6 +175,122 @@
        }
     }
 
+    /**
+     * tParser
+     * 構文:
+     *   {{ A }}: 変数の代入
+     *     ex: {{ A }}, {{A.B}}
+     *   {{ iter A@B }}: 配列 A に B という名前を付けてループ
+     *     ex: {{ iter A@B }} {{ B }} {{ /iter }}
+     *         {{ iter A.a@B }} ... {{/iter}}
+     * 
+     * 自由度と制約:
+     *   {{...}} で参照する際には、オブジェクトの階層を .(ドット) を用いて掘ることができます
+     *   {{...}} の中括弧の直内は空白を自由に取って構いません
+     *   {{ iter }} はネストできません
+     *   {{ iter }} はインデックス番号を参照できません
+     */
+    Etc.tParser = function tParser(src) {
+      var a = arguments;
+      var self = this;
+      var reg = /(?:{{\s*([A-Za-z0-9._]+)\s*}}|{{\s*iter\s+([A-Za-z0-9._]+)@([A-Za-z0-9_]+)\s*}}([\s\S]*){{\s*\/iter\s*}})/gm;
+      var last_index = 0;
+      var next_str = "";
+      var nodes = [];
+      
+      /* ここでは置換ではなく字句解析目的で replace 関数を用いています */
+      src.replace(reg,
+        function(match_text, assign_key, iter_key, iter_as, iter_text, index, all_text){
+          if (index !== 0) {
+            nodes.push(self.tNode(all_text.slice(last_index, index), 'text'));
+            last_index = index;
+          }
+          
+          if (assign_key !== undefined) {
+            nodes.push(self.tNode(assign_key, 'assign'));
+            last_index += match_text.length;
+          }
+          else {
+            nodes.push(self.tNode('', 'iter', {iter_key: iter_key, iter_as: iter_as, template: new Etc.tParser(iter_text)}));
+            last_index += match_text.length;
+          }
+          next_str = all_text.slice(last_index);
+        }
+      );
+      
+      if (next_str.length) {
+        nodes.push(self.tNode(next_str, 'text'));
+      }
+      
+      this.nodes = nodes;
+    }
+     
+    Etc.tParser.prototype = {
+      digDict: function digDict(dict, keys) {
+        if (keys.length === 1) {
+          return dict[keys[0]];
+        }
+        
+        return ((dict[keys[0]] !== undefined)
+                ? (this.digDict(dict[keys[0]], keys.slice(1)))
+                : (undefined));
+      },
+      textBuilder: function textBuilder(text, dict, iter_dict) {
+        var self = this;
+        var reg = /{{\s*([A-Za-z0-9._]+)\s*}}/gm;
+        
+        function replacer(a,b,c,d) {
+          return self.digDict(iter_dict, b.split('.')) || self.digDict(dict, b.split('.')) || "";
+        }
+        
+        return text.replace(reg, replacer);
+      },
+      tNode: function tNode(text, type, iter_options) {
+        return {
+          text: text,
+          type: type, /* text, iter, assign */
+          iter_options: iter_options, /* iter_key, iter_as */
+        }
+      },
+      assign: function(dict) {
+        var self = this;
+        
+        return this.nodes.map(
+          function(tnode){
+            var iter_array;
+            var iter_results;
+            
+            switch(tnode.type) {
+              case "iter":
+                iter_array = self.digDict(dict, tnode.iter_options.iter_key.split('.'));
+                
+                iter_results = iter_array.map(function(src, index) {
+                  /* FIXME: iter_dict と dict が重複した際に値が消えます */
+                  var last_value, last_index, text;
+                  
+                  dict[tnode.iter_options.iter_as] = src;
+                  dict['index'] = index.toString();
+                  
+                  text = tnode.iter_options.template.assign(dict);
+                  
+                  dict[tnode.iter_options.iter_as] = last_value;
+                  dict['index'] = last_index;
+                  
+                  return text;
+                });
+                
+                return iter_results.join('');
+                
+              case "assign":
+              
+                return self.digDict(dict, tnode.text.split('.')) || "";
+            }
+            
+            return tnode.text;
+          }
+        ).join('');
+      }
+    };
     /**
      * クライアントページでコードを実行します。
      * Google chrome と Opera では遅延実行が可能です。
@@ -1104,7 +1222,7 @@
             necromancyCallback(new_json);
         }
 
-        var parsed_page_path = window.location.href.match(Val.PATH_PARSER);
+        var parsed_page_path = window.location.href.match(Vals.PATH_PARSER);
         if (window.new_json && parsed_page_path != 'random' && parsed_page_path[4] >= window.new_json.response.total_posts) {
             pe.stop();
             alert('Get last post!');
@@ -1130,7 +1248,7 @@
             posts[0].className = posts[0].className.replace('\bsame_user_as_last\b', '');
         }
 
-        var next_page_parsed = window.next_page.match(Val.PATH_PARSER);
+        var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
         var tumblelog = next_page_parsed[1];
         var tag = next_page_parsed[2] || '';
         var type = next_page_parsed[3] || '';
@@ -1164,10 +1282,10 @@
 
         var posts;
         if ((posts = $$('#posts > li')) &&
-            (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < window.Val.LOAD_SCROLL_OFFSET) {
+            (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < window.Vals.LOAD_SCROLL_OFFSET) {
             window.loading_next_page = true;
 
-            var next_page_parsed = window.next_page.match(Val.PATH_PARSER);
+            var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
             var tumblelog = next_page_parsed[1];
             var tag = next_page_parsed[2] || '';
             var type = next_page_parsed[3] || '';
@@ -1190,8 +1308,8 @@
 
             var querystring = buildQueryString({
                 limit: 10,
-                api_key: Val.API_KEY,
-                reblog_info: 'true',
+                api_key: Vals.API_KEY,
+                reblog_ifo: 'true',
                 tag: decodeURI(tag),
                 offset: offset,
                 jsonp: 'window.new_json = '});
@@ -1211,7 +1329,7 @@
     }
 
     function getTotalPost() {
-        var next_page_parsed = window.next_page.match(Val.PATH_PARSER);
+        var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
         var tumblelog = next_page_parsed[1];
         var tag = next_page_parsed[2] || '';
         var type = next_page_parsed[3] || '';
@@ -1223,7 +1341,7 @@
 
         var querystring = buildQueryString({
             limit: 10,
-            api_key: Val.API_KEY,
+            api_key: Vals.API_KEY,
             reblog_info: 'true',
             tag: decodeURI(tag),
             offset: offset,
@@ -1276,6 +1394,12 @@
                     document.head.innerHTML = head;
                     document.body.innerHTML = body;
 
+                    LIKE_KEY = document.querySelector('meta#tumblr_form_key').getAttribute('content');
+
+                    $$('#posts > li:not(.new_post)').map(function(elm) {
+                        elm.parentNode.removeChild(elm);
+                    });
+
                     var scripts = tumblr_scripts.map(function(src) {
                         var script = document.createElement('script');
 
@@ -1291,7 +1415,7 @@
                         'window.next_page = location.pathname;',
                         'window.prev_json = window.new_json = null;',
                         'window.TOTAL_POST = null;',
-                        'window.Val = ' + (serialize(Val)) + ';',
+                        'window.Vals = ' + (serialize(Vals)) + ';',
                         'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
                         cloneChildren,
                         escapeHtmlScript,
@@ -1331,10 +1455,49 @@
         );
     }
 
+    function startTumblelogCollection() {
+        var first_observer = [];
+        Vals.tumblelog_observers.push(first_observer);
+
+        var url = 'http://api.tumblr.com/v2/blog/poochin.tumblr.com/posts';
+        var parameters = 'api_key=lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
+        new Ajax(url, {method: 'GET', parameters: parameters, onSuccess: function(xhr) {
+            var json = JSON.parse(xhr.responseText);
+            Array.prototype.push.apply(first_observer, json.response.posts);
+        }});
+    }
+
+    function startLogObserver() {
+        setInterval(function() {
+            var elm_posts = document.querySelector('#posts');
+
+            if (elm_posts === null) {
+                return;
+            }
+            if (Vals.tumblelog_observers.length === 0) {
+                return;
+            }
+
+            while (Vals.tumblelog_observers[0].length) {
+                var json_post = Vals.tumblelog_observers[0].shift();
+                var post = PostBuilder.similarPost(json_post);
+                elm_posts.appendChild(post);
+            }
+        }, 1000);
+    }
+
     /**
      * ユーザスクリプトが実行された際に呼び出される関数です
      */
+    /* function initNecromancy */
     function necromancyInitialize() {
+
+        rebuildDocumentPage();
+        setTimeout(startTumblelogCollection, 100);
+        startLogObserver();
+
+        return;
+
         /**
          * 巡回するべきタンブルログを収集する
          * タンブルログ名を取得したら巡回クラスのインスタンスに投げ巡回を開始させる
@@ -1343,7 +1506,6 @@
          */
 
         var tumblelog_names = [];
-
 
         /**
          * タンブルログ名を集めます
@@ -1362,9 +1524,11 @@
             /**
              * ここでタンブルログ巡回クラスのインスタンスを生成します
              */
+
+             tumblelog_names.push(name);
         }
         else {
-            var lists = location.pathname.match(Val.LIST_PARSER).slice(1);
+            var lists = location.pathname.match(Vals.LIST_PARSER).slice(1);
             new ObserverList(lists);
         }
 
@@ -1382,20 +1546,15 @@
      * TODO: 何の意味があってこれがあるのか分からないので調べる
      */
     function embedNecromancyLink() {
-        var link = document.createElement('div'),
-            url = 'http://www.tumblr.com/blog/' + (location.hostname),
-            a_style = [
-                "color: white;",
-                "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08);",
-                "text-decoration: none;",
-                'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif;',
-                "font-size: 12px;",
-                "font-weight: 600;",
-                "line-height: 18px;",
-            ].join('');
+        var base_html = [
+            '<div style="{{ div_style }}">',
+            ' <a href="{{ url }}" style="{{ a_style }}">Necromancy</a>',
+            '</div>',
+        ].join('\n');
 
-        link.innerHTML = '<a href="' + (url) + '" style="' + (a_style) + '">Necromancy</a>';
-        link.style.cssText = [
+        var dict = {};
+        dict['url'] = 'http://www.tumblr.com/blog/' + (location.hostname);
+        dict['div_style'] = [
             "margin: 3px;",
             "padding: 0 5px;",
             "position: absolute;",
@@ -1408,8 +1567,21 @@
             "font-weight: 600;",
             "line-height: 18px;",
         ].join('');
+        dict['a_style'] = [
+                "color: white;",
+                "text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.08);",
+                "text-decoration: none;",
+                'font: "Helvetica Neue","HelveticaNeue",Helvetica,Arial,sans-serif;',
+                "font-size: 12px;",
+                "font-weight: 600;",
+                "line-height: 18px;",
+        ].join('');
 
-        document.body.appendChild(link);
+        var t = new Etc.tParser(base_html);
+        var html = t.assign(dict);
+        var elm = buildElementBySource(html);
+
+        document.body.appendChild(elm);
     }
 
     /**
@@ -1419,7 +1591,8 @@
         if (/^https?:\/\/www\.tumblr\.com\/blog\/follower/.test(location)) {
             return;
         }
-        if (document.querySelector('#posts')) {
+        if (/www\.tumblr\.com/.test(location.host) &&
+            document.querySelector('#left_column')) {
             return;
         }
 
@@ -1439,8 +1612,8 @@
      * @return {Boolean} 実行してよいページの場合は true を返します.
      */
     function isExecPage() {
-        if (Val.browser == 'opera') {
-            if (Val.PATH_PARSER.test(location) &&
+        if (Vals.browser == 'opera') {
+            if (Vals.PATH_PARSER.test(location) &&
                 (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
                  /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
                     document.documentElement.innerHTML)) ||
