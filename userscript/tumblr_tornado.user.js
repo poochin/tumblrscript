@@ -1076,7 +1076,7 @@
     
         key.push((shortcut.follows && shortcut.follows.join(' ')) || '');
         key.push((shortcut.shift && 's-') || '');
-        // key.push(shortcut.match.toUpperCase());
+        key.push(shortcut.key_bind.join(''));
     
         key = key.join('');
         key = pre_spacing.slice(key.length).join('') + key;
@@ -2885,9 +2885,9 @@
      */
     function main() {
         if (document.body.id === 'tinymce') {
-            /* リッチテキストエディタで起動されています */
-            return;
+            return; /* リッチテキストエディタで起動されています */
         }
+
         Tornado.initTumblelogConfigs();
 
         document.addEventListener('keydown', Tornado.keyevent, true);
