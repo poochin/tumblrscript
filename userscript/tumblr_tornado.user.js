@@ -872,7 +872,8 @@
             last_index = index;
           }
           
-          if (assign_key !== undefined) {
+          if (assign_key !== undefined &&
+              assign_key.length) {
             nodes.push(self.tNode(assign_key, 'assign'));
             last_index += match_text.length;
           }
@@ -944,6 +945,7 @@
                   
                   return text;
                 });
+
                 
                 return iter_results.join('');
                 
@@ -2845,6 +2847,7 @@
      * 右カラムにヘルプを表示します
      */
     function showShortcutHelp() {
+
         var base_html = [
             '<div id="tornado_rightcolumn_help">',
             ' <p>',
