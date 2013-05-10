@@ -1459,7 +1459,16 @@
         var first_observer = [];
         Vals.tumblelog_observers.push(first_observer);
 
-        var url = 'http://api.tumblr.com/v2/blog/poochin.tumblr.com/posts';
+            var m = location.href.match(
+                /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/);
+            
+            name   = m[1];
+            tag    = m[2] || '';
+            type   = m[3] || '';
+            offset = m[4];
+            random = m[4];
+
+        var url = 'http://api.tumblr.com/v2/blog/' + (name) + '/posts';
         var parameters = 'api_key=lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
         new Ajax(url, {method: 'GET', parameters: parameters, onSuccess: function(xhr) {
             var json = JSON.parse(xhr.responseText);
@@ -1636,5 +1645,4 @@
     else {
         window.document.addEventListener('DOMContentLoaded', main, false);
     }
-
 })();
