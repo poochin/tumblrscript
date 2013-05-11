@@ -37,6 +37,12 @@
         : window.navigator.userAgent.match(/Firefox/) ? 'firefox'
                                                       : '');
 
+    Vals.tag = "";
+    Vals.type = "";
+    Vals.is_random = false;
+    Vals.is_list = false;
+    Vals.offset = 0;
+
     /**
      *  /blog/
      *    blog_name
