@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.22
+// @version     1.2.9.23
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1829,6 +1829,7 @@
                     else {
                         var json = JSON.parse(xhr.responseText);
                         new Etc.PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
+                        alert(json.response.errors[0]);
                     }
                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
                 }
