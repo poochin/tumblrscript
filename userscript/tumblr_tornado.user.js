@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.21
+// @version     1.2.9.22
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1062,6 +1062,9 @@
             });
         },
         addExclude: function addExclude(tumblelog_info) {
+            if (this.isExcluded(tumblelog_info) === true) {
+                return;
+            }
             this.exclude_tumblelogs.push(tumblelog_info);
             this.save();
             this.reload();
@@ -2806,7 +2809,7 @@
             check_exclude.checked = Vals.oauth_operator.isEnabled(tumblelog_info);
 
             check_exclude.addEventListener('change', function(e) {
-                if (Vals.oauth_operator.isEnabled(tumblelog_info)) {
+                if (!Vals.oauth_operator.isExcluded(tumblelog_info)) {
                     Vals.oauth_operator.addExclude(tumblelog_info);
                 }
                 else {
