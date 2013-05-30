@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.23
+// @version     1.2.9.24
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -224,7 +224,7 @@
         "    background-color: #fff;",
         "}",
         /* Reblog Button */
-        ".reblog_button.loading {",
+        ".reblog.loading {",
         // "    background-position: -530px -270px !important;",
         "    -webkit-animation: reblogging 1s infinite;",
         "    -moz-animation: reblogging 1s infinite;",
@@ -1593,7 +1593,13 @@
 
         Etc.KeyEventCache.add(e);
 
+
+        /*
         post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
+            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
+        })[0];
+        */
+        post = $$('#posts > .post_container:not(.new_post) > .post').filter(function(elm) {
             return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
         })[0];
         if (!post) {
@@ -1642,13 +1648,13 @@
         reblog: function reblog(post, default_postdata) {
             Tornado.funcs.shutterEffect(post);
         
-            var reblog_button = post.querySelector('a.reblog_button');
+            var reblog_button = post.querySelector('a.reblog');
             reblog_button.className += ' loading';
 
             var reblog_id, reblog_key, form_key;
-            reblog_id = reblog_button.getAttribute('data-reblog-id');
-            reblog_key = reblog_button.getAttribute('data-reblog-key');
-            form_key = reblog_button.getAttribute('data-user-form-key');
+            reblog_id = post.getAttribute('data-post-id');
+            reblog_key = post.getAttribute('data-reblog-key');
+            form_key = document.body.getAttribute('data-form-key');
 
             var parameters = JSON.stringify({
                 reblog_id: reblog_id,
@@ -1806,9 +1812,9 @@
                 tokenSecret    : target_blog_info.oauth_token_secret
             };
 
-            var reblog_button = post.querySelector('a.reblog_button');
-            var reblog_key = reblog_button.getAttribute('data-reblog-key'),
-                reblog_id = reblog_button.getAttribute('data-reblog-id');
+            var reblog_button = post.querySelector('a.reblog');
+            var reblog_key = post.getAttribute('data-reblog-key'),
+                reblog_id = post.getAttribute('data-post-id');
     
             var parameters = {
                 state: state,
@@ -2004,10 +2010,10 @@
             window.scroll(0, y - 7);
         },
         fast_reblog: function fastReblog(post) {
-            var reblog_button = post.querySelector('a.reblog_button');
-            var reblog_key = reblog_button.getAttribute('data-reblog-key'),
-                reblog_id = reblog_button.getAttribute('data-reblog-id'),
-                form_key = reblog_button.getAttribute('data-user-form-key');
+            var reblog_button = post.querySelector('a.reblog');
+            var reblog_key = post.getAttribute('data-reblog-key'),
+                reblog_id = post.getAttribute('data-post-id'),
+                form_key = document.body.getAttribute('data-form-key');
     
             Tornado.funcs.shutterEffect(post);
             reblog_button.className += ' loading';
