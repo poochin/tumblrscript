@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.25
+// @version     1.2.9.26
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2186,7 +2186,7 @@
     
             new Etc.PinNotification('Deleting... ' + post.id);
             Tornado.funcs.submitPublish(
-                post.querySelector('form#delete_' + post.id),
+                post.querySelector('.post_control .delete'),
                 function(_xhr) {
                     new Etc.PinNotification('Deleted ' + post.id);
                 },
@@ -2755,7 +2755,7 @@
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
-        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post[data-post-id]").getAttribute("data-post-id"));',
+        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
     ];
 
