@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.27
+// @version     1.2.9.28
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -213,10 +213,10 @@
     /* Reblog Effect */
     Tornado.css += [
         /* Reblog Shutter */
-        "#posts > .post.shutter_base {",
+        "#posts > .post_control > .post.shutter_base {",
         "    background-color: #F8ABA6;",
         "}",
-        "#posts > .post.shutter_base.shuttering {",
+        "#posts > .post_control > .post.shutter_base.shuttering {",
         "    -webkit-transition: background-color 0.08s ease;",
         "    -moz-transition: background-color 0.08s ease;",
         "    -o-transition: background-color 0.08s ease;",
@@ -1619,19 +1619,15 @@
             if (!shortcut.urlTest()) {
                 return false;
             }
-            console.log('success: url test');
             if (!shortcut.hasSelectorTest(post)) {
                 return false;
             }
-            console.log('success: has selector test');
             if (!shortcut.exprTest(post)) {
                 return false;
             }
-            console.log('success: expr test');
             if (!shortcut.keyTest(Etc.KeyEventCache)) {
                 return false;
             }
-            console.log('success: key test');
 
             shortcut.func(post, e, shortcut.options);
             Etc.KeyEventCache.clear();
@@ -1937,6 +1933,16 @@
                 onSuccess: onSuccess,
                 onFailure: onFailure});
         },
+        submitSVC: function submitSVC(url, default_ajax_options) {
+            var parameters = default_ajax_options.parameters || {};
+            Etc.dictUpdate(default_ajax_options, {
+                post_id: post.getAttribute('data-post-id'),
+                channel_id: post.getAttribute('data-tumblelog-name'),
+                form_key: document.body.getAttribute('data-form-key'),
+            });
+
+            new Ajax(url, default_ajax_options);
+        },
         shutterEffect: function shutterEffect(post) {
             post.classList.remove('shutter_base');
             post.classList.remove('shuttering');
@@ -2163,70 +2169,73 @@
         },
         forceDelete: function forceDelete(post) {
             Tornado.funcs.shutterEffect(post);
-    
-            new Etc.PinNotification('Deleting... ' + post.id);
-            Tornado.funcs.submitPublish(
-                post.querySelector('form#delete_' + post.id),
-                function(_xhr) {
-                    new Etc.PinNotification('Deleted ' + post.id);
-                },
-                function(_xhr) {
-                    alert('fail to delete');
+
+            new Ajax(
+                'http://www.tumblr.com/svc/post/delete',
+                {
+                    method: 'POST',
+                    parameters: JSON.stringify({
+                        post_id: post.getAttribute('data-post-id'),
+                        channel_id: post.getAttribute('data-tumblelog-name'),
+                        form_key: document.body.getAttribute('data-form-key'),
+                    }),
+                    onSuccess: function(_xhr) {
+                        new Etc.PinNotification('Success to delete post: ' + post.getAttribute('data-post-id'));
+                    },
+                    onFailure: function(_xhr) {
+                        alert('Fail to delte post: ' + post.getAttribute('data-post-id'));
+                    },
                 }
             );
         },
         delete: function _delete(post) {
-            post.querySelector('.delete').dispatchEvent(Tornado.left_click);
-            return;
-
             Tornado.funcs.shutterEffect(post);
+
             if (!confirm('Delete this post?')) {
-                post.classList.remove('shutter_base');
                 return;
             }
-    
-            new Etc.PinNotification('Deleting... ' + post.id);
-            Tornado.funcs.submitPublish(
-                post.querySelector('.post_control .delete'),
-                function(_xhr) {
-                    new Etc.PinNotification('Deleted ' + post.id);
-                },
-                function(_xhr) {
-                    alert('fail to delete');
-                }
-            );
+            CustomFuncs.forceDelete(post);
         },
         publish: function publish(post) {
-            post.querySelector('.publish').dispatchEvent(Tornado.left_click);
-            return;
-
             Tornado.funcs.shutterEffect(post);
-    
-            new Etc.PinNotification('Publishing... ' + post.id);
-            Tornado.funcs.submitPublish(
-                post.querySelector('form#publish_' + post.id),
-                function(_xhr) {
-                    new Etc.PinNotification('Published ' + post.id);
-                },
-                function(_xhr) {
-                    alert('fail to publish');
+            new Etc.PinNotification('Publishing...');
+
+            new Ajax(
+                'http://www.tumblr.com/publish',
+                {
+                    method: 'POST',
+                    parameters: {
+                        id: post.getAttribute('data-post-id'),
+                        form_key: document.body.getAttribute('data-form-key'),
+                    },
+                    onSuccess: function(_xhr) {
+                        new Etc.PinNotification('Success to publish post: ' + post.getAttribute('data-post-id'));
+                    },
+                    onFailure: function(_xhr) {
+                        alert('Fail to publish post: ' + post.getAttribute('data-post-id'));
+                    },
                 }
             );
         },
         enqueue: function enqueue(post) {
-            post.querySelector('.queue').dispatchEvent(Tornado.left_click);
-            return;
-
             Tornado.funcs.shutterEffect(post);
-    
-            new Etc.PinNotification('Enqueueing... ' + post.id);
-            Tornado.funcs.submitPublish(
-                post.querySelector('form#queue_' + post.id),
-                function(_xhr) {
-                    new Etc.PinNotification('Enqueued ' + post.id);
-                },
-                function(_xhr) {
-                    alert('fail to enqueue');
+            new Etc.PinNotification('Enqueueing...');
+
+            new Ajax(
+                'http://www.tumblr.com/publish',
+                {
+                    method: 'POST',
+                    parameters: {
+                        id: post.getAttribute('data-post-id'),
+                        form_key: document.body.getAttribute('data-form-key'),
+                        queue: 'queue',
+                    },
+                    onSuccess: function(_xhr) {
+                        new Etc.PinNotification('Success to enqueue post: ' + post.getAttribute('data-post-id'));
+                    },
+                    onFailure: function(_xhr) {
+                        alert('Fail to enqueue post: ' + post.getAttribute('data-post-id'));
+                    },
                 }
             );
         },
