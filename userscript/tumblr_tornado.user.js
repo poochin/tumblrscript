@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.30
+// @version     1.2.9.31
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -213,10 +213,10 @@
     /* Reblog Effect */
     Tornado.css += [
         /* Reblog Shutter */
-        "#posts > .post_control > .post.shutter_base {",
+        "#posts > .post_container > .post.shutter_base {",
         "    background-color: #F8ABA6;",
         "}",
-        "#posts > .post_control > .post.shutter_base.shuttering {",
+        "#posts > .post_container > .post.shutter_base.shuttering {",
         "    -webkit-transition: background-color 0.08s ease;",
         "    -moz-transition: background-color 0.08s ease;",
         "    -o-transition: background-color 0.08s ease;",
