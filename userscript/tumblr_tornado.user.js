@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.24
+// @version     1.2.9.25
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -244,7 +244,10 @@
         "  50% { -moz-transform: rotate(360deg) scale(1.1, 1.1); }",
         "  55% { -moz-transform: rotate(360deg) scale(1, 1); }",
         "  100% { -moz-transform: rotate(360deg) scale(1, 1); }",
-        "}"
+        "}",
+        ".reblogged {",
+        "  background: url('http://assets.tumblr.com/images/dashboard_master_sprite.png?1a24f18dcb94fd4ba0eeaa09a2f950ce') -527px -268px;",
+        "}",
     ].join('\n');
 
     /* Lite Dialog */
