@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.28
+// @version     1.2.9.29
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2048,8 +2048,7 @@
             new Etc.PinNotification('Endless summer was turned ' + ({'true': 'On', 'false': 'Off'}[value]));
         },
         scaleImage: function scaleImage(post) {
-            var reg_type = /\b(?:photo|regular|quote|link|conversation|audio|video)\b/;
-            var type = post.className.match(reg_type)[0];
+            var type = post.getAttribute('data-type');
             if (type != "photo" && type != "video") {
                 return;
             }
