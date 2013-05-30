@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.29
+// @version     1.2.9.30
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2766,7 +2766,7 @@
         'BeforeAutoPaginationQueue.push(endlessSummer);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
-            'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' +
+            'Tumblr.KeyCommands = new Tumblr.KeyCommands_v2Constructor();' + 
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
