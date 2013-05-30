@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.31
+// @version     1.2.9.32
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2049,11 +2049,11 @@
         },
         scaleImage: function scaleImage(post) {
             var type = post.getAttribute('data-type');
-            if (type != "photo" && type != "video") {
+            if (type != "photo" && type != 'photoset' && type != "video") {
                 return;
             }
     
-            if (type == "photo") {
+            if (type == "photo" || type == 'photoset') {
                 (function letit(elm){
                     // from Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
                     // This is excellent code to fix redrew bug of chrome.
@@ -2064,7 +2064,7 @@
                     elm.dispatchEvent(Tornado.left_click);
                 })(post.querySelector('img.image_thumbnail') ||
                    document.querySelector('#tumblr_lightbox') ||
-                   post.querySelector('a.photoset_photo'));
+                   post.querySelector('a.photoset_photo img'));
             }   
             else if (type == 'video') {
                 Etc.toggleVideoEmbed(post);
