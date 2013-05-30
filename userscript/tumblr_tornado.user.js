@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.26
+// @version     1.2.9.27
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1596,7 +1596,6 @@
 
         Etc.KeyEventCache.add(e);
 
-
         /*
         post = $$('#posts>.post:not(.new_post)').filter(function(elm) {
             return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
@@ -1620,20 +1619,19 @@
             if (!shortcut.urlTest()) {
                 return false;
             }
+            console.log('success: url test');
             if (!shortcut.hasSelectorTest(post)) {
                 return false;
             }
+            console.log('success: has selector test');
             if (!shortcut.exprTest(post)) {
                 return false;
             }
+            console.log('success: expr test');
             if (!shortcut.keyTest(Etc.KeyEventCache)) {
                 return false;
             }
-            if (typeof shortcut.expr === 'function') {
-                if (!shortcut.expr(post, e)) {
-                    return false;
-                }
-            }
+            console.log('success: key test');
 
             shortcut.func(post, e, shortcut.options);
             Etc.KeyEventCache.clear();
@@ -2178,6 +2176,9 @@
             );
         },
         delete: function _delete(post) {
+            post.querySelector('.delete').dispatchEvent(Tornado.left_click);
+            return;
+
             Tornado.funcs.shutterEffect(post);
             if (!confirm('Delete this post?')) {
                 post.classList.remove('shutter_base');
@@ -2196,6 +2197,9 @@
             );
         },
         publish: function publish(post) {
+            post.querySelector('.publish').dispatchEvent(Tornado.left_click);
+            return;
+
             Tornado.funcs.shutterEffect(post);
     
             new Etc.PinNotification('Publishing... ' + post.id);
@@ -2210,6 +2214,9 @@
             );
         },
         enqueue: function enqueue(post) {
+            post.querySelector('.queue').dispatchEvent(Tornado.left_click);
+            return;
+
             Tornado.funcs.shutterEffect(post);
     
             new Etc.PinNotification('Enqueueing... ' + post.id);
@@ -2590,7 +2597,7 @@
                     ja: 'Post が自分のものならばポストを削除します',
                     en: 'Delete my post'
                 },
-                has_selector: 'form[id^=delete]',
+                has_selector: '.post_control.delete',
                 usehelp: 'hide',
                 group: 4
         }),
@@ -2602,7 +2609,7 @@
                     ja: '確認ボックスを表示することなくポストを削除します',
                     en: 'Force delete my post',
                 },
-                has_selector: 'form[id^=delete]',
+                has_selector: '.post_control.delete',
                 usehelp: 'hide',
                 group: 4
         }),
@@ -2614,7 +2621,7 @@
                     ja: 'Drafts か Queue のポストを公開します',
                     en: 'Publish my post drafted or queued'
                 },
-                has_selector: 'form[id^=publish]',
+                has_selector: '.post_control.publish',
                 usehelp: 'hide',
                 group: 4
         }),
@@ -2626,7 +2633,7 @@
                     ja: 'Drafts を Queue へ納めます',
                     en: 'Enqueue my draft',
                 },
-                has_selector: 'form[id^=queue]',
+                has_selector: '.post_control.queue',
                 usehelp: 'hide',
                 group: 4
         })
