@@ -461,8 +461,8 @@
      * Tornado で使用できる左クリックイベントです。
      * Element.dispatchEvent(Tornado.left_click) として使います。
      */
-    Tornado.left_click = document.createEvent('MouseEvent');
-    Tornado.left_click.initEvent('click', true, true);
+    Vals.left_click = Tornado.left_click = document.createEvent('MouseEvent');
+    Vals.left_click.initEvent('click', true, true);
 
     /**
      * オブジェクトをシリアライズします
@@ -2300,7 +2300,10 @@
 
         new Etc.CustomKey({
                 key_bind: ['l'],
-                func: CustomFuncs.default,
+                // func: CustomFuncs.default,
+                func: function like(post) {
+                    post.querySelector('.like').dispatchEvent(Vals.left_click);
+                },
                 title: 'Like',
                 desc: {
                     ja: 'Like します',
@@ -2772,6 +2775,7 @@
         'window.ison_endless_summer = false;',
         'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
+        "Tumblr.Events.unbind('post:like');",
     ];
 
 
