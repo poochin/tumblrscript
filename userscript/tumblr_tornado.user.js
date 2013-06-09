@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.36
+// @version     1.2.9.37
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1382,6 +1382,8 @@
      * @todo Ajax.Request では parameters は文字列ではなく辞書型オブジェクトで入ってくるかどうか
      */
     function Ajax(url, options) {
+        var options = options || {};
+
         var xhr = this.xhr = new XMLHttpRequest(),
             async = (options.asynchronous === undefined) || options.asynchronous;
     
@@ -2136,6 +2138,10 @@
          * @fixme private ポストでの取得には対応していません
          */
         rootInfo: function rootInfo(post) {
+            if (Tornado.gm_api === false) {
+                return;
+            }
+
             var post_id = post.id.match(/\d+/)[0];
             var post_info = post.querySelector('.post_info');
             if (post_info.querySelector('.root_info')) {
@@ -2150,16 +2156,27 @@
             var script = document.createElement('script');
             script.id = 'showroot_' + post_id;
     
-            var permalink = post.querySelector('a.permalink').href;
+            var permalink = post.querySelector('a.post_permalink').href;
             var blog_name = permalink.match(/[^\/]*(?=\/(?:post|private))/)[0];
-            var qs = Etc.buildQueryString({id: post_id , jsonp: 'jsonpRootInfo', reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
+            var qs = Etc.buildQueryString({id: post_id , /* jsonp: 'jsonpRootInfo', */ reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
             var url = [
                 'http://api.tumblr.com/v2/blog',
                 blog_name,
                 'posts?' + qs].join('/');
-            script.src = url;
-    
-            document.body.appendChild(script);
+
+            var a = new Ajax(url, {
+                onSuccess: function (xhr) {
+                    var json = JSON.parse(xhr.response);
+
+                    var post_info = json.response.posts[0];
+                    var root_name = post_info.reblogged_root_name;
+                    var root_url = post_info.reblogged_root_url;
+                    var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
+        
+                    var root_info = post.querySelector('.root_info');
+                    root_info.innerHTML = ' [' + text_root_link + ']';
+                },
+            });
         },
         topReload: function topReload() {
             var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
@@ -2716,8 +2733,8 @@
             var root_info = node_post.querySelector('.root_info');
             root_info.innerHTML = ' [' + text_root_link + ']';
         
-            var script = document.querySelector('#showroot_' + post.id);
-            script.parentNode.removeChild(script);
+            // var script = document.querySelector('#showroot_' + post.id);
+            // script.parentNode.removeChild(script);
         },
         /**
          * 次ページパスを訂正すべき場合は正常な次ページパスを返します
