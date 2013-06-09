@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.10
+// @version     1.0.11
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -145,7 +145,7 @@
         postfound: {
             while (elm.tagName && elm.id != 'posts') {
                 if (elm.tagName.toUpperCase() == 'LI' &&
-                    /\bpost\b/.test(elm.className)) {
+                    /\bpost_container\b/.test(elm.className)) {
                     break postfound;
                 }
                 elm = elm.parentNode;
