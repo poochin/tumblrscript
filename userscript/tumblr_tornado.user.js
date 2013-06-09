@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.33
+// @version     1.2.9.35
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2126,7 +2126,7 @@
         },
         viewPostPageInBackground: function viewPostPageInBackground(post) {
             var permalink;
-            if (permalink = post.querySelector('.permalink')) {
+            if (permalink = post.querySelector('.post_permalink')) {
                 window.open(permalink.href);
                 window.focus();
             }
