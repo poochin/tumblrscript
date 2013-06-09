@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.35
+// @version     1.2.9.36
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2093,17 +2093,17 @@
                 vr = Etc.viewportRect(),
                 del_count = 0;
     
-            $$('#posts > li:not(.new_post)').filter(function(post) {
+            $$('#posts > li:not(.new_post_buttons_container)').filter(function(post) {
                 return (post.offsetTop - 7) < vr.top;
             }).map(function(post) {
                 del_count++;
                 dsbd.removeChild(post);
             });
     
-            var firstpost = document.querySelector('#posts > li:not(.new_post)');
+            var firstpost = document.querySelector('#posts > li:not(.new_post_buttons_container)');
             firstpost.className = firstpost.className.replace('same_user_as_last', '');
     
-            window.scrollTo(0, document.querySelector('#posts>.post:not(.new_post)').offsetTop - 7);
+            window.scrollTo(0, document.querySelector('#posts>li.post_container:not(.new_post_buttons_container)').offsetTop - 7);
     
             new Etc.PinNotification(del_count + '件のポストを削除しました。');
         },
