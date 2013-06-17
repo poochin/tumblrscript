@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.37
+// @version     1.2.9.38
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2792,7 +2792,7 @@
         'window.ison_endless_summer = false;',
         'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
-        "Tumblr.Events.unbind('post:like');",
+        "setTimeout(function(){Tumblr.Events.unbind('post:like');}, 50);",
     ];
 
 
