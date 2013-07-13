@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.38
+// @version     1.2.9.39
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1898,14 +1898,13 @@
                 dialog.dialog.className += ' channel_dialog';
     
                 var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
-        
-                $$('#popover_blogs .popover_menu_item:not(#button_new_blog)').map(function(elm, i) {
-                    var channel_id = elm.id.slice(9);
+                $$('.blog_name').slice(1).map(function(elm, i) {
+                    var channel_id = elm.href.slice(elm.href.lastIndexOf('/') + 1);
                     var button = Etc.buildElement('input', {
                             type: 'button',
                             class: 'button' + (i + 1),
                             name: channel_id,
-                            value: ['[', i + 1, ']: ', elm.children[1].textContent.trim()].join('')});
+                            value: ['[', i + 1, ']: ', elm.textContent.trim()].join('')});
                     button.addEventListener('click', function(e) {
                         postdata['channel_id'] = this.name;
                         Tornado.funcs.reblog(post, postdata);
