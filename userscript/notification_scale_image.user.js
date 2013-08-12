@@ -2,7 +2,7 @@
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.1
+// @version     1.0.2
 // @description ユーザスクリプトの概要を記入してください
 // 
 // @author      poochin
