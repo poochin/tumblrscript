@@ -2,7 +2,7 @@
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.2
+// @version     1.0.3
 // @description ユーザスクリプトの概要を記入してください
 // 
 // @author      poochin
@@ -68,6 +68,7 @@
         if (preview_frame) {
             sq_img = preview_frame.style.backgroundImage.match(/\((.*)\)/)[1];
             if (sq_img) {
+                sq_img = sq_img.replace(/"/g, '');
                 full_img = preview_frame.appendChild(document.createElement('img'));
                 full_img.setAttribute('src', sq_img.replace('_75sq.', '_250.'));
                 full_img.className = 'full';
@@ -83,7 +84,12 @@
     }
 
     function addAltText_Activity(elm) {
-        var quote = elm.querySelector('.summary').textContent;
+        var summary = elm.querySelector('.summary');
+        if (!summary) {
+            return;
+        }
+
+        var quote = summary.textContent;
         quote = quote.replace(/(\s|\r|\n)+/g, ' ');
         elm.setAttribute('title', quote);
     }
