@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.39
+// @version     1.2.9.40
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1898,13 +1898,17 @@
                 dialog.dialog.className += ' channel_dialog';
     
                 var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
-                $$('.blog_name').slice(1).map(function(elm, i) {
-                    var channel_id = elm.href.slice(elm.href.lastIndexOf('/') + 1);
+
+                var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
+                var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
+
+                tumblelog_elms.map(function(elm, i) {
+                    var channel_id = elm.getAttribute('data-option-value');
                     var button = Etc.buildElement('input', {
                             type: 'button',
                             class: 'button' + (i + 1),
                             name: channel_id,
-                            value: ['[', i + 1, ']: ', elm.textContent.trim()].join('')});
+                            value: ['[', i + 1, ']: ', elm.getAttribute('title')].join('')});
                     button.addEventListener('click', function(e) {
                         postdata['channel_id'] = this.name;
                         Tornado.funcs.reblog(post, postdata);
@@ -1968,8 +1972,9 @@
         reblog: function reblog(post, e, options) {
             var params = {};
 
-            var first_channel = document.querySelector('#popover_blogs .popover_menu_item:not(#button_new_blog)');
-            var channel_id = first_channel.id.slice(9);
+            var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
+            var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
+            var channel_id = tumblelog_elms[0].getAttribute('data-option-value');
 
             Etc.dictUpdate(params, options.default_values);
             Etc.dictUpdate(params, {
@@ -1992,7 +1997,10 @@
                 }
             }
             else {
-                var channel_id = $$('#popover_blogs .popover_menu_item:not(#button_new_blog)')[channel_num].id.slice(9);
+                var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
+                var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
+                var channel_id = tumblelog_elms[channel_num].getAttribute('data-option-value');
+
                 Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
             }
         },
