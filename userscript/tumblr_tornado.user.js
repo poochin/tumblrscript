@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.41
+// @version     1.2.9.42
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -119,41 +119,6 @@
                     :  window.navigator.userAgent.match(/Chrome/) ? 'chrome'
                     :  window.navigator.userAgent.match(/Firefox/) ? 'firefox'
                     :  '');
-
-    Tornado.tumblelogs = (function() {
-        var tumblelogs = [],
-            map = Array.prototype.map;
-
-        /**
-         * まず dashboard か確認します
-         * dashboard である場合は
-         * ul.blog_menu #popover_blogs .popover_menu_item
-         * から取得します。
-         * 取得したものは localStorage で活用します
-         */
-
-        if (/^\/dashboard/.test(location.pathname)) {
-            tumblelogs = Array.apply(0, document.querySelectorAll('ul.blog_menu #popover_blogs .popover_menu_item:not(#button_new_blog)')).map(function(elm) {
-                var channel_id = elm.id.slice(9);
-                var title_elm = elm.querySelector('a');
-
-                title_elm.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
-                var title = (title_elm.textContent || title_elm.innerText).replace(/^\s*|\s*$/g, '');
-
-                return {
-                    'name': channel_id,
-                    'title': title
-                };
-            });
-
-            localStorage.setItem('tornado_tumblelogs', JSON.stringify(tumblelogs));
-        }
-        else {
-            tumblelogs = JSON.parse(localStorage.getItem('tornado_tumblelogs')) || {};
-        }
-
-        return tumblelogs;
-    })();
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
     Tornado.vals.CONSUMER_SECRET = 'wYZ7hzCu5NnSJde8U2d7BW6pz0mtMMAZCoGgGKnT4YNB8uZNDL';
@@ -1205,6 +1170,39 @@
     /*---------------------------------
      * Functions
      *-------------------------------*/
+    Etc.tumblelogCollection = function tumblelogCollection() {
+        var tumblelogs = [];
+
+        /**
+         * まず dashboard か確認します
+         * dashboard である場合は
+         * ul.blog_menu #popover_blogs .popover_menu_item
+         * から取得します。
+         * 取得したものは localStorage で活用します
+         */
+
+        if (/^\/dashboard/.test(location.pathname)) {
+            tumblelogs = Array.apply(0, document.querySelectorAll('ul.blog_menu #popover_blogs .popover_menu_item:not(#button_new_blog)')).map(function(elm) {
+                var channel_id = elm.id.slice(9);
+                var title_elm = elm.querySelector('a');
+
+                title_elm.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
+                var title = (title_elm.textContent || title_elm.innerText).replace(/^\s*|\s*$/g, '');
+
+                return {
+                    'name': channel_id,
+                    'title': title
+                };
+            });
+
+            localStorage.setItem('tornado_tumblelogs', JSON.stringify(tumblelogs));
+        }
+        else {
+            tumblelogs = JSON.parse(localStorage.getItem('tornado_tumblelogs')) || [];
+        }
+
+        Tornado.tumblelogs = tumblelogs;
+    };
 
     Etc.verifyAccessToken = function verifyAccessToken() {
         var access_tokens = Vals.oauth_operator.getAccessToken();
@@ -3113,6 +3111,8 @@
         }
 
         Tornado.initTumblelogConfigs();
+
+        Etc.tumblelogCollection();
 
         document.addEventListener('keydown', Tornado.keyevent, true);
 
