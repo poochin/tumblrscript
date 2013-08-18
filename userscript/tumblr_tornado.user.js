@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.40
+// @version     1.2.9.41
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -88,6 +88,14 @@
         },
     };
 
+    Tornado.tumblelogs = [
+        /*
+        {
+            name: tumblelog name,
+            title: tumblelog title
+        }*/
+    ];
+
     Tornado.oauth = {};
     /*-- /ここまで Tornado オブジェクトの仮属性 --*/
 
@@ -111,6 +119,41 @@
                     :  window.navigator.userAgent.match(/Chrome/) ? 'chrome'
                     :  window.navigator.userAgent.match(/Firefox/) ? 'firefox'
                     :  '');
+
+    Tornado.tumblelogs = (function() {
+        var tumblelogs = [],
+            map = Array.prototype.map;
+
+        /**
+         * まず dashboard か確認します
+         * dashboard である場合は
+         * ul.blog_menu #popover_blogs .popover_menu_item
+         * から取得します。
+         * 取得したものは localStorage で活用します
+         */
+
+        if (/^\/dashboard/.test(location.pathname)) {
+            tumblelogs = Array.apply(0, document.querySelectorAll('ul.blog_menu #popover_blogs .popover_menu_item:not(#button_new_blog)')).map(function(elm) {
+                var channel_id = elm.id.slice(9);
+                var title_elm = elm.querySelector('a');
+
+                title_elm.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
+                var title = (title_elm.textContent || title_elm.innerText).replace(/^\s*|\s*$/g, '');
+
+                return {
+                    'name': channel_id,
+                    'title': title
+                };
+            });
+
+            localStorage.setItem('tornado_tumblelogs', JSON.stringify(tumblelogs));
+        }
+        else {
+            tumblelogs = JSON.parse(localStorage.getItem('tornado_tumblelogs')) || {};
+        }
+
+        return tumblelogs;
+    })();
 
     Tornado.vals.CONSUMER_KEY = 'kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo';
     Tornado.vals.CONSUMER_SECRET = 'wYZ7hzCu5NnSJde8U2d7BW6pz0mtMMAZCoGgGKnT4YNB8uZNDL';
@@ -1899,16 +1942,13 @@
     
                 var dialog_body = dialog.dialog.querySelector('.lite_dialog_body');
 
-                var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
-                var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
-
-                tumblelog_elms.map(function(elm, i) {
-                    var channel_id = elm.getAttribute('data-option-value');
+                Tornado.tumblelogs.map(function(obj, i) {
+                    var channel_id = obj.name;
                     var button = Etc.buildElement('input', {
                             type: 'button',
                             class: 'button' + (i + 1),
                             name: channel_id,
-                            value: ['[', i + 1, ']: ', elm.getAttribute('title')].join('')});
+                            value: ['[', i + 1, ']: ', obj.title].join('')});
                     button.addEventListener('click', function(e) {
                         postdata['channel_id'] = this.name;
                         Tornado.funcs.reblog(post, postdata);
@@ -1972,13 +2012,9 @@
         reblog: function reblog(post, e, options) {
             var params = {};
 
-            var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
-            var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
-            var channel_id = tumblelog_elms[0].getAttribute('data-option-value');
-
             Etc.dictUpdate(params, options.default_values);
             Etc.dictUpdate(params, {
-                channel_id: channel_id
+                channel_id: Tornado.tumblelogs[0].name
             });
 
             Tornado.funcs.reblog(post, params);
@@ -1997,11 +2033,7 @@
                 }
             }
             else {
-                var tmp_elm = Etc.buildElementBySource(document.querySelector('#base_template').innerHTML);
-                var tumblelog_elms = Array.prototype.slice.call(tmp_elm.querySelectorAll('#tumblelog_choices ul div.option'));
-                var channel_id = tumblelog_elms[channel_num].getAttribute('data-option-value');
-
-                Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': channel_id});
+                Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': Tornado.tumblelogs[channel_num].name});
             }
         },
         halfdown: function halfdown() {
