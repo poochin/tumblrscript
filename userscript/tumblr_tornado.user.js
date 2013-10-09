@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.44
+// @version     1.2.9.45
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2180,15 +2180,22 @@
             }
 
             var post_id = post.id.match(/\d+/)[0];
-            var post_info = post.querySelector('.post_info');
-            if (post_info.querySelector('.root_info')) {
+            var post_source = post.querySelector('.post_source');
+            if (post_source == null) {
+                post_source = document.createElement('div');
+                post_source.className = 'post_source';
+                post.querySelector('.post_header').appendChild(post_source);
+            }
+            if (post_source.querySelector('.root_info')) {
                 return;
             }
     
             var root_info = document.createElement('span');
-            root_info.className = 'root_info';
-            root_info.innerHTML = ' [...]';
-            post_info.insertBefore(root_info, post_info.lastChild);
+            root_info.className = 'root_info post_source_link';
+            root_info.innerHTML = 'Root: <a href="">...</a>';
+            post_source.insertBefore(document.createElement('br'), post_source.lastChild);
+            post_source.insertBefore(root_info, post_source.lastChild);
+            var root_link = root_info.querySelector('a');
     
             var script = document.createElement('script');
             script.id = 'showroot_' + post_id;
@@ -2201,6 +2208,23 @@
                 blog_name,
                 'posts?' + qs].join('/');
 
+            GM_xmlhttpRequest({
+                url: url,
+                method: 'GET',
+                onload: function (xhr) {
+                    var json = JSON.parse(xhr.response);
+
+                    var post_info = json.response.posts[0];
+                    var root_name = post_info.reblogged_root_name;
+                    var root_url = post_info.reblogged_root_url;
+
+                    var text_root_link = (root_name ? (['<a href="', root_url, '">', root_name, '</a>'].join('')) : 'missing');
+
+                    root_link.setAttribute('href', root_url);
+                    root_link.innerHTML = text_root_link;
+                }
+            });
+            return;
             var a = new Ajax(url, {
                 onSuccess: function (xhr) {
                     var json = JSON.parse(xhr.response);
