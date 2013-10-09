@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.42
+// @version     1.2.9.43
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2811,6 +2811,18 @@
             var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
             next_page = '/dashboard/' + (page + 1) + '/' + next_id;
          },
+         /**
+          * Page Link を挿入します
+          */
+         function appendPageLink(){
+           var li = document.createElement('li'),
+               page_info = document.createElement('div');
+           li.setAttribute('style', 'margin: 5px; color: white;');
+           li.appendChild(document.createElement('hr'));
+           li.appendChild(page_info);
+           page_info.innerHTML = ['Page: <a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
+           posts.appendChild(li)
+         },
          Etc.buildElement,
     ];
 
@@ -2821,6 +2833,7 @@
     Tornado.clientlaunches = [
         'BeforeAutoPaginationQueue.push(dsbdPjax);',
         'BeforeAutoPaginationQueue.push(endlessSummer);',
+        'BeforeAutoPaginationQueue.push(appendPageLink);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommands_v2Constructor();' + 
