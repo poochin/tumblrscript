@@ -2843,7 +2843,7 @@
                page_info = document.createElement('div');
            li.setAttribute('style', 'margin: -8px 0 8px 0; color: white; text-align: center; opacity: 0.65;');
            li.appendChild(page_info);
-           page_info.setAttribute('style', 'border-top: 1px dashed rgb(255, 255, 255); padding-top: 2px;');
+           page_info.setAttribute('style', 'text-shadow: 0 0 1px #fff; border-top: 1px dashed rgb(255, 255, 255); padding-top: 2px;');
            page_info.innerHTML = ['<a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
            posts.appendChild(li)
          },
