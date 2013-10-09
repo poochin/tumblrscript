@@ -2503,6 +2503,15 @@
                 group: 2,
                 grouporder: 5,
         }),
+        new Etc.CustomKey({
+                key_bind: ['s-q'],
+                func: function () {console.log('not defined');}, // CustomFuncs.publishingLbL,
+                title: 'Publishing Little by Little',
+                dest: {
+                    ja: '少しずつ公開されるように Queue へ追加します',
+                },
+        }),
+
 
         /* FIXME */
         new Etc.CustomKey({
@@ -2598,6 +2607,7 @@
                     ja: 'Root 投稿者情報を取得します',
                     en: 'Get root post user',
                 },
+                usehelp: 'hide',
                 group: 0
         }),
         new Etc.CustomKey({
@@ -2841,10 +2851,9 @@
          function prependPageLink(){
            var li = document.createElement('li'),
                page_info = document.createElement('div');
-           li.setAttribute('style', 'margin: -8px 0 8px 0; color: white; text-align: center; opacity: 0.65;');
+           li.setAttribute('style', 'margin: -8px 0 4px 0; color: white; text-align: right; opacity: 0.65;');
            li.appendChild(page_info);
-           page_info.setAttribute('style', 'text-shadow: 0 0 1px #fff; border-top: 1px dashed rgb(255, 255, 255); padding-top: 2px;');
-           page_info.innerHTML = ['<a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
+           page_info.innerHTML = ['page:<a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
            posts.appendChild(li)
          },
          Etc.buildElement,
