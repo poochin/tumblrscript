@@ -2240,7 +2240,7 @@
             });
         },
         topReload: function topReload() {
-            var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
+            var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue|activity)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
             var url = location.href.match(reg_top_path)[0];
             location.assign(url);
         },
@@ -2504,12 +2504,16 @@
                 grouporder: 5,
         }),
         new Etc.CustomKey({
+                key_bind: ['o'],
+                func: function() {console.log('Publish on');}, // CustomFuncs.publishon,
+                title: 'Publish on',
+                dest: 'Publish on ... a post'
+        }),
+        new Etc.CustomKey({
                 key_bind: ['s-q'],
                 func: function () {console.log('not defined');}, // CustomFuncs.publishingLbL,
                 title: 'Publishing Little by Little',
-                dest: {
-                    ja: '少しずつ公開されるように Queue へ追加します',
-                },
+                dest: '少しずつ公開されるように Queue へ追加します',
         }),
 
 
