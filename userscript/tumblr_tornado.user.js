@@ -2855,7 +2855,7 @@
          function prependPageLink(){
            var li = document.createElement('li'),
                page_info = document.createElement('div');
-           li.setAttribute('style', 'margin: -8px 0 4px 0; color: white; text-align: right; opacity: 0.65;');
+           li.setAttribute('style', 'font-size: 13px; margin: -8px 0 4px 0; color: white; text-align: right; opacity: 0.65;');
            li.appendChild(page_info);
            page_info.innerHTML = ['page:<a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
            posts.appendChild(li)
