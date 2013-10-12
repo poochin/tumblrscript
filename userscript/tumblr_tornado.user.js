@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.46
+// @version     1.2.9.47
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -469,7 +469,7 @@
         "#posts li.pagelink {",
         "  font-size: 13px;",
         "  line-height: 13px;",
-        "  margin: -13px 0 4px 0;",
+        "  margin: -15px 0 7px 0;",
         "  color: white;",
         "  opacity: 0.65;",
         "}",
