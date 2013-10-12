@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.47
+// @version     1.2.9.49
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2519,14 +2519,16 @@
         new Etc.CustomKey({
                 key_bind: ['o'],
                 func: function() {console.log('Publish on');}, // CustomFuncs.publishon,
+                help: 'hide',
                 title: 'Publish on',
-                dest: 'Publish on ... a post'
+                desc: 'Publish on ... a post'
         }),
         new Etc.CustomKey({
                 key_bind: ['s-q'],
                 func: function () {console.log('not defined');}, // CustomFuncs.publishingLbL,
+                help: 'hide',
                 title: 'Publishing Little by Little',
-                dest: '少しずつ公開されるように Queue へ追加します',
+                desc: '少しずつ公開されるように Queue へ追加します',
         }),
 
 
