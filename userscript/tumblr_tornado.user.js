@@ -464,6 +464,19 @@
         "}",
     ].join('\n');
 
+    /* Prepend Page Link */
+    Tornado.css += [
+        "#posts li.pagelink {",
+        "  font-size: 13px;",
+        "  line-height: 13px;",
+        "  margin: -13px 0 4px 0;",
+        "  color: white;",
+        "  opacity: 0.65;",
+        "}",
+        "#posts li.pagelink a {",
+        "   color: white;",
+        "}",
+    ].join('\n');
 
     /**
      * Tornado で使用できる左クリックイベントです。
@@ -2855,9 +2868,9 @@
          function prependPageLink(){
            var li = document.createElement('li'),
                page_info = document.createElement('div');
-           li.setAttribute('style', 'font-size: 13px; margin: -8px 0 4px 0; color: white; text-align: right; opacity: 0.65;');
+           li.className = 'pagelink';
            li.appendChild(page_info);
-           page_info.innerHTML = ['page:<a style="color: white;" href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
+           page_info.innerHTML = ['page:<a href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
            posts.appendChild(li)
          },
          Etc.buildElement,
