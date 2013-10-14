@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.50
+// @version     1.2.9.51
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -1798,8 +1798,9 @@
                                     var dp = default_postdata;
                                     new Etc.PinNotification([
                                         'Success: Reblogged',
-                                        (dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) || '',
-                                        (dp['channel_id'] && dp['channel_id'] != '0' && dp['channel_id']) || ''].join(' '));
+                                        ((dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) ||
+                                         (dp['post[state]'] == 'on.2' && 'on ' + dp['post[publish_on]'])) || '',
+                                        (dp['channel_id'] && dp['channel_id'] != '0' && 'to ' + dp['channel_id']) || ''].join(' '));
                                 }
                             },
                         });
@@ -2046,6 +2047,50 @@
             else {
                 Tornado.funcs.reblog(post, {'post[state]': '0', 'channel_id': Tornado.tumblelogs[channel_num].name});
             }
+        },
+        publishOn: function publishOn(post, e, options) {
+            function buildTime(epoch) {
+                var d = (epoch ? new Date(epoch * 1000) : new Date());
+                return [d.getFullYear(), d.getMonth()+1, d.getDate()].join('/') + ' ' + [d.getHours(), d.getMinutes()].join(':');
+            }
+            var default_time = buildTime();
+            var date = prompt('Input time to publish on?', default_time);
+
+            if (date === null) {
+                new Etc.PinNotification('Cancel Publish on');
+                return;
+            }
+
+            options.default_values['post[publish_on]'] = date;
+            
+            CustomFuncs.reblog(post, e, options);
+        },
+        publishLittleByLittle: function publishLittleByLittle(post, e, options) {
+            function buildTime(epoch) {
+                var d = (epoch ? new Date(epoch * 1000) : new Date());
+                return [d.getFullYear(), d.getMonth()+1, d.getDate()].join('/') + ' ' + [d.getHours(), d.getMinutes()].join(':');
+            }
+            function sliceUp(num, mod) {
+                return num - (num % mod) + mod;
+            }
+
+            var t = localStorage.getItem('tornado_lbl_time');
+            var next_t = 0;
+            var date;
+
+            if (isNaN(parseInt(t)) ||
+                t < (new Date() / 1000)) {
+                t = parseInt(new Date() / 1000);
+            }
+
+            next_t = sliceUp(t, 10 * 60);
+            localStorage.setItem('tornado_lbl_time', next_t);
+
+            date = buildTime(next_t);
+            
+            options.default_values['post[publish_on]'] = date;
+
+            CustomFuncs.reblog(post, e, options);
         },
         halfdown: function halfdown() {
             var view_height = window.innerHeight;
@@ -2391,8 +2436,8 @@
 
         new Etc.CustomKey({
                 key_bind: ['l'],
-                // func: CustomFuncs.default,
                 func: function like(post) {
+                    /* fire default event */
                     post.querySelector('.like.post_control').dispatchEvent(Vals.left_click);
                 },
                 title: 'Like',
@@ -2518,16 +2563,28 @@
         }),
         new Etc.CustomKey({
                 key_bind: ['o'],
-                func: function() {console.log('Publish on');}, // CustomFuncs.publishon,
-                help: 'hide',
+                func: CustomFuncs.publishOn,
                 title: 'Publish on',
+                options: {
+                    default_values: {
+                        'post[state]': 'on.2'
+                    },
+                },
+                // func: function() {console.log('Publish on');}, // CustomFuncs.publishon,
+                help: 'hide',
                 desc: 'Publish on ... a post'
         }),
         new Etc.CustomKey({
-                key_bind: ['s-q'],
-                func: function () {console.log('not defined');}, // CustomFuncs.publishingLbL,
-                help: 'hide',
+                key_bind: ['s-o'],
                 title: 'Publishing Little by Little',
+                func: CustomFuncs.publishLittleByLittle,
+                // func: function () {console.log('not defined');}, // CustomFuncs.publishingLbL,
+                options: {
+                    default_values: {
+                        'post[state]': 'on.2'
+                    },
+                },
+                help: 'hide',
                 desc: '少しずつ公開されるように Queue へ追加します',
         }),
 
