@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.51
+// @version     1.2.9.52
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2870,6 +2870,8 @@
          * RootInfo用のAPIのデータを受け取り実際に埋め込む関数です
          * @param {Object} json Tumblr API が返す JSON オブジェクト
          */
+        /* 
+        // 役目を終えました
         function jsonpRootInfo(json) {
             var post = json.response.posts[0];
             var root_name = post.reblogged_root_name;
@@ -2883,6 +2885,7 @@
             // var script = document.querySelector('#showroot_' + post.id);
             // script.parentNode.removeChild(script);
         },
+        */
         /**
          * 次ページパスを訂正すべき場合は正常な次ページパスを返します
          * @return 次ページ path か null
@@ -2945,7 +2948,7 @@
         'BeforeAutoPaginationQueue.push(prependPageLink);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
-            'Tumblr.KeyCommands = new Tumblr.KeyCommands_v2Constructor();' + 
+            'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' + 
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
