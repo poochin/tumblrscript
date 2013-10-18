@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.52
+// @version     1.2.9.53
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -2901,41 +2901,57 @@
         /**
          * pjax ライクにページの読み込みとロケーションバーを連動させます
          */
-         function dsbdPjax() {
-            next_pageCorrection();
-            history.pushState('', '', next_page);
-         },
-         /**
-          * Dashboard をランダムに降下する為の機能です
-          */
-         function endlessSummer() {
-            var oldest_id = 264102; // http://ku.tumblr.com/post/264102
-            var name = 'endless_summer';
+        function dsbdPjax() {
+           next_pageCorrection();
+           history.pushState('', '', next_page);
+        },
+        /**
+         * Dashboard をランダムに降下する為の機能です
+         */
+        function endlessSummer() {
+           var oldest_id = 264102; // http://ku.tumblr.com/post/264102
+           var name = 'endless_summer';
 
-            if (ShareValue.get(name, false) === "false") {
-                return;
+           if (ShareValue.get(name, false) === "false") {
+               return;
+           }
+
+           var path = location.href.match(/\/dashboard(\/(\d+)\/(\d+))?/);
+           var page, last_id;
+           var page = (path[2] ? parseInt(path[2]) : 1),
+               last_id = path[3];
+
+           var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
+           next_page = '/dashboard/' + (page + 1) + '/' + next_id;
+        },
+        /**
+         * Page Link を挿入します
+         */
+        function prependPageLink(){
+          var li = document.createElement('li'),
+              page_info = document.createElement('div');
+          li.className = 'pagelink';
+          li.appendChild(page_info);
+          page_info.innerHTML = ['page:<a href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
+          posts.appendChild(li)
+        },
+        /**
+         * Url Container を常に表示し続けます
+         */
+        function UrlContainerAlways() { 
+          (new MutationObserver(function(mutations) {
+            if (mutations[0].addedNodes && document.querySelector('#post_form').getAttribute('data-post-type') == 'photo') {
+              var url_container_observer = new MutationObserver(function(mutations) {
+                if (mutations[0].target.style.display == 'none') {
+                  mutations[0].target.style.display = 'block';
+                }
+              });
+              var config = { attributes: true, attributeFilter: ['style']};
+              url_container_observer.observe(document.querySelector('.url_container'), config);
             }
-
-            var path = location.href.match(/\/dashboard(\/(\d+)\/(\d+))?/);
-            var page, last_id;
-            var page = (path[2] ? parseInt(path[2]) : 1),
-                last_id = path[3];
-
-            var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
-            next_page = '/dashboard/' + (page + 1) + '/' + next_id;
-         },
-         /**
-          * Page Link を挿入します
-          */
-         function prependPageLink(){
-           var li = document.createElement('li'),
-               page_info = document.createElement('div');
-           li.className = 'pagelink';
-           li.appendChild(page_info);
-           page_info.innerHTML = ['page:<a href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
-           posts.appendChild(li)
-         },
-         Etc.buildElement,
+          })).observe(document.querySelector('.new_post_buttons'), {childList: true});
+        },
+        Etc.buildElement,
     ];
 
     /**
@@ -2955,6 +2971,7 @@
         'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
         "setTimeout(function(){Tumblr.Events.unbind('post:like');}, 50);",
+        'UrlContainerAlways();',
     ];
 
 
