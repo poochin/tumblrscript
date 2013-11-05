@@ -2106,7 +2106,8 @@
         },
         goBottom: function goBottom(post) {
             Tornado.vals.prev_cursor = post;
-            window.scroll(0, document.height || document.body.clientHeight);
+            // window.scroll(0, document.height || document.body.clientHeight);
+            window.scroll(0, document.height || document.documentElement.scrollHeight);
         },
         jumpToLastCursor: function jumpToLastCursor() {
             var y = Tornado.vals.prev_cursor.offsetTop;
