@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.54
+// @version     1.2.9.55
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
@@ -664,13 +664,13 @@
             var root_elm;
 
             if ((root_elm = document.querySelector('#share_value')) === null) {
-                root_elm = document.body.appendChild((window.Etc || window).buildElement('div', {id: 'share_value'}));
+                root_elm = document.body.appendChild(((typeof Etc !== 'undefined') ? (Etc) : window).buildElement('div', {id: 'share_value'}));
             }
 
             var id = this.buildId(name);
             var elm;
 
-            elm = (window.Etc || window).buildElement('inpug', {
+            elm = ((typeof Etc !== 'undefined') ? (Etc) : window).buildElement('inpug', {
                     type: 'hidden',
                     id: id,
                     value: value});
@@ -699,10 +699,10 @@
         },
         toggle: function(name, default_value) {
             var id = this.buildId(name);
-            var elm = document.querySelectorAll('#' + id)[0];
+            var elm = document.querySelector('#' + id);
             var value;
 
-            if (elm === undefined) {
+            if (elm === null) {
                 elm = this.addElement(name, default_value);
             }
             else {
