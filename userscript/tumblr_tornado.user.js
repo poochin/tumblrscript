@@ -4,6 +4,7 @@
 // @version     1.2.9.55
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
+// @include     http://www.tumblr.com/dashboard?tumblelog
 // @include     http://www.tumblr.com/dashboard?oauth_token=*
 // @include     http://www.tumblr.com/dashboard/*
 // @include     http://www.tumblr.com/reblog/*
