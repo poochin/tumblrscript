@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name        Necromancy Tumblelog
 // @namespace   https://github.com/poochin
-// @include     http://www.tumblr.com/blog/*
-// @include     http://www.tumblr.com/list/*
+// @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.1.9
+// @version     1.2.0
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -43,6 +42,12 @@
     Vals.is_list = false;
     Vals.offset = 0;
 
+    Vals.total_post = 0;
+
+    Vals.next_page = null;
+    Vals.loading_next_page = false;
+    Vals.pagenator_interval_id = null;
+
     /**
      *  /blog/
      *    blog_name
@@ -52,74 +57,260 @@
      *          offset
      */
     Vals.PATH_PARSER = 
-        /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/;
-
-    Vals.LIST_PARSER = /([a-z0-9\-]+(?:\.tumblr\.com)?)+/g;
-
-    /**
-     *
-     */
-    function ListObserver(names, options) {
-        var self = this;
-
-        this.namelist = names;
-        this.cache = [];
-
-        this.items = this.namelist.map(function(name) {
-            return new TumblelogItem(self, name, options || {});
-        });
-
-        setInterval(Etc.preapply(this, this.timer), 1000);
-    };
-
-    ListObserver.prototype = {
-        timer: function() {
-            this.items.map(function(item) {
-            });
-        },
-    };
-
-    /**
-     *
-     */
-    function TumblelogItem(list_observer, name, options) {
-        this.name   = name;
-        this.tag    = options.tag;
-        this.type   = options.type;
-        this.random = options.random;
-        this.offset = options.offset;
-
-        this.posts = [];
-
-        this.list_observer = list_observer;
-    };
-
-    TumblelogItem.prototype = {
-        getNextPosts: function() {
-            if (this.posts <= 10) {
-                var url = "";
-            };
-        },
-    };
-
-    /**
-     *
-     */
-    function CacheObserver(list_observer) {
-        this.list_observer = list_observer;
-    };
-
-
-    CacheObserver.prototype = {
-    };
-
-
+        /\/dashboard\?tumblelog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/;
+    // Vals.PATH_PARSER = 
+    //     /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/;
 
     Etc.preapply = function preapply(self, func, args) {
         return function() {
             func.apply(self, (args || []).concat(Array.prototype.slice.call(arguments)));
         };
     };
+
+    Vals.post_template_head = 
+            ["<li class=\"post_container\">",
+            "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"___\"",
+            "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\"",
+            "    data-view-exists=\"true\">",
+            "        <div class=\"post_avatar  faded_sub_avatar\">",
+            "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('___')\" data-user-avatar-url=\"___\"",
+            "            data-avatar-url=\"___\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
+            "                <img class=\"post_avatar_image\" src=\"___\" width=\"64\" height=\"64\">",
+            "            </a>",
+            "        </div>",
+            "        <div class=\"post_wrapper\">",
+            "            <div class=\"post_header\">",
+            "                <div class=\"post_info\">",
+            "                    <div class=\"post_info_fence has_follow_button\">",
+            "                        <a href=\"http://<%=blog_name%>.tumblr.com/\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>}.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\"><%=blog_name%></a>",
+            "                        <span class=\"reblog_source\">",
+            "                        <span class=\"reblog_icon\" title=\"<%=blog_name%> reblogged <%=reblogged_from_name%>\">reblogged</span>",
+            "                        <a title=\"<%=reblogged_from_name%>\" href=\"<%=reblogged_from_url%>\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=reblogged_from_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=reblogged_from_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:false,&quot;asks&quot;:true,&quot;anonymous_asks&quot;:1}\"><%=reblogged_from_name%></a>",
+            "                        </span>",
+            "                    </div>",
+            "                    <a href=\"/follow/<%=reblogged_from_name%>\" class=\"reblog_follow_button\" data-tumblelog-name=\"<%=reblogged_from_name%>\" title=\"Follow <%=reblogged_from_name%>\"><i>Follow</i></a> ",
+            "                </div>",
+            "                <div class=\"post_source\">",
+            "                    <a class=\"post_source_link\" target=\"_blank\" href=\"<%=source_url%>\" title=\"<%=source_title%>\"><%=source_title%></a>",
+            "                    <span class=\"post_source_name_prefix\">Source:</span>",
+            "                </div>",
+            "            </div>"].join('\n');
+
+    Vals.post_template_bodies = {
+        text:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_container\">",
+            "                        <div class=\"post_title\"><%=title%></div>",
+            "                        <div class=\"post_body\"><%=body%></div>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        photo:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_media\">",
+            "                        <img class=\"image_thumbnail\" alt=\"\" id=\"thumbnail_photo_<%=id%>\" data-full-size=\"<%=photo_full.url%>\" data-thumbnail=\"<%=photo_thumbnail.url%>\"",
+            "                        data-width=\"<%=photo_full.width%>\" data-height=\"<%=photo_full.height%>\" data-thumbnail-width=\"<%=photo_thumbnail.width%>\" data-thumbnail-height=\"<%=photo_thumbnail.height%>\" style=\"cursor: pointer; background-color: transparent;\" width=\"<%=photo_thumbnail.width%>\" height=\"<%=photo_thumbnail.height%>\" src=\"<%=photo_thumbnail.url%>\"",
+            "                        onload=\"if (this.src.indexOf('_100') != -1) { this.style.backgroundColor = 'transparent'; this.src='<%=photo_full.url%>'; }\">",
+            "                        <div class=\"photo_info hidden\" style=\"height:27px;\">",
+            "                            <a href=\"<%=source_url%></a>\"><%=source_url%></a> →",
+            "                        </div>",
+            "                    </div>",
+            "                    <div class=\"post_body\">",
+            "                        <%=caption%>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        quote:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_title small\">",
+            "                      “<span class=\"quote\"><%=text%></span>”",
+            "                    </div>",
+            "                    <div class=\"post_body\">",
+            "                        <table class=\"quote_source_table\">",
+            "                            <tbody>",
+            "                                <tr>",
+            "                                    <td valign=\"top\" class=\"quote_source_mdash\">",
+            "                                        —&nbsp;",
+            "                                    </td>",
+            "                                    <td valign=\"top\" class=\"quote_source\">",
+            "                                      <%=source%>",
+            "                                    </td>",
+            "                                </tr>",
+            "                            </tbody>",
+            "                        </table>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        link: 
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_media\">",
+            "                        <div class=\"link_button clickable\">",
+            "                            <div class=\"link_text_container\">",
+            "                                <div class=\"link_text_outer\">",
+            "                                    <div class=\"link_text\">",
+            "                                        <a href=\"<%=url%>\" target=\"_blank\" class=\"link_title\"><%=title%>&nbsp;→</a>",
+            "                                        <a href=\"<%=url%>\" target=\"_blank\" class=\"link_source\">___domain___</a>",
+            "                                    </div>",
+            "                                </div>",
+            "                            </div>",
+            "                        </div>",
+            "                    </div>",
+            "                    <div class=\"post_body\">",
+            "                      <%=description%>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        chat:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_title\">",
+            "                        <%=title%></div>",
+            "                    <div class=\"post_body\">",
+            "                        <ul class=\"conversation_lines\">",
+            "                          <% for (var i = 0; i < dialogue.length; i++) { var line = dialogue[i]; %>",
+            "                          <li class=\"chat_line\">",
+            "                            <strong><%=line.name%>:</strong>",
+            "                            <%=line.phrase%>",
+            "                          </li>",
+            "                          <% } %>",
+            "                        </ul>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        audio:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_media\">",
+            "                      <%=embed%>",
+            "                    </div>",
+            "                    <div class=\"post_body\">",
+            "                      <%=caption%>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n'),
+        video:
+            ["            <div class=\"post_content clearfix\">",
+            "                <div class=\"post_content_inner clearfix\">",
+            "                    <div class=\"post_media\">",
+            "                        <div id=\"video_preview_<%=id%>\" class=\"retro_video_preview\" data-id=\"<%=id%>\" style=\"width: <%=thumbnail_width%>px; height: <%=thumbnail_height%>px;\">",
+            "                            <div class=\"retro_thumbnail\" style=\"background-image: url('<%=thumbnail_url%>');\"></div>",
+            "                            <div class=\"retro_fuzz\"></div>",
+            "                            <div class=\"safety_glass\"></div>",
+            "                            <div class=\"big_play_button\">",
+            "                                <span>Play</span>",
+            "                            </div>",
+            "                        </div>",
+            "                        <div id=\"watch_video_<%=id%>\" class=\"video\" data-id=\"<%=id%>\" style=\"display:none;\">",
+            "                            <div id=\"video_embed_<%=id%>\" class=\"video_embed\"></div>",
+            "                        </div>",
+            "                        <input type=\"hidden\" id=\"video_code_<%=id%>\" value=\"<%=embed_code%>\">",
+            "                    </div>",
+            "                    <div class=\"post_body\">",
+            "                        <%=caption%>",
+            "                    </div>",
+            "                </div>",
+            "            </div>"].join('\n')
+    };
+
+    Vals.post_template_tail = 
+            ["            <div class=\"post_footer clearfix\">",
+            "                <div class=\"post_notes\">",
+            "                    <div class=\"post_notes_inner\">",
+            "                        <div class=\"post_notes_label note_count\">",
+            "                            <span class=\"note_link_current\" title=\"0 notes\" data-less=\"\" data-more=\"1 note\"></span>",
+            "                            <div class=\"notes_outer_container popover popover_gradient nipple_on_left\" style=\"display: none;\">",
+            "                                <div class=\"notes_container popover_inner\">",
+            "                                    <div class=\"popover_scroll\">",
+            "                                        <ol class=\"notes\"></ol>",
+            "                                        <div class=\"more_notes_link_container\">",
+            "                                            <span class=\"notes_loading\">Loading...</span>",
+            "                                            <a class=\"more_notes_link\" style=\"display:none;\" data-next=\"\" rel=\"nofollow\" href=\"#\">Show more notes</a>",
+            "                                        </div>",
+            "                                    </div>",
+            "                                </div>",
+            "                            </div>",
+            "                        </div>",
+            "                    </div>",
+            "                </div>",
+            "                <div class=\"post_controls\" role=\"toolbar\">",
+            "                    <div class=\"post_controls_inner\">",
+            "                      ",
+            "                        <div class=\"post_control post_control_menu creator\" title=\"Post Options\">",
+            "                            <div class=\"popover popover_menu popover_gradient nipple_on_bottom popover_post_control\">",
+            "                                <ul class=\"popover_inner\">",
+            "                                    <li class=\"popover_menu_item\">",
+            "                                        <a class=\"post_control edit show_label\" title=\"Edit\" href=\"/edit/66047149103?redirect_to=%2Fblog%2F___\">Edit</a>",
+            "                                    </li>",
+            "                                    <li class=\"popover_menu_item\">",
+            "                                        <div class=\"post_control delete show_label\" title=\"Delete\" data-confirm=\"Are you sure you want to delete this post?\">Delete</div>",
+            "                                    </li>",
+            "                                </ul>",
+            "                            </div>",
+            "                        </div>",
+            "                        ",
+            "                        <div class=\"post_control share share_social_button\" data-tumblelog-name=\"<%=blog_name%>\" data-post-id=\"<%=id%>\" id=\"share_social_button_<%=id%>\">",
+            "                            <div class=\"popover popover_menu popover_gradient popover_share_social\">",
+            "                                <div class=\"popover_inner\">",
+            "                                    <ul class=\"share_options active\" data-post-url=\"<%=post_url%>\" data-post-tiny-url=\"<%=short_url%>\">",
+            "                                        <li class=\"share_email popover_menu_item\">",
+            "                                            <a href=\"#\">Email</a>",
+            "                                        </li>",
+            "                                        <li class=\"share_facebook popover_menu_item\" data-has-facebook=\"\">",
+            "                                            <a href=\"#\">Facebook</a>",
+            "                                        </li>",
+            "                                        <li class=\"share_twitter popover_menu_item\" data-twitter-username=\"\">",
+            "                                            <a href=\"#\">Twitter</a>",
+            "                                        </li>",
+            "                                        <li class=\"share_permalink popover_menu_item\">",
+            "                                            <a href=\"<%=post_url%>\" target=\"_blank\" class=\"external\" title=\"Permalink\">Permalink</a>",
+            "                                        </li>",
+            "                                    </ul>",
+            "                                    <form method=\"post\" class=\"share_form email_form\" id=\"share_email_<%=id%>\" novalidate=\"\">",
+            "                                        <div class=\"form_wrapper\">",
+            "                                            <div class=\"share_label\"></div>",
+            "                                            <a href=\"#\" class=\"cancel service\" tabindex=\"-1\"></a>",
+            "                                            <div class=\"input_group\">",
+            "                                                <ul>",
+            "                                                    <li>",
+            "                                                        <input type=\"email\" class=\"email_address\" name=\"email_address\" maxlength=\"100\" placeholder=\"Email\" title=\"Email\">",
+            "                                                        <input type=\"hidden\" name=\"post_id\" value=\"<%=id%>\">",
+            "                                                        <input type=\"hidden\" name=\"tumblelog_name\" value=\"<%=blog_name%>\">",
+            "                                                        <a href=\"#\" class=\"cancel\" tabindex=\"-1\"></a>",
+            "                                                    </li>",
+            "                                                    <li>",
+            "                                                        <textarea name=\"message\" class=\"share_message\" maxlength=\"255\" placeholder=\"Message (Optional)\" title=\"Message (Optional)\"></textarea>",
+            "                                                        <div class=\"character_count\">140</div>",
+            "                                                    </li>",
+            "                                                </ul>",
+            "                                            </div>",
+            "                                            <div class=\"reply_to\" title=\"Let them reply to ___\">",
+            "                                                <input id=\"allow_reply_to_<%=id%>\" class=\"reply_to_input\" type=\"checkbox\" name=\"allow_reply_to\">",
+            "                                                <label for=\"allow_reply_to_<%=id%>\" class=\"reply_to_label\">Let them reply to <span class=\"reply_to_email\">___</span>",
+            "                                                </label>",
+            "                                            </div>",
+            "                                            <div class=\"error_status\"></div>",
+            "                                            <button type=\"submit\" class=\"chrome blue email_submit\" data-label-sending=\"Sending...\" data-label=\"Send\" disabled=\"\">Send</button>",
+            "                                        </div>",
+            "                                    </form>",
+            "                                    <div class=\"status\" data-sent=\"Sent!\" data-error=\"Error!\">",
+            "                                        <span class=\"status_message\">Sent!</span>",
+            "                                    </div>",
+            "                                </div>",
+            "                            </div>",
+            "                        </div>",
+            "                        <a class=\"post_control reblog\" title=\"Reblog\" href=\"/reblog/<%=id%>/<%=reblog_key%>?redirect_to=%2Fdashboard\"><span class=\"offscreen\">Reblog</span></a>",
+            "                    </div>",
+            "                </div>",
+            "            </div>",
+            "            <a class=\"post_permalink\" id=\"permalink_<%=id%>\" href=\"<%=post_url%>\" target=\"_blank\" title=\"View post - 10:10am ___\">",
+            "            </a>",
+            "        </div>",
+            "    </div>",
+            "</li>"].join('\n');
 
     /**
      * オブジェクトをシリアライズします
@@ -181,122 +372,44 @@
        }
     }
 
-    /**
-     * tParser
-     * 構文:
-     *   {{ A }}: 変数の代入
-     *     ex: {{ A }}, {{A.B}}
-     *   {{ iter A@B }}: 配列 A に B という名前を付けてループ
-     *     ex: {{ iter A@B }} {{ B }} {{ /iter }}
-     *         {{ iter A.a@B }} ... {{/iter}}
-     * 
-     * 自由度と制約:
-     *   {{...}} で参照する際には、オブジェクトの階層を .(ドット) を用いて掘ることができます
-     *   {{...}} の中括弧の直内は空白を自由に取って構いません
-     *   {{ iter }} はネストできません
-     *   {{ iter }} はインデックス番号を参照できません
-     */
-    Etc.tParser = function tParser(src) {
-      var a = arguments;
-      var self = this;
-      var reg = /(?:{{\s*([A-Za-z0-9._]+)\s*}}|{{\s*iter\s+([A-Za-z0-9._]+)@([A-Za-z0-9_]+)\s*}}([\s\S]*){{\s*\/iter\s*}})/gm;
-      var last_index = 0;
-      var next_str = "";
-      var nodes = [];
-      
-      /* ここでは置換ではなく字句解析目的で replace 関数を用いています */
-      src.replace(reg,
-        function(match_text, assign_key, iter_key, iter_as, iter_text, index, all_text){
-          if (index !== 0) {
-            nodes.push(self.tNode(all_text.slice(last_index, index), 'text'));
-            last_index = index;
-          }
-          
-          if (assign_key !== undefined) {
-            nodes.push(self.tNode(assign_key, 'assign'));
-            last_index += match_text.length;
-          }
-          else {
-            nodes.push(self.tNode('', 'iter', {iter_key: iter_key, iter_as: iter_as, template: new Etc.tParser(iter_text)}));
-            last_index += match_text.length;
-          }
-          next_str = all_text.slice(last_index);
-        }
-      );
-      
-      if (next_str.length) {
-        nodes.push(self.tNode(next_str, 'text'));
-      }
-      
-      this.nodes = nodes;
-    }
+    // Simple JavaScript Templating
+    // John Resig - http://ejohn.org/ - MIT Licensed
+    (function(){
+      var cache = {};
      
-    Etc.tParser.prototype = {
-      digDict: function digDict(dict, keys) {
-        if (keys.length === 1) {
-          return dict[keys[0]];
-        }
-        
-        return ((dict[keys[0]] !== undefined)
-                ? (this.digDict(dict[keys[0]], keys.slice(1)))
-                : (undefined));
-      },
-      textBuilder: function textBuilder(text, dict, iter_dict) {
-        var self = this;
-        var reg = /{{\s*([A-Za-z0-9._]+)\s*}}/gm;
-        
-        function replacer(a,b,c,d) {
-          return self.digDict(iter_dict, b.split('.')) || self.digDict(dict, b.split('.')) || "";
-        }
-        
-        return text.replace(reg, replacer);
-      },
-      tNode: function tNode(text, type, iter_options) {
-        return {
-          text: text,
-          type: type, /* text, iter, assign */
-          iter_options: iter_options, /* iter_key, iter_as */
-        }
-      },
-      assign: function(dict) {
-        var self = this;
-        
-        return this.nodes.map(
-          function(tnode){
-            var iter_array;
-            var iter_results;
-            
-            switch(tnode.type) {
-              case "iter":
-                iter_array = self.digDict(dict, tnode.iter_options.iter_key.split('.'));
-                
-                iter_results = iter_array.map(function(src, index) {
-                  /* FIXME: iter_dict と dict が重複した際に値が消えます */
-                  var last_value, last_index, text;
-                  
-                  dict[tnode.iter_options.iter_as] = src;
-                  dict['index'] = index.toString();
-                  
-                  text = tnode.iter_options.template.assign(dict);
-                  
-                  dict[tnode.iter_options.iter_as] = last_value;
-                  dict['index'] = last_index;
-                  
-                  return text;
-                });
-                
-                return iter_results.join('');
-                
-              case "assign":
-              
-                return self.digDict(dict, tnode.text.split('.')) || "";
-            }
-            
-            return tnode.text;
-          }
-        ).join('');
-      }
-    };
+      Etc.tmpl = function tmpl(str, data){
+        // Figure out if we're getting a template, or if we need to
+        // load the template - and be sure to cache the result.
+        var fn = !/\W/.test(str) ?
+          cache[str] = cache[str] ||
+            tmpl(document.getElementById(str).innerHTML) :
+         
+          // Generate a reusable function that will serve as a template
+          // generator (and which will be cached).
+          new Function("obj",
+            "var p=[],print=function(){p.push.apply(p,arguments);};" +
+           
+            // Introduce the data as local variables using with(){}
+            "with(obj){p.push('" +
+           
+            // Convert the template into pure JavaScript
+            str
+              .replace(/[\r\t\n]/g, " ")
+              .replace(/'/g, "\\’")
+              .split("<%").join("\t")
+              .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+              .replace(/\t=(.*?)%>/g, "',$1,'")
+              .split("\t").join("');")
+              .split("%>").join("p.push('")
+              .replace(/\\’/g, "\\'")
+              .split("\r").join("\\'")
+          + "');}return p.join('');");
+       
+        // Provide some basic currying to the user
+        return data ? fn( data ) : fn;
+      };
+    })();
+
     /**
      * クライアントページでコードを実行します。
      * Google chrome と Opera では遅延実行が可能です。
@@ -352,7 +465,8 @@
      * @return {Array} Array 化した NodeList.
      */
     function $$(selector) {
-        return Array.prototype.slice.call(document.querySelectorAll(selector));
+        return Array.apply(0, document.querySelectorAll(selector));
+        /* return Array.prototype.slice.call(document.querySelectorAll(selector)); */
     }
 
 
@@ -405,6 +519,8 @@
      * @param {Object} options 各オプションを持った辞書型オブジェクト.
      */
     function Ajax(url, options) {
+        /* TODO: GM_xmlhttprequest を使うようにする */
+
         var xhr = this.xhr = new XMLHttpRequest();
         var async = (options.asynchronous == undefined) || options.asynchronous;
 
@@ -505,702 +621,6 @@
     }
 
     /**
-     * Post を作成するための関数群です
-     * @namespace PostBuilder
-     */
-    var PostBuilder = {
-        /**
-         * post_control 内の note_count 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        note_count: function(json) {
-            /*
-            var notes_onclick = [
-                'display_post_notes(',
-                json.id,
-                ', \'',
-                json.reblog_key,
-                '\'); return false;'].join('');
-            */
-            var note_count = parseInt(json.note_count);
-            if (note_count == 0) {
-                return buildElement('span'); 
-            }
-
-            var notes_onclick = 'void alert("このコマンドは実装できませんでした！！");';
-            var notes = buildElement('a', {
-                    href: '#',
-                    id: 'show_notes_link_' + json.id,
-                    class: 'reblog_count post_control',
-                    onclick: notes_onclick});
-
-            notes.appendChild(buildElement('span', {
-                    id: 'note_link_less_' + json.id,
-                    style: 'display:none;',
-                    title: (note_count - 1) + ' notes'},
-                note_count - 1));
-            notes.appendChild(buildElement('span', {
-                    id: 'note_link_current_' + json.id,
-                    title: (note_count) + ' notes'},
-                note_count));
-            notes.appendChild(buildElement('span', {
-                    id: 'note_link_more_' + json.id,
-                    style: 'display:none;',
-                    title: (note_count + 1) + ' notes'},
-                note_count + 1));
-
-            return notes;
-        },
-        /**
-         * post_control 内の reblog_button 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         * @todo 
-         */
-        reblog_button: function(json) {
-            var url_reblog = ['/reblog', json.id, json.reblog_key].join('/');
-            var url_fast_reblog = ['/fast_reblog', json.id, json.reblog_key].join('/');
-            return buildElement('a', {
-                    href: url_reblog,
-                    class: 'reblog_button post_control post_control_icon',
-                    title: 'Reblog',
-                    'data-reblog-key': json.reblog_key,
-                    'data-reblog-id': json.id,
-                    'data-user-form-key': LIKE_KEY});
-        },
-        /**
-         * post_control 内の like_button 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        like_button: function(json) {
-            var frag = document.createDocumentFragment();
-
-            var like_form = frag.appendChild(buildElement('form', {
-                        method: 'post',
-                        action: ['/like', json.reblog_key].join('/'),
-                        id: 'like_form_' + json.id,
-                        style: 'display: none'}));
-            like_form.appendChild(buildElement('input', {
-                    type: 'hidden', name: 'id', value: json.id}));
-            like_form.appendChild(buildElement('input', {
-                    type: 'hidden', id: 'form_key', name: 'form_key', value: LIKE_KEY}));
-
-            var root_id;
-            with ({url: json.reblogged_root_url}) {
-                root_id = (url ? url.match(/(?:post\/(\d+)|private_\d+?(\d+))/)[1] : '');
-            }
-            var like_button = frag.appendChild(buildElement('a', {
-                        class: 'like_button post_control post_control_icon like_root_' + root_id,
-                        href: '#',
-                        title: 'like',
-                        id: 'like_button_' + json.id,
-                        'data-root-post-id': root_id,
-                        onclick: 'submit_like(\'' + (json.id) + '\'); return false;'}));
-
-            return frag;
-        },
-        /**
-         * post 内の post_controls 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        controls: function(json) {
-            var post_controls = buildElement('div', {class: 'post_controls'});
-
-            post_controls.appendChild(PostBuilder.note_count(json));
-            post_controls.appendChild(PostBuilder.reblog_button(json));
-            post_controls.appendChild(PostBuilder.like_button(json));
-
-            return post_controls;
-        },
-        /**
-         * post 内の post_info 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        postInfo: function(json) {
-            var post_info = buildElement('div', {class: 'post_info'});
-            var html = [
-                '<a href="http://' + json.blog_name + '.tumblr.com/">',
-                json.blog_name,
-                '</a>'];
-            if (json.reblogged_from_url) {
-                html = html.concat([
-                    ' <span class="reblog_icon" title="' + (json.blog_name) + ' reblogged ' + (json.reblogged_from_name) + '">reblogged</span> ',
-                    '<a href="', json.reblogged_from_url, '">',
-                    json.reblogged_from_name,
-                    '</a>']);
-            }
-            html.push(':');
-            post_info.innerHTML = html.join('');
-            return post_info;
-        },
-        /**
-         * post 内の content 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        content: function(json) {
-            var post_content = buildElement('div', {
-                    class: 'post_content',
-                    id: 'post_content_' + json.id,
-                    style: 'clear: both;'});
-
-            if (json.type == 'text') {
-                post_content.appendChild(PostBuilder.contentOf.text(json));
-            }
-            else if (json.type == 'quote') {
-                post_content.appendChild(PostBuilder.contentOf.quote(json));
-            }
-            else if (json.type == 'link') {
-                post_content.appendChild(PostBuilder.contentOf.link(json));
-            }
-            else if (json.type == 'answer') {
-                post_content.appendChild(PostBuilder.contentOf.answer(json));
-            }
-            else if (json.type == 'video') {
-                post_content.appendChild(PostBuilder.contentOf.video(json));
-            }
-            else if (json.type == 'audio') {
-                post_content.appendChild(PostBuilder.contentOf.audio(json));
-            }
-            else if (json.type == 'chat') {
-                post_content.appendChild(PostBuilder.contentOf.chat(json));
-            }
-            else if (json.type == 'photo') {
-                post_content.appendChild(PostBuilder.contentOf.photo(json));
-            }
-
-            return post_content;
-        },
-        /**
-         * @namespace PostBuilder.contentOf
-         */
-        contentOf: {
-            /**
-             * post 内の content 要素を作成します (photo専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            photo: function(json) {
-                var frag = document.createDocumentFragment();
-
-                var highres = json.photos[0].alt_sizes[0];
-                var minres = json.photos[0].alt_sizes.slice(-2)[0];
-                var midres = json.photos[0].alt_sizes.slice(0, 2).reverse()[0];
-                var width150 = '150px';
-                var height150 = parseInt((150 * parseFloat(highres.height) / parseFloat(highres.width))) + 'px';
-                var width500 = midres.width;
-                var height500 = midres.height;
-                var onload = '';
-                if (midres.url.indexOf('_100') == -1) {
-                    onload = [
-                        "if (this.src.indexOf('_100') != -1) {",
-                        "    this.style.backgroundColor = 'transparent';",
-                        "    this.src = '" + (midres.url) + "';",
-                        "}"].join('');
-                }
-                var onclick = [
-                    onload,
-                    "if ($(this).hasClassName('enlarged')) {",
-                    "    this.style.width = '", width150, "';",
-                    "    this.style.height = '", height150, "';",
-                    "    $(this).removeClassName('enlarged');",
-                    "    if ($('photo_info_", json.id, "')) $('photo_info_", json.id, "').hide();",
-                    "    if ($('photo_exif_flipper_", json.id, "')) $('photo_exif_flipper_", json.id, "').hide();",
-                    "    $('post_content_", json.id, "').style.clear = 'none';",
-                    "} else {",
-                    "    $('post_content_", json.id, "').style.clear = 'both';",
-                    "    if ($('photo_info_", json.id, "')) $('photo_info_", json.id, "').show();",
-                    "    if ($('photo_exif_flipper_", json.id, "')) $('photo_exif_flipper_", json.id, "').show();",
-                    "    this.style.width = '", width500, "px';",
-                    "    this.style.height = '", height500, "px';",
-                    "    $(this).addClassName('enlarged');",
-                    "}",
-                    "this.blur();",
-                    "return false;"].join('');
-
-                var style = [
-                    'cursor: pointer;',
-                    'background-color: transparent;',
-                    'width: ', width150, ';',
-                    'height: ', height150, ';'].join('');
-
-                var post_image = buildElement('img', {
-                        class: 'image_thumbnail',
-                        id: 'thumbnail_photo_' + json.id,
-                        src: minres.url,
-                        style: style,
-                        onclick: onclick,
-                        onload: onload});
-
-                frag.appendChild(post_image);
-
-                if (json.link_url && /^https?:\/\/[^\/]+/.test(json.link_url)) {
-                    var link_domain = json.link_url.match(/^https?:\/\/([^\/]+)/)[1];
-                    var post_info = frag.appendChild(buildElement('div', {
-                                id: 'photo_info_' + (json.id),
-                                style: [
-                                    'display:none;',
-                                    'margin-top: 2px;',
-                                    'font-size:10px;',
-                                    'line-height:20px;',
-                                    'clear:both; height:27px;'].join('')}));
-                    post_info.appendChild(buildElement('a', {href: escape(json.link_url)}, escape(link_domain)));
-                    post_info.appendChild(document.createTextNode(' → '));
-                }
-
-                if (json.caption) {
-                    var post_caption = frag.appendChild(buildElement('div', {
-                                class: 'caption',
-                                style: 'margin-top:0px;'},
-                            escapeHtmlScript(json.caption)));
-                    trimNodeEtc(post_caption);
-                }
-
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (text専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            text: function(json) {
-                var frag = document.createDocumentFragment();
-
-                if (json.title) {
-                    var post_title = frag.appendChild(buildElement('div',
-                            {class: 'post_title'},
-                            escapeHtmlScript(json.title)));
-                    trimNodeEtc(post_title);
-                }
-
-                if (json.body) {
-                    var post_body = frag.appendChild(buildElementBySource(
-                            escapeHtmlScript(json.body)));
-                    Array.prototype.slice.call(post_body).map(trimNodeEtc);
-                }
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (quote専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            quote: function(json) {
-                var frag = document.createDocumentFragment();
-
-                if (json.text) {
-                    frag.appendChild(document.createTextNode('“'));
-
-                    var quote = frag.appendChild(buildElement('span', {}, escapeHtmlScript(json.text)));
-                    trimNodeEtc(quote);
-                    quote.className = 'quote';
-
-                    frag.appendChild(document.createTextNode('”'));
-                }
-
-                if (json.source) {
-                    var table_html = [
-                        '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top:10px;">',
-                        '    <tbody>',
-                        '        <tr>',
-                        '            <td valign="top" style="width:1px; padding:0px 10px 0px 20px;">—</td>',
-                        '            <td valign="top" class="quote_source"></td>',
-                        '        </tr>',
-                        '    </tbody>',
-                        '</table>'].join('');
-                    var table = buildElementBySource(table_html);
-                    var quote_source = table.querySelector('.quote_source');
-                    quote_source.innerHTML = escapeHtmlScript(json.source);
-                    trimNodeEtc(quote_source);
-                    quote_source.className = 'quote_source';
-
-                    frag.appendChild(table);
-                }
-
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (link専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            link: function(json) {
-                var frag = document.createDocumentFragment();
-
-                if (json.title) {
-                    var post_title = frag.appendChild(buildElement('div', {class: 'post_title'}));
-                    var link_title = post_title.appendChild(buildElement('a', {href: json.url}, escapeHtmlScript(json.title)));
-                    trimNodeEtc(link_title);
-                }
-
-                if (json.description) {
-                    var link_description = frag.appendChild(buildElement('div',
-                            {style: 'margin-top: 10px;'}, escapeHtmlScript(json.description)));
-                    trimNodeEtc(link_description);
-                }
-
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (answer専用) 未実装です
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            answer: function(json) {
-                var frag = document.createDocumentFragment();
-                /* これは何……？ */
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (video専用)
-             * @TODO thumbnail を埋め込むようにします
-             * @TODO onmouseover, js: cycle_video_thumbnail() を作成する
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            video: function(json) {
-                var frag = document.createDocumentFragment();
-
-                var thumbnail = buildElement('a', {
-                    class: 'video_thumbnail',
-                    id: 'video_toggle_' + json.id,
-                    onclick: 'toggle_video_embed(' + (json.id) + '); return false;'});
-
-                thumbnail.appendChild(buildElement('img', {
-                        id: 'video_thumbnail_' + json.id,
-                        src: json.thumbnail_url,
-                        width: 150,
-                        height: 113,
-                        thumbnails: ''}));
-
-                frag.appendChild(thumbnail);
-
-                if (json.player.length) {
-                    var watch_video = frag.appendChild(buildElement('div', {
-                                id: 'watch_video_' + json.id,
-                                class: 'video',
-                                style: 'display:none;'}));
-
-                    var outer_click = buildElement('div', {
-                            style: 'font-size:10px; line-height:20px; clear:both; height:27px;'});
-                    outer_click.appendChild(buildElement('a', {
-                                href: '#',
-                                onclick: 'toggle_video_embed(' + (json.id) + '); return false;'},
-                            'Hide video'));
-
-                    var video_code = buildElement('input', {
-                            type: 'hidden',
-                            id: 'video_code_' + json.id,
-                            value: json.player[2].embed_code});
-
-                    watch_video.appendChild(buildElement('div', {id: 'video_embed_' + json.id, class: 'video_embed'}));
-                    watch_video.appendChild(outer_click);
-                    watch_video.appendChild(video_code);
-                }
-
-                if (json.caption) {
-                    var caption = frag.appendChild(buildElement('div', {class: 'caption'}, escapeHtmlScript(json.caption)));
-                    trimNodeEtc(caption);
-                }
-
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (audio専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            audio: function(json) {
-                var frag = document.createDocumentFragment();
-
-                if (json.album_art) {
-                    frag.appendChild(buildElement('img', {
-                                class: 'album_art',
-                                alt: '',
-                                onclick: "$(this).toggleClassName('album_art'); return false;",
-                                title: escape(json.track_name),
-                                src: encodeURI(json.album_art)}));
-                }
-
-                if (json.audio_url) {
-                    /* non-Flash info */
-                    frag.appendChild(buildElement('span', {
-                                id: 'audio_node_' + json.id},
-                            '[<a href="http://www.adobe.com/shockwave/download/download.cgi?P1_Prod_Version=ShockwaveFlash" target="_blank">Flash 9</a>is required to listen to audio.]'));
-
-                    /* Audio script */
-                    var inner = [
-                        "replaceIfFlash(9, 'audio_node_", json.id, "', ",
-                        "'<div>", json.player.replace('player.swf', 'player_black.swf'), "</div>');"].join('');
-                    frag.appendChild(buildElement('script', {type: 'text/javascript'}, inner));
-                }
-
-                if (json.caption) {
-                    var post_body = frag.appendChild(buildElement('div', {
-                                style: 'margin: 10px;',
-                                class: 'post_body'},
-                            escapeHtmlScript(json.caption)));
-                    trimNodeEtc(post_body);
-                }
-
-                return frag;
-            },
-            /**
-             * post 内の content 要素を作成します (conversation専用)
-             * @param {Object} json API が返すうちポスト単位の JSON.
-             * @return {Node} 作成した Node オブジェクト.
-             */
-            chat: function(json) {
-                var frag = document.createDocumentFragment();
-
-                if (json.title) {
-                    var post_title = frag.appendChild(buildElement('div', {},
-                            escapeHtmlScript(json.title)));
-                    trimNodeEtc(post_title);
-                    post_title.className = 'post_title';
-                }
-
-                if (json.body) {
-                    var conversation_lines = frag.appendChild(buildElement('ul', {class: 'conversation_lines'}));
-
-                    json.body.split('\n').map(function(line) {
-                        if (line.trim() == '') {
-                            return;
-                        }
-
-                        line = line.replace('<', '&lt;');
-
-                        var li = buildElement('li', {class: 'chat_line'});
-                        li.innerHTML = [
-                            '<strong>',
-                            line.slice(0, line.search(':')),
-                            '</strong>',
-                            line.slice(line.search(':'))].join('');
-                        conversation_lines.appendChild(li);
-                    });
-                }
-
-                return frag;
-            }
-        },
-        /**
-         * post 内の footer_links 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        footerLinks: function(json) {
-            var footer_links = buildElement('div', {
-                    class: 'post_footer_links'});
-            if (json.source_url) {
-                var source_url = footer_links.appendChild(buildElement('span', {
-                            id: 'source_url_' + json.id,
-                            class: 'source_url'}));
-                source_url.appendChild(buildElement('a', {
-                            href: encodeURI(json.source_url)},
-                        'Source: ' + escape(json.source_title)));
-                source_url.appendChild(buildElement('div', {
-                            class: 'source_url_gradient'}));
-
-                footer_links.className += ' with_source_url';
-            }
-
-            if (json.tags.length) {
-                var tags_wrapper = footer_links.appendChild(buildElement('span', {
-                                id: 'post_tags_wrapper_' + json.id}));
-                var tags_node = tags_wrapper.appendChild(buildElement('span', {
-                                id: 'post_tags_' + json.id,
-                                class: 'tags'}));
-
-                json.tags.map(function(tag) {
-                    tags_node.appendChild(buildElement('a', {
-                                class: 'tag',
-                                href: '/tagged/' + encodeURI(tag)},
-                            '#' + escape(tag)));
-                });
-
-                footer_links.className += ' with_tags';
-            }
-            return footer_links;
-        },
-        /**
-         * post 内の note_outer_container 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        notesOuterContainer: function(json) {
-            var notes_outer_container = buildElement('div', {
-                    id: 'notes_outer_container_' + json.id,
-                    style: 'display:none; overflow:hidden; clear:both;'});
-            var notes_outer_container_inner = buildElement('div', {
-                    style: 'padding-top:10px;'});
-            var notes_container = buildElement('div', {
-                    id: 'notes_container_' + json.id,
-                    style: 'display:none; overflow:hidden;'});
-            var notes_control = buildElement('div', {
-                    id: 'notes_control_' + json.id,
-                    class: 'notes_control'});
-            var notes_loader = buildElement('div', {
-                    id: 'notes_loader_' + json.id,
-                    class: 'notes_loader'},
-                'Loading...');
-            var notes_hide_link = buildElement('div', {
-                    id: 'notes_hide_link_' + json.id,
-                    style: 'display:none;',
-                    class: 'notes_hide_link'});
-            var notes_hide_alink = buildElement('a', {
-                    href: '#',
-                    onclick: 'Effect.SlideUp(\'notes_outer_container_' + (json.id) + '\'); return false;',
-                    style: 'color:#79A0BE;'},
-                'Hide notes');
-
-            notes_outer_container.appendChild(notes_outer_container_inner);
-            notes_outer_container_inner.appendChild(notes_container);
-            notes_outer_container_inner.appendChild(notes_control);
-            notes_control.appendChild(notes_loader);
-            notes_control.appendChild(notes_hide_link);
-            notes_hide_link.appendChild(notes_hide_alink);
-
-            return notes_outer_container;
-        },
-        /**
-         * post 内の avatar_and_i 要素を作成します
-         * @TODO post_avatar.title
-         * @TODO node follow 等の node を追加する
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        avatarAndI: function(json) {
-            /* 他にも追加するノードがあります */
-            var avatar_and_i = buildElement('div', {
-                    class: 'avatar_and_i'});
-            var url_icon = 'background-image:url(\'http://api.tumblr.com/v2/blog/' + (json.blog_name) + '.tumblr.com/avatar/64\');';
-            var post_avatar = avatar_and_i.appendChild(buildElement('a', {
-                        href: 'http://' + json.blog_name + '.tumblr.com/',
-                        title: '???',
-                        class: 'post_avatar',
-                        id: 'post_avatar_' + json.id,
-                        style: url_icon}));
-
-            return avatar_and_i;
-        },
-        /**
-         * post 内の post_permalink 要素を作成します
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        postPermalink: function(json) {
-            /**
-             * title:
-             *   View post -
-             *           11:02am, 8:02pm
-             *      Monday,      11:24am
-             *      January 28th, 8:46am
-             */
-            var permalink_title = 'View post - ';
-
-            var now = new Date();
-            var post_date = new Date(json.timestamp);
-
-            if (now.getDay() == post_date.getDay()) {
-                /* pass */
-            }
-            else if ((now - post_date) < (7 * 24 * 60 * 60)) {
-                var day_of_week = (new Date(json.timestamp)).getUTCDay();
-                permalink_title += [
-                    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][day_of_week];
-            }
-            else {
-                var month = (new Date(json.timestamp)).getMonth();
-                permalink_title += [
-                    'January', 'February', 'March', 'April',
-                    'May', 'June', 'July', 'August',
-                    'September', 'October', 'November', 'December'][month];
-
-                permalink_title += ' ';
-
-                var day = (new Date(json.timestamp)).getDate();
-                if (day <= 3) {
-                    permalink_title += ['1st', '2nd', '3rd'][day];
-                }
-                else {
-                    permalink_title += (day) + 'th';
-                }
-
-                if (now.getYear() != post_date.getYear()) {
-                    permalink_title += ' ' + post_date.getFullYear();
-                }
-
-                permalink_title += ', ';
-            }
-
-            permalink_title += [
-                post_date.getUTCHours() % 12, post_date.getUTCMinutes()].join(':');
-            permalink_title += ['am', 'pm'][parseInt(post_date.getUTCHours() / 12)];
-
-            return buildElement('a', {
-                    href: json.post_url,
-                    title: permalink_title,
-                    class: 'permalink',
-                    id: 'permalink_' + json.id});
-        },
-        /**
-         * API で取得したデータを元に擬似的に post 要素を作成します
-         * @TODO liked かどうか判別できるように出来ないか
-         * @param {Object} json API が返すうちポスト単位の JSON.
-         * @return {Node} 作成した Node オブジェクト.
-         */
-        similarPost: function(json) {
-            var post = buildElement('li', {id: 'post_' + json.id});
-            post.className = [
-                'post',
-                json.type,
-                (json.reblogged_from_name ? 'is_reblog' : ''),
-                'not_mine'].join(' ');
-
-            /* 謎要素です */
-            post.appendChild(buildElement('div', {class: 'corner_mask'}));
-
-            /* notes, Reblog, Like など */
-            post.appendChild(PostBuilder.controls(json));
-
-            /* A reblogged B: */
-            post.appendChild(PostBuilder.postInfo(json));
-
-            /* 謎要素です */
-            post.appendChild(buildElement('div', {
-                        id: 'reply_pane_outer_container_' + json.id,
-                        style: 'clear:both; display:none;'}));
-
-            /* 各 type のポストコンテンツです */
-            post.appendChild(PostBuilder.content(json));
-
-            /* 多分 clearfix です*/
-            post.appendChild(buildElement('div', {class: 'clear'}));
-
-            /* <div class="footer_links  with_source_url"> */
-            post.appendChild(PostBuilder.footerLinks(json));
-
-            /* Notes 一覧 */
-            post.appendChild(PostBuilder.notesOuterContainer(json));
-
-            /* avatar アイコン */
-            post.appendChild(PostBuilder.avatarAndI(json));
-
-            /* arrow */
-            post.appendChild(buildElement('span', {class: 'arrow'}));
-
-            /* 右上に出る折れる Permalink */
-            post.appendChild(PostBuilder.postPermalink(json));
-
-            return post;
-        }
-    };
-
-    /**
      * 引数から path を作成します
      * @param {String} tumblelog tumbelog名.
      * @param {String} type 取得対象のタイプ.
@@ -1208,14 +628,15 @@
      * @return {String} 上記をまとめた URL.
      */
     function buildNecromancyURL(tumblelog, tag, type, offset) {
-        var url = ['http://www.tumblr.com/blog'];
+        var url = 'http://www.tumblr.com/dashboard?tumblelog/';
+        var params = [];
 
-        if (tumblelog)           url.push(tumblelog);
-        if (tag)                 url = url.concat(['tag', tag]);
-        if (type)                url.push(type);
-        if (offset != undefined) url.push(offset);
+        if (tumblelog)           params.push(tumblelog);
+        if (tag)                 params = url.concat(['tag', tag]);
+        if (type)                params.push(type);
+        if (offset != undefined) params.push(offset);
 
-        return url.join('/');
+        return url + params.join('/');
     }
 
     /**
@@ -1277,21 +698,22 @@
      * スクロール位置として次ページの読み込みを監視します
      * @param {Object} pe PeriodicalExecuter オブジェクト.
      */
-    function necromancyPaginator(pe) {
-        if (!window.next_page) {
-            pe.stop();
+    function necromancyPaginator(e, force) {
+        if (!Vals.next_page) {
+            window.removeEventListener(necromancyPaginator);
             return;
         }
-        if (window.loading_next_page) {
+        if (Vals.loading_next_page) {
             return;
         }
 
         var posts;
-        if ((posts = $$('#posts > li')) &&
-            (posts[posts.length - 1].positionedOffset().top - (document.viewport.getDimensions().height + document.viewport.getScrollOffsets().top)) < window.Vals.LOAD_SCROLL_OFFSET) {
-            window.loading_next_page = true;
+        if (force ||
+            ((posts = $$('#posts > li')) &&
+             (posts[posts.length - 1].offsetTop - (document.documentElement.offsetHeight + window.scrollY)) < Vals.LOAD_SCROLL_OFFSET)) {
+            Vals.loading_next_page = true;
 
-            var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
+            var next_page_parsed = Vals.next_page.match(Vals.PATH_PARSER);
             var tumblelog = next_page_parsed[1];
             var tag = next_page_parsed[2] || '';
             var type = next_page_parsed[3] || '';
@@ -1301,8 +723,8 @@
                 tumblelog += '.tumblr.com';
             }
 
-            if (offset == 'random' && TOTAL_POST == null) {
-                window.loading_next_page = false;
+            if (offset == 'random' && Vals.total_post == null) {
+                Vals.loading_next_page = false;
                 return;
             }
             else if (offset == 'random') {
@@ -1313,18 +735,60 @@
             }
 
             var querystring = buildQueryString({
-                limit: 10,
-                api_key: Vals.API_KEY,
-                reblog_ifo: 'true',
-                tag: decodeURI(tag),
-                offset: offset,
-                jsonp: 'window.new_json = '});
+                    limit: 10,
+                    api_key: Vals.API_KEY,
+                    reblog_info: 'true',
+                    tag: decodeURI(tag),
+                    offset: offset
+            });
 
             var url = [
                 'http://api.tumblr.com/v2/blog',
                 tumblelog,
                 'posts',
                  type + '?' + querystring].join('/');
+
+            GM_xmlhttpRequest({
+                url: url,
+                method: 'GET',
+                onload: function (xhr) {
+                    json = JSON.parse(xhr.response);
+                    json.response.posts
+                        .filter(function(e) {return e.type!=='answer';})
+                        .map(function(e) {
+                            e.root_id = (e.reblogged_root_url || e.post_url).match(/\/post\/(\d+)/)[1];
+                            e.reblogged_from_name = e.reblogged_from_name || "";
+                            e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
+                            e.source_url = e.source_url || "";
+                            e.source_title = e.source_title || "";
+                            if (e.type == 'photo') {
+                                e.photo_full = e.photos[0].alt_sizes.filter(function(e){return e.width <= 500;})[0];
+                                e.photo_thumbnail = e.photos[0].alt_sizes.filter(function(e){return e.width <= 150;})[0];
+                                e.photo_thumbnail.height = parseInt(e.photo_thumbnail.height * (150 / e.photo_thumbnail.width));
+                                e.photo_thumbnail.width = 150;
+                            }
+                            if (e.type == 'video') {
+                                e.embed_code = e.player[2].embed_code.replace(/"/g, "'");
+                            }
+                            return e;
+                        })
+                        .map(function(e) {
+                            console.log(e);
+                            var template = Vals.post_template_head + Vals.post_template_bodies[e.type] + Vals.post_template_tail;
+                            var html = Etc.tmpl(template, e);
+                            var d = document.createElement('div');
+                            d.innerHTML = html;
+                            $$('#posts')[0].appendChild(d.children[0]);
+                        });
+                    Vals.loading_next_page = false;
+
+                    var m = Vals.next_page.match(Vals.PATH_PARSER);
+                    Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', (+m[4] || 0) + 10);  // TODO +10 to limit
+                    console.log(Vals.next_page);
+                }
+            });
+
+            return;
 
             var script = buildElement('script', {
                 src: url,
@@ -1364,101 +828,6 @@
             class: 'necromancy_paginator',
             onload: 'if (window.prev_json == window.new_json) {window.loading_next_page = false;;}'});
         document.body.appendChild(script);
-    }
-
-    function rebuildDocumentPage() {
-        /**
-         * http://www.tumblr.com/dashboard から HTML を取得して差し替えます
-         * そのままだと有効にならない CSS や JavaScript を埋め込み直して有効になるようにします
-         */
-
-        var tumblr_scripts  = [
-            'http://assets.tumblr.com/languages/strings/en_US.js?838',
-            'http://assets.tumblr.com/javascript/jquery_with_plugins.js?55d600b2029041781b32956f270dc4a7',
-            'http://assets.tumblr.com/assets/scripts/dashboard.js?56ba83a724097cfa925f3947d923f6bf',
-
-            'http://assets.tumblr.com/javascript/prototype_and_effects.js?6d9a669b8f64150cfcbe643e4596e1e9',
-            'http://assets.tumblr.com/javascript/application.js',
-            'http://assets.tumblr.com/javascript/tumblelog.js',
-            'http://assets.tumblr.com/javascript/spin.js',
-            'http://assets.tumblr.com/javascript/sortable.js',
-            'http://assets.tumblr.com/javascript/jquery.pano.js',
-            'http://assets.tumblr.com/javascript/jquery.application.js',
-        ];
-
-        new Ajax(
-            '/dashboard',
-            {
-                method: 'GET',
-                asynchronous: false,
-                onSuccess: function(xhr) {
-                    /* TODO: style タグの移植はまだ行なっていません */
-
-                    var head = xhr.responseText.match(/<head>([\s\S]*)<\/head>/)[1];
-                    var body = xhr.responseText.match(/<body[^>]+>([\s\S]*)<\/body>/)[1];
-
-                    document.head.innerHTML = head;
-                    document.body.innerHTML = body;
-
-                    LIKE_KEY = document.querySelector('meta#tumblr_form_key').getAttribute('content');
-
-                    $$('#posts > li:not(.new_post)').map(function(elm) {
-                        elm.parentNode.removeChild(elm);
-                    });
-
-                    var scripts = tumblr_scripts.map(function(src) {
-                        var script = document.createElement('script');
-
-                        script.setAttribute('src', src);
-                        script.setAttribute('type', 'text/javascript');
-
-                        return script;
-                    });
-
-                    var run_script = [
-                        'window.Tumblr.enable_dashboard_key_commands = true;',
-                        'window.Tumblr.KeyCommands = new window.Tumblr.KeyCommandsConstructor();',
-                        'window.next_page = location.pathname;',
-                        'window.prev_json = window.new_json = null;',
-                        'window.TOTAL_POST = null;',
-                        'window.Vals = ' + (serialize(Vals)) + ';',
-                        'window.PostBuilder = ' + (serialize(PostBuilder)) + ';',
-                        cloneChildren,
-                        escapeHtmlScript,
-                        trimNodeEtc,
-                        trimNodeEvent,
-                        trimNodeStyle,
-                        trimNodeClass,
-                        necromancyPaginator,
-                        necromancyObserver,
-                        necromancyCallback,
-                        buildQueryString,
-                        buildElement,
-                        buildElementBySource,
-                        buildNecromancyURL,
-                        '(', getTotalPost, ')();',
-                        'new PeriodicalExecuter(necromancyPaginator, 0.2);',
-                        'new PeriodicalExecuter(necromancyObserver, 0.02);',
-                    ].join('\n');
-
-                    var script = document.createElement('script');
-                    script.innerHTML = run_script;
-                    script.setAttribute('type', 'text/javascript');
-
-                    scripts.push(script);
-
-                    scripts.map(function(elm, index, array) {
-                        elm.addEventListener('load', function() {
-                            if(array[index+1]) {
-                                document.body.appendChild(array[index+1]);
-                            }
-                        });
-                    });
-
-                    document.head.appendChild(scripts[0]);
-                },
-            }
-        );
     }
 
     function startTumblelogCollection() {
@@ -1507,53 +876,46 @@
     /* function initNecromancy */
     function necromancyInitialize() {
 
-        rebuildDocumentPage();
-        setTimeout(startTumblelogCollection, 100);
-        startLogObserver();
+        $$('#posts > li:not(.new_post_buttons_container)').map(function(elm) {
+            elm.parentNode.removeChild(elm);
+        });
+
+        execScript('AutoPaginator.stop()');
+
+        window.addEventListener('scroll', necromancyPaginator);
+
+        var m = location.href.match(Vals.PATH_PARSER);
+        Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] || 0);
+        console.log(Vals.next_page);
+
+        necromancyPaginator(null, true);
 
         return;
 
-        /**
-         * 巡回するべきタンブルログを収集する
-         * タンブルログ名を取得したら巡回クラスのインスタンスに投げ巡回を開始させる
-         * ページを定義し直します
-         * 巡回から post を回収するクラスのインスタンスを生成して起動する
-         */
+        GM_xmlhttpRequest({
+            url: "http://api.tumblr.com/v2/blog/poochin.tumblr.com/posts?reblog_info=true&api_key=kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo",
+            method: 'GET',
+            onload: function(xhr) {
+                json = JSON.parse(xhr.response);
+                console.log(json);
+                json.response.posts
+                  .filter(function(e) {return e.type!=='answer';})
+                  .map(function(e) {
+                    e.root_id = e.reblogged_root_url.match(/\/post\/(\d+)/)[1];
+                    return e;
+                  })
+                  .map(function(e) {
+                    var html = Etc.tmpl(Vals.template_base[e.type], e);
+                    var d = document.createElement('div');
+                    d.innerHTML = html;
+                    posts.appendChild(d.children[0]);
+                  });
+            },
+        });
+        
 
-        var tumblelog_names = [];
 
-        /**
-         * タンブルログ名を集めます
-         */
-        if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
-            var name, tag, type, offset, random;
-            var m = location.href.match(
-                /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/);
-            
-            name   = m[1];
-            tag    = m[2] || '';
-            type   = m[3] || '';
-            offset = m[4];
-            random = m[4];
-
-            /**
-             * ここでタンブルログ巡回クラスのインスタンスを生成します
-             */
-
-             tumblelog_names.push(name);
-        }
-        else {
-            var lists = location.pathname.match(Vals.LIST_PARSER).slice(1);
-            new ObserverList(lists);
-        }
-
-        rebuildDocumentPage();
-
-        var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
-
-        /**
-         * タンブルログ名から巡回クラスのインスタンスを生成します
-         */
+        // var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
     }
 
     /**
@@ -1562,13 +924,13 @@
      */
     function embedNecromancyLink() {
         var base_html = [
-            '<div style="{{ div_style }}">',
-            ' <a href="{{ url }}" style="{{ a_style }}">Necromancy</a>',
+            '<div style="<%=div_style%>">',
+            ' <a href="<%=url%>" style="<%=a_style%>">Necromancy</a>',
             '</div>',
         ].join('\n');
 
         var dict = {};
-        dict['url'] = 'http://www.tumblr.com/blog/' + (location.hostname);
+        dict['url'] = 'http://www.tumblr.com/dashboard?tumblelog/' + (location.hostname.replace(/\..+/,''));
         dict['div_style'] = [
             "margin: 3px;",
             "padding: 0 5px;",
@@ -1592,8 +954,7 @@
                 "line-height: 18px;",
         ].join('');
 
-        var t = new Etc.tParser(base_html);
-        var html = t.assign(dict);
+        var html = Etc.tmpl(base_html, dict);
         var elm = buildElementBySource(html);
 
         document.body.appendChild(elm);
@@ -1603,18 +964,7 @@
      * ユーザスクリプトが呼び出されたさいに呼び出されるメイン関数です
      */
     function main() {
-        if (/^https?:\/\/www\.tumblr\.com\/blog\/follower/.test(location)) {
-            return;
-        }
-        if (/www\.tumblr\.com/.test(location.host) &&
-            document.querySelector('#left_column')) {
-            return;
-        }
-
-        if (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location)) {
-            necromancyInitialize();
-        }
-        else if (/^https?:\/\/www\.tumblr\.com\/list\/.*/.test(location)) {
+        if (/^https?:\/\/www\.tumblr\.com\/dashboard\?tumblelog\/.+/.test(location)) {
             necromancyInitialize();
         }
         else if (/^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
@@ -1622,30 +972,7 @@
         }
     }
 
-    /**
-     * スクリプトの実行はこのページで良いのか返します
-     * @return {Boolean} 実行してよいページの場合は true を返します.
-     */
-    function isExecPage() {
-        if (Vals.browser == 'opera') {
-            if (Vals.PATH_PARSER.test(location) &&
-                (/^https?:\/\/www\.tumblr\.com\/blog\/.*/.test(location) /* for Opera */ &&
-                 /<script type="text\/javascript" language="javascript">var status_code = '(403|404)'<\/script>/.test(
-                    document.documentElement.innerHTML)) ||
-                /^https?:\/\/[a-z0-9\-_]+\.tumblr\.com\/?$/.test(location)) {
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    if (!isExecPage()) {
-        /* thrhough */
-    }
-    else if (window.document.body) {
+    if (window.document.body) {
         main();
     }
     else {
