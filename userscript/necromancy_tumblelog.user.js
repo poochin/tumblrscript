@@ -42,7 +42,7 @@
     Vals.is_list = false;
     Vals.offset = 0;
 
-    Vals.total_post = 0;
+    Vals.total_posts = 0;
 
     Vals.next_page = null;
     Vals.loading_next_page = false;
@@ -723,12 +723,12 @@
                 tumblelog += '.tumblr.com';
             }
 
-            if (offset == 'random' && Vals.total_post == null) {
+            if (offset == 'random' && Vals.total_posts == null) {
                 Vals.loading_next_page = false;
                 return;
             }
             else if (offset == 'random') {
-                offset = Math.floor(Math.random() * TOTAL_POST);
+                offset = Math.floor(Math.random() * Vals.total_posts);
             }
             else {
                 offset = parseInt(offset);
@@ -783,23 +783,15 @@
                     Vals.loading_next_page = false;
 
                     var m = Vals.next_page.match(Vals.PATH_PARSER);
-                    Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', (+m[4] || 0) + 10);  // TODO +10 to limit
+                    Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] == 'random' ? m[4] : ((m[4] || 0) + 10));  // TODO +10 to limit
                     console.log(Vals.next_page);
                 }
             });
-
-            return;
-
-            var script = buildElement('script', {
-                src: url,
-                class: 'necromancy_paginator',
-                onload: 'if (window.prev_json == window.new_json) {window.loading_next_page = false;;}'});
-            document.body.appendChild(script);
         }
     }
 
     function getTotalPost() {
-        var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
+        var next_page_parsed = location.href.match(Vals.PATH_PARSER);
         var tumblelog = next_page_parsed[1];
         var tag = next_page_parsed[2] || '';
         var type = next_page_parsed[3] || '';
@@ -814,8 +806,8 @@
             api_key: Vals.API_KEY,
             reblog_info: 'true',
             tag: decodeURI(tag),
-            offset: offset,
-            jsonp: 'void function(json){window.TOTAL_POST = json.response.total_posts;}'});
+            offset: offset
+        });
 
         var url = [
             'http://api.tumblr.com/v2/blog',
@@ -823,25 +815,32 @@
             'posts',
              type + '?' + querystring].join('/');
 
-        var script = buildElement('script', {
-            src: url,
-            class: 'necromancy_paginator',
-            onload: 'if (window.prev_json == window.new_json) {window.loading_next_page = false;;}'});
-        document.body.appendChild(script);
+        GM_xmlhttpRequest({
+            url: url,
+            method: 'GET',
+            synchronous: false,
+            onload: function(xhr) {
+                var json = JSON.parse(xhr.responseText);
+                Vals.total_posts = json.response.total_posts;
+
+                if (offset == 'random') {
+                    necromancyPaginator(null, true);
+                }
+            },
+        });
     }
 
     function startTumblelogCollection() {
         var first_observer = [];
         Vals.tumblelog_observers.push(first_observer);
 
-            var m = location.href.match(
-                /\/blog\/(?:([a-z0-9\-_.]+)\/?)(?:tag\/([^\/]+)\/?)?(?:(text|quote|link|answer|video|audio|chat|photo)\/?)?(?:(\d+|random)\/?)?$/);
-            
-            name   = m[1];
-            tag    = m[2] || '';
-            type   = m[3] || '';
-            offset = m[4];
-            random = m[4];
+        var m = location.href.match(Vals.PATH_PARSER);
+
+        name   = m[1];
+        tag    = m[2] || '';
+        type   = m[3] || '';
+        offset = m[4];
+        random = m[4];
 
         var url = 'http://api.tumblr.com/v2/blog/' + (name) + '/posts';
         var parameters = 'api_key=lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
@@ -876,44 +875,22 @@
     /* function initNecromancy */
     function necromancyInitialize() {
 
+        execScript('AutoPaginator.stop()');
+        window.addEventListener('scroll', necromancyPaginator);
+
         $$('#posts > li:not(.new_post_buttons_container)').map(function(elm) {
             elm.parentNode.removeChild(elm);
         });
 
-        execScript('AutoPaginator.stop()');
-
-        window.addEventListener('scroll', necromancyPaginator);
-
         var m = location.href.match(Vals.PATH_PARSER);
         Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] || 0);
-        console.log(Vals.next_page);
 
-        necromancyPaginator(null, true);
-
-        return;
-
-        GM_xmlhttpRequest({
-            url: "http://api.tumblr.com/v2/blog/poochin.tumblr.com/posts?reblog_info=true&api_key=kgO5FsMlhJP7VHZzHs1UMVinIcM5XCoy8HtajIXUeo7AChoNQo",
-            method: 'GET',
-            onload: function(xhr) {
-                json = JSON.parse(xhr.response);
-                console.log(json);
-                json.response.posts
-                  .filter(function(e) {return e.type!=='answer';})
-                  .map(function(e) {
-                    e.root_id = e.reblogged_root_url.match(/\/post\/(\d+)/)[1];
-                    return e;
-                  })
-                  .map(function(e) {
-                    var html = Etc.tmpl(Vals.template_base[e.type], e);
-                    var d = document.createElement('div');
-                    d.innerHTML = html;
-                    posts.appendChild(d.children[0]);
-                  });
-            },
-        });
-        
-
+        if (m[4] == 'random') {
+            getTotalPost();
+        }
+        else {
+            necromancyPaginator(null, true);
+        }
 
         // var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
     }
