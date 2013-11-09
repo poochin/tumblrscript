@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.1
+// @version     1.2.0.2
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -783,7 +783,7 @@
                     Vals.loading_next_page = false;
 
                     var m = Vals.next_page.match(Vals.PATH_PARSER);
-                    Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] == 'random' ? m[4] : ((m[4] || 0) + 10));  // TODO +10 to limit
+                    Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] == 'random' ? m[4] : ((+m[4]) + 10));  // TODO +10 to limit
                     console.log(Vals.next_page);
                 }
             });
