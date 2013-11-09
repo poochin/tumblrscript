@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0
+// @version     1.2.0.1
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -752,7 +752,7 @@
                 url: url,
                 method: 'GET',
                 onload: function (xhr) {
-                    json = JSON.parse(xhr.response);
+                    json = JSON.parse(xhr.responseText);
                     json.response.posts
                         .filter(function(e) {return e.type!=='answer';})
                         .map(function(e) {
