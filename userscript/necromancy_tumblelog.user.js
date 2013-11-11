@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.3
+// @version     1.2.0.4
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -825,7 +825,7 @@
                 var json = JSON.parse(xhr.responseText);
                 Vals.total_posts = json.response.total_posts;
 
-                if (offset == 'random') {
+                if (next_page_parsed[4] == 'random') {
                     necromancyPaginator(null, true);
                 }
             },
