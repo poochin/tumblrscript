@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.4
+// @version     1.2.0.5
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -70,8 +70,7 @@
     Vals.post_template_head = 
             ["<li class=\"post_container\">",
             "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"___\"",
-            "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\"",
-            "    data-view-exists=\"true\">",
+            "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
             "        <div class=\"post_avatar  faded_sub_avatar\">",
             "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('___')\" data-user-avatar-url=\"___\"",
             "            data-avatar-url=\"___\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
@@ -638,61 +637,6 @@
 
         return url + params.join('/');
     }
-
-    /**
-     * API から次ページのポストを取得しているかどうか監視します
-     * @param {Object} pe PeriodicalExecuter オブジェクト.
-     */
-    function necromancyObserver(pe) {
-        if (window.prev_json != window.new_json) {
-            window.prev_json = window.new_json;
-            necromancyCallback(new_json);
-        }
-
-        var parsed_page_path = window.location.href.match(Vals.PATH_PARSER);
-        if (window.new_json && parsed_page_path != 'random' && parsed_page_path[4] >= window.new_json.response.total_posts) {
-            pe.stop();
-            alert('Get last post!');
-            $('auto_pagination_loader').hide();
-        }
-    }
-
-    /**
-     * API から次ポスト群の取得に成功したら呼び出される関数
-     * callback と名付けて有りますがコールバック関数ではありません
-     * @param {Object} json API が返す JSON データです.
-     */
-    function necromancyCallback(json) {
-        console.log(json.response);
-
-        var posts_node = document.querySelector('#posts');
-        var posts = json.response.posts.map(function(json_post) {
-            var post = PostBuilder.similarPost(json_post);
-            post.className += ' same_user_as_last';
-            return posts_node.appendChild(post);
-        });
-        if (posts.length) {
-            posts[0].className = posts[0].className.replace('\bsame_user_as_last\b', '');
-        }
-
-        var next_page_parsed = window.next_page.match(Vals.PATH_PARSER);
-        var tumblelog = next_page_parsed[1];
-        var tag = next_page_parsed[2] || '';
-        var type = next_page_parsed[3] || '';
-        var offset = next_page_parsed[4];
-
-        var script = document.querySelector('body > script.necromancy_paginator');
-        script.parentNode.removeChild(script);
-
-        if (offset != 'random') {
-            offset = parseInt(offset);
-            var cur_path = buildNecromancyURL(tumblelog, tag, type, offset || 0);
-            history.pushState('', '', cur_path);
-            window.next_page = buildNecromancyURL(tumblelog, tag, type, (offset || 0) + 10);
-        }
-        window.loading_next_page = false;
-    }
-
 
     /**
      * スクロール位置として次ページの読み込みを監視します
