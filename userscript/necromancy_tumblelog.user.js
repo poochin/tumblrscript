@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.8
+// @version     1.2.0.9
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -152,7 +152,7 @@
             "                                <div class=\"link_text_outer\">",
             "                                    <div class=\"link_text\">",
             "                                        <a href=\"<%=url%>\" target=\"_blank\" class=\"link_title\"><%=title%>&nbsp;→</a>",
-            "                                        <a href=\"<%=url%>\" target=\"_blank\" class=\"link_source\">___domain___</a>",
+            "                                        <a href=\"<%=url%>\" target=\"_blank\" class=\"link_source\"><%=source_domain%></a>",
             "                                    </div>",
             "                                </div>",
             "                            </div>",
@@ -712,6 +712,8 @@
                             e.reblogged_from_name = e.reblogged_from_name || "";
                             e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
 
+                            console.log(e);
+                            e.source_domain = (e.source_url ? e.source_url.match(/https?:\/\/([^\/]+)/)[1] : "");
                             e.source_url = e.source_url || "";
                             e.source_title = e.source_title || "";
 
