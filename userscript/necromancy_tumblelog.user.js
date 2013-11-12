@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.5
+// @version     1.2.0.6
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -302,6 +302,7 @@
             "                            </div>",
             "                        </div>",
             "                        <a class=\"post_control reblog\" title=\"Reblog\" href=\"/reblog/<%=id%>/<%=reblog_key%>?redirect_to=%2Fdashboard\"><span class=\"offscreen\">Reblog</span></a>",
+            "                        <div class=\"post_control like\" title=\"Like\"></div>",
             "                    </div>",
             "                </div>",
             "            </div>",
