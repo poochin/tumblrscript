@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.6
+// @version     1.2.0.7
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -306,7 +306,7 @@
             "                    </div>",
             "                </div>",
             "            </div>",
-            "            <a class=\"post_permalink\" id=\"permalink_<%=id%>\" href=\"<%=post_url%>\" target=\"_blank\" title=\"View post - 10:10am ___\">",
+            "            <a class=\"post_permalink\" id=\"permalink_<%=id%>\" href=\"<%=post_url%>\" target=\"_blank\" title=\"View post - <%=permalink_date%>\">",
             "            </a>",
             "        </div>",
             "    </div>",
@@ -701,13 +701,13 @@
                     json.response.posts
                         .filter(function(e) {return e.type!=='answer';})
                         .map(function(e) {
-                            console.log(e);
                             e.root_id = (e.reblogged_root_url || e.post_url).match(/(?:\/post\/|private_)(\d+)/)[1];
-                            console.log(e.root_id);
                             e.reblogged_from_name = e.reblogged_from_name || "";
                             e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
                             e.source_url = e.source_url || "";
                             e.source_title = e.source_title || "";
+                            e.permalink_date = e.date; // December 31st 2011, 3:25am
+
                             if (e.type == 'photo') {
                                 e.photo_full = e.photos[0].alt_sizes.filter(function(e){return e.width <= 500;})[0];
                                 e.photo_thumbnail = e.photos[0].alt_sizes.filter(function(e){return e.width <= 150;})[0];
