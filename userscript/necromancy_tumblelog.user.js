@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.7
+// @version     1.2.0.8
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -220,7 +220,7 @@
             "                <div class=\"post_notes\">",
             "                    <div class=\"post_notes_inner\">",
             "                        <div class=\"post_notes_label note_count\">",
-            "                            <span class=\"note_link_current\" title=\"0 notes\" data-less=\"\" data-more=\"1 note\"></span>",
+            "                            <span class=\"note_link_current\" title=\"<%=note_count_str%>\" data-less=\"<%=note_less_str%>\" data-more=\"<%=note_more_str%>\"><%=note_count_str%></span>",
             "                            <div class=\"notes_outer_container popover popover_gradient nipple_on_left\" style=\"display: none;\">",
             "                                <div class=\"notes_container popover_inner\">",
             "                                    <div class=\"popover_scroll\">",
@@ -701,12 +701,27 @@
                     json.response.posts
                         .filter(function(e) {return e.type!=='answer';})
                         .map(function(e) {
+                            function note_str(count) {
+                                return (count == 0 ? ""
+                                      : count == 1 ? "1 note"
+                                                   : (count + " notes"));
+                            }
+
+
                             e.root_id = (e.reblogged_root_url || e.post_url).match(/(?:\/post\/|private_)(\d+)/)[1];
                             e.reblogged_from_name = e.reblogged_from_name || "";
                             e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
+
                             e.source_url = e.source_url || "";
                             e.source_title = e.source_title || "";
+
                             e.permalink_date = e.date; // December 31st 2011, 3:25am
+
+                            e.note_count_str = note_str(e.note_count);
+                            e.note_less = Math.max(0, e.note_count - 1);
+                            e.note_less_str = note_str(e.note_less);
+                            e.note_more = e.note_count + 1;
+                            e.note_more_str = note_str(e.note_more);
 
                             if (e.type == 'photo') {
                                 e.photo_full = e.photos[0].alt_sizes.filter(function(e){return e.width <= 500;})[0];
