@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.57
+// @version     1.2.9.58
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -2905,7 +2905,7 @@
          */
         function dsbdPjax() {
             next_pageCorrection();
-            history.pushState('', '', document.querySelector('#next_page_link').href);
+            history.pushState('', '', next_page);
         },
         /**
          * Dashboard をランダムに降下する為の機能です
