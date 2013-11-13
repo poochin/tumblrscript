@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.10
+// @version     1.2.0.12
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -12,6 +12,8 @@
 // @namespace   NecromancyTumblelog
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
+
+// TODO: http://www.tumblr.com/svc/poochin/posts/highlighted
 
 /**
  * @namespace NecromancyTumblelog
@@ -72,9 +74,9 @@
             "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"___\"",
             "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
             "        <div class=\"post_avatar  faded_sub_avatar\">",
-            "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('___')\" data-user-avatar-url=\"___\"",
-            "            data-avatar-url=\"___\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
-            "                <img class=\"post_avatar_image\" src=\"___\" width=\"64\" height=\"64\">",
+            "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64')\" data-user-avatar-url=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\"",
+            "            data-avatar-url=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/128&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
+            "                <img class=\"post_avatar_image\" src=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\" width=\"64\" height=\"64\">",
             "            </a>",
             "        </div>",
             "        <div class=\"post_wrapper\">",
@@ -82,12 +84,14 @@
             "                <div class=\"post_info\">",
             "                    <div class=\"post_info_fence has_follow_button\">",
             "                        <a href=\"http://<%=blog_name%>.tumblr.com/\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>}.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\"><%=blog_name%></a>",
+            "                        <% if (reblogged_from_name) { %>",
             "                        <span class=\"reblog_source\">",
             "                        <span class=\"reblog_icon\" title=\"<%=blog_name%> reblogged <%=reblogged_from_name%>\">reblogged</span>",
             "                        <a title=\"<%=reblogged_from_name%>\" href=\"<%=reblogged_from_url%>\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=reblogged_from_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=reblogged_from_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:false,&quot;asks&quot;:true,&quot;anonymous_asks&quot;:1}\"><%=reblogged_from_name%></a>",
             "                        </span>",
+            "                        <% } %>",
             "                    </div>",
-            "                    <a href=\"/follow/<%=reblogged_from_name%>\" class=\"reblog_follow_button\" data-tumblelog-name=\"<%=reblogged_from_name%>\" title=\"Follow <%=reblogged_from_name%>\"><i>Follow</i></a> ",
+            // "                    <a href=\"/follow/<%=reblogged_from_name%>\" class=\"reblog_follow_button\" data-tumblelog-name=\"<%=reblogged_from_name%>\" title=\"Follow <%=reblogged_from_name%>\"><i>Follow</i></a> ",
             "                </div>",
             "                <div class=\"post_source\">",
             "                    <a class=\"post_source_link\" target=\"_blank\" href=\"<%=source_url%>\" title=\"<%=source_title%>\"><%=source_title%></a>",
@@ -596,6 +600,18 @@
     }
 
     /**
+     *
+     *
+     */
+    function getUserAvatar(blog_name, onload) {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar',
+            onload:  onload
+        });
+    }
+
+    /**
      * Node の Element.Style を取り除きます
      * @param {Node} node 対象の Node オブジェクト.
      */
@@ -667,6 +683,7 @@
             if (tumblelog.search('\\.') == -1) {
                 tumblelog += '.tumblr.com';
             }
+
 
             if (offset == 'random' && Vals.total_posts == null) {
                 Vals.loading_next_page = false;
