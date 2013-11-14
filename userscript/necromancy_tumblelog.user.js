@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.14
+// @version     1.2.0.15
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -72,8 +72,8 @@
 
     Vals.post_template_head = 
             ["<li class=\"post_container\">",
-            "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"___\"",
-            "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
+            "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"<%=tumblelog_key%>\"",
+            "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;<%=tumblelog_key%>&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
             "        <div class=\"post_avatar  faded_sub_avatar\">",
             "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('<%=avatar_url%>')\" data-user-avatar-url=\"<%=avatar_url%>\"",
             "            data-avatar-url=\"<%=avatar_url%>\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;<%=avatar_url%>&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
@@ -738,6 +738,7 @@
                             e.note_more_str = note_str(e.note_more);
 
                             e.avatar_url = Vals.avatar_url;
+                            e.tumblelog_key = Vals.tumblelog_key;
 
                             if (e.type == 'photo') {
                                 e.photo_full = e.photos[0].alt_sizes.filter(function(e){return e.width <= 500;})[0];
