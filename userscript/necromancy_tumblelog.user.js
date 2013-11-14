@@ -719,6 +719,31 @@
                             function escapeTagQuote(str) {
                                 return str.replace(/</, '&lt;').replace(/"/, "&quot;");
                             }
+                            function buildDate(date_str) {
+                                var date = new Date(date_str);
+                                var m = [
+                                    "January",
+                                    "February",
+                                    "March",
+                                    "April",
+                                    "May",
+                                    "June",
+                                    "July",
+                                    "August",
+                                    "September",
+                                    "October",
+                                    "November",
+                                    "December",
+                                ][date.getMonth()];
+                                var d = date.getDate() + ["st", "nd", "rd", "th"][Math.min(4, date.getDate()) - 1];
+                                var y = date.getFullYear();
+                                var h = (date.getHours() > 12 ? (date.getHours() % 12) : date.getHours());
+                                var min = ('0' + date.getMinutes()).slice(-2);
+                                var hm = h + ':' + min;
+                                var ampm = ['am', 'pm'][parseInt(date.getHours() / 12)];
+                                
+                                return [m, d, y + ',', hm + ampm].join(' ');
+                            }
 
 
                             e.root_id = (e.reblogged_root_url || e.post_url).match(/(?:\/post\/|private_)(\d+)/)[1];
@@ -729,7 +754,7 @@
                             e.source_url = escapeTagQuote((e.source_url || "").replace(/"/g, "'"));
                             e.source_title = escapeTagQuote(e.source_title || "");
 
-                            e.permalink_date = e.date; // December 31st 2011, 3:25am
+                            e.permalink_date = buildDate(e.date);
 
                             e.note_count_str = note_str(e.note_count);
                             e.note_less = Math.max(0, e.note_count - 1);
