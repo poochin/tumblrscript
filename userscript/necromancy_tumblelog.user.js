@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.15
+// @version     1.2.0.16
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -72,7 +72,7 @@
 
     Vals.post_template_head = 
             ["<li class=\"post_container\">",
-            "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"<%=tumblelog_key%>\"",
+            "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash not_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"<%=tumblelog_key%>\"",
             "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;<%=tumblelog_key%>&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
             "        <div class=\"post_avatar  faded_sub_avatar\">",
             "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('<%=avatar_url%>')\" data-user-avatar-url=\"<%=avatar_url%>\"",
@@ -247,7 +247,7 @@
             "                            <div class=\"popover popover_menu popover_gradient nipple_on_bottom popover_post_control\">",
             "                                <ul class=\"popover_inner\">",
             "                                    <li class=\"popover_menu_item\">",
-            "                                        <a class=\"post_control edit show_label\" title=\"Edit\" href=\"/edit/66047149103?redirect_to=%2Fblog%2F___\">Edit</a>",
+            "                                        <a class=\"post_control edit show_label\" title=\"Edit\" href=\"/edit/66047149103?redirect_to=%2Fblog%2Fpoochin\">Edit</a>",
             "                                    </li>",
             "                                    <li class=\"popover_menu_item\">",
             "                                        <div class=\"post_control delete show_label\" title=\"Delete\" data-confirm=\"Are you sure you want to delete this post?\">Delete</div>",
@@ -291,9 +291,9 @@
             "                                                    </li>",
             "                                                </ul>",
             "                                            </div>",
-            "                                            <div class=\"reply_to\" title=\"Let them reply to ___\">",
+            "                                            <div class=\"reply_to\" title=\"Let them reply to poochin\">",
             "                                                <input id=\"allow_reply_to_<%=id%>\" class=\"reply_to_input\" type=\"checkbox\" name=\"allow_reply_to\">",
-            "                                                <label for=\"allow_reply_to_<%=id%>\" class=\"reply_to_label\">Let them reply to <span class=\"reply_to_email\">___</span>",
+            "                                                <label for=\"allow_reply_to_<%=id%>\" class=\"reply_to_label\">Let them reply to <span class=\"reply_to_email\">poochin@poochin.poochin</span>",
             "                                                </label>",
             "                                            </div>",
             "                                            <div class=\"error_status\"></div>",
@@ -708,7 +708,7 @@
                 method: 'GET',
                 onload: function (xhr) {
                     var json = JSON.parse(xhr.responseText);
-                    json.response.posts
+                    var new_posts_html = json.response.posts
                         .filter(function(e) {return e.type!=='answer';})
                         .map(function(e) {
                             function note_str(count) {
@@ -758,7 +758,12 @@
                             var d = document.createElement('div');
                             d.innerHTML = html;
                             $$('#posts')[0].appendChild(d.children[0]);
-                        });
+                            return html;
+                        })
+                        .join('');
+
+                    execScript("AutoPaginator.trigger('after');");
+
                     Vals.loading_next_page = false;
 
                     var m = Vals.next_page.match(Vals.PATH_PARSER);
@@ -851,11 +856,11 @@
     /* function initNecromancy */
     function necromancyInitialize() {
 
-        execScript('AutoPaginator.stop()');
+        execScript('AutoPaginator.stop(); Tumblr.Events.unbind("post:like");');
         window.addEventListener('scroll', necromancyPaginator);
 
         $$('#posts > li:not(.new_post_buttons_container)').map(function(elm) {
-            elm.parentNode.removeChild(elm);
+             elm.parentNode.removeChild(elm);
         });
 
         var m = location.href.match(Vals.PATH_PARSER);
