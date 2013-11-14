@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.13
+// @version     1.2.0.14
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -46,6 +46,7 @@
     Vals.loading_next_page = false;
     Vals.pagenator_interval_id = null;
 
+    Vals.is_userdata_fetched = false;
     Vals.total_posts = -1;
     Vals.tumblelog_key = "";
     Vals.avatar_url = "";
@@ -74,9 +75,9 @@
             "    <div class=\"post post_full is_<%=(type==\"text\"?\"regular\":type==\"chat\"?\"conversation\":type)%> post_tumblelog_nohash is_mine is_original with_permalink no_notes\" id=\"post_<%=id%>\" data-post-id=\"<%=id%>\" data-root-id=\"<%=root_id%>\" data-tumblelog-name=\"<%=blog_name%>\" data-tumblelog-key=\"___\"",
             "    data-reblog-key=\"<%=reblog_key%>\" data-type=\"<%=type%>\" data-json=\"{&quot;post-id&quot;:<%=id%>,&quot;root-id&quot;:<%=root_id%>,&quot;tumblelog-name&quot;:&quot;<%=blog_name%>&quot;,&quot;tumblelog-key&quot;:&quot;___&quot;,&quot;reblog-key&quot;:&quot;<%=reblog_key%>&quot;,&quot;type&quot;:&quot;<%=type%>&quot;}\">",
             "        <div class=\"post_avatar  faded_sub_avatar\">",
-            "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64')\" data-user-avatar-url=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\"",
-            "            data-avatar-url=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/128&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
-            "                <img class=\"post_avatar_image\" src=\"http://api.tumblr.com/v2/blog/<%=blog_name%>.tumblr.com/avatar/64\" width=\"64\" height=\"64\">",
+            "            <a class=\"post_avatar_link\" href=\"http://<%=blog_name%>.tumblr.com/\" target=\"_blank\" title=\"___\" id=\"post_avatar_<%=id%>\" style=\"background-image:url('<%=avatar_url%>')\" data-user-avatar-url=\"<%=avatar_url%>\"",
+            "            data-avatar-url=\"<%=avatar_url%>\" data-blog-url=\"http://<%=blog_name%>.tumblr.com/\" data-use-channel-avatar=\"1\" data-use-sub-avatar=\"\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;<%=avatar_url%>&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\">",
+            "                <img class=\"post_avatar_image\" src=\"<%=avatar_url%>\" width=\"64\" height=\"64\">",
             "            </a>",
             "        </div>",
             "        <div class=\"post_wrapper\">",
@@ -655,6 +656,10 @@
         if (Vals.loading_next_page) {
             return;
         }
+        if (!Vals.is_userdata_fetched) {
+            return;
+        }
+
 
         var posts;
         if (force ||
@@ -732,6 +737,8 @@
                             e.note_more = e.note_count + 1;
                             e.note_more_str = note_str(e.note_more);
 
+                            e.avatar_url = Vals.avatar_url;
+
                             if (e.type == 'photo') {
                                 e.photo_full = e.photos[0].alt_sizes.filter(function(e){return e.width <= 500;})[0];
                                 e.photo_thumbnail = e.photos[0].alt_sizes.filter(function(e){return e.width <= 150;})[0];
@@ -761,14 +768,16 @@
         }
     }
 
-    function getvatarURL(blog_name) {
+    function getAvatarURL(blog_name) {
         GM_xmlhttpRequest({
             method: 'GET',
             url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar/128',
             onload: function(f) {
-                Vals.avatar_url = f.finalURL;
+                console.log(f);
+                Vals.avatar_url = f.finalUrl;
 
                 if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
+                    Vals.is_userdata_fetched = true;
                     necromancyPaginator(null, true);
                 }
             },
@@ -776,8 +785,22 @@
     }
 
     function getTumblelogKey(blog_name) {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: 'http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted',
+            onload: function(f) {
+                var l = JSON.parse(f.responseText);
+                var d = document.createElement('div');
 
-// TODO: http://www.tumblr.com/svc/poochin/posts/highlighted
+                d.innerHTML = l[0];
+                Vals.tumblelog_key = d.children[0].getAttribute('data-tumblelog-key');
+
+                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
+                    Vals.is_userdata_fetched = true;
+                    necromancyPaginator(null, true);
+                }
+            }
+        });
     }
 
     function getTotalPost() {
@@ -813,50 +836,12 @@
                 var json = JSON.parse(xhr.responseText);
                 Vals.total_posts = json.response.total_posts;
 
-                if (next_page_parsed[4] == 'random') {
+                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
+                    Vals.is_userdata_fetched = true;
                     necromancyPaginator(null, true);
                 }
             },
         });
-    }
-
-    function startTumblelogCollection() {
-        var first_observer = [];
-        Vals.tumblelog_observers.push(first_observer);
-
-        var m = location.href.match(Vals.PATH_PARSER);
-
-        name   = m[1];
-        tag    = m[2] || '';
-        type   = m[3] || '';
-        offset = m[4];
-        random = m[4];
-
-        var url = 'http://api.tumblr.com/v2/blog/' + (name) + '/posts';
-        var parameters = 'api_key=lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
-        new Ajax(url, {method: 'GET', parameters: parameters, onSuccess: function(xhr) {
-            var json = JSON.parse(xhr.responseText);
-            Array.prototype.push.apply(first_observer, json.response.posts);
-        }});
-    }
-
-    function startLogObserver() {
-        setInterval(function() {
-            var elm_posts = document.querySelector('#posts');
-
-            if (elm_posts === null) {
-                return;
-            }
-            if (Vals.tumblelog_observers.length === 0) {
-                return;
-            }
-
-            while (Vals.tumblelog_observers[0].length) {
-                var json_post = Vals.tumblelog_observers[0].shift();
-                var post = PostBuilder.similarPost(json_post);
-                elm_posts.appendChild(post);
-            }
-        }, 1000);
     }
 
     /**
@@ -875,12 +860,9 @@
         var m = location.href.match(Vals.PATH_PARSER);
         Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] || 0);
 
-        if (m[4] == 'random') {
-            getTotalPost();
-        }
-        else {
-            necromancyPaginator(null, true);
-        }
+        getTotalPost();
+        getTumblelogKey(m[1]);
+        getAvatarURL(m[1]);
 
         // var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
     }
