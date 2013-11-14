@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.12
+// @version     1.2.0.13
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -12,8 +12,6 @@
 // @namespace   NecromancyTumblelog
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
-
-// TODO: http://www.tumblr.com/svc/poochin/posts/highlighted
 
 /**
  * @namespace NecromancyTumblelog
@@ -44,11 +42,13 @@
     Vals.is_list = false;
     Vals.offset = 0;
 
-    Vals.total_posts = 0;
-
     Vals.next_page = null;
     Vals.loading_next_page = false;
     Vals.pagenator_interval_id = null;
+
+    Vals.total_posts = -1;
+    Vals.tumblelog_key = "";
+    Vals.avatar_url = "";
 
     /**
      *  /blog/
@@ -83,11 +83,11 @@
             "            <div class=\"post_header\">",
             "                <div class=\"post_info\">",
             "                    <div class=\"post_info_fence has_follow_button\">",
-            "                        <a href=\"http://<%=blog_name%>.tumblr.com/\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=blog_name%>}.tumblr.com&quot;,&quot;name&quot;:&quot;<%=blog_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:true}\"><%=blog_name%></a>",
+            "                        <a href=\"http://<%=blog_name%>.tumblr.com/\"><%=blog_name%></a>",
             "                        <% if (reblogged_from_name) { %>",
             "                        <span class=\"reblog_source\">",
             "                        <span class=\"reblog_icon\" title=\"<%=blog_name%> reblogged <%=reblogged_from_name%>\">reblogged</span>",
-            "                        <a title=\"<%=reblogged_from_name%>\" href=\"<%=reblogged_from_url%>\" data-tumblelog-popover=\"{&quot;avatar_url&quot;:&quot;___&quot;,&quot;url&quot;:&quot;http:\/\/<%=reblogged_from_name%>.tumblr.com&quot;,&quot;name&quot;:&quot;<%=reblogged_from_name%>&quot;,&quot;title&quot;:&quot;___&quot;,&quot;following&quot;:false,&quot;asks&quot;:true,&quot;anonymous_asks&quot;:1}\"><%=reblogged_from_name%></a>",
+            "                        <a title=\"<%=reblogged_from_name%>\" href=\"<%=reblogged_from_url%>\"><%=reblogged_from_name%></a>",
             "                        </span>",
             "                        <% } %>",
             "                    </div>",
@@ -600,18 +600,6 @@
     }
 
     /**
-     *
-     *
-     */
-    function getUserAvatar(blog_name, onload) {
-        GM_xmlhttpRequest({
-            method: 'GET',
-            url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar',
-            onload:  onload
-        });
-    }
-
-    /**
      * Node の Element.Style を取り除きます
      * @param {Node} node 対象の Node オブジェクト.
      */
@@ -771,6 +759,25 @@
                 }
             });
         }
+    }
+
+    function getvatarURL(blog_name) {
+        GM_xmlhttpRequest({
+            method: 'GET',
+            url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar/128',
+            onload: function(f) {
+                Vals.avatar_url = f.finalURL;
+
+                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
+                    necromancyPaginator(null, true);
+                }
+            },
+        });
+    }
+
+    function getTumblelogKey(blog_name) {
+
+// TODO: http://www.tumblr.com/svc/poochin/posts/highlighted
     }
 
     function getTotalPost() {
