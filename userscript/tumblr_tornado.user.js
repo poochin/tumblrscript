@@ -2439,7 +2439,20 @@
         new Etc.CustomKey({
                 key_bind: ['l'],
                 func: function like(post) {
-                    /* fire default event */
+                    var id = post.getAttribute('data-post-id');
+
+                    Etc.execScript("Tumblr.Posts.get('" + (id) + "').toggleLike()");
+
+                    return;
+
+                    /* 以下今後のコード変更に耐えられるように残しておきます */
+                    var like_button = post.querySelector('.like.post_control');
+                    if (like_button.className.match(/\bliked\b/)) {
+                        Etc.execScript("Tumblr.Posts.get('" + (id) + "').trigger('unlike:success')");
+                    }
+                    else {
+                        Etc.execScript("Tumblr.Posts.get('" + (id) + "').trigger('like:success')");
+                    }
                     post.querySelector('.like.post_control').dispatchEvent(Vals.left_click);
                 },
                 title: 'Like',
@@ -2475,6 +2488,7 @@
                 group: 5,
                 grouporder: 2,
         }),
+        /*
         new Etc.CustomKey({
                 key_bind: ['s-o'],
                 func: CustomFuncs.jumpToLastCursor,
@@ -2487,6 +2501,7 @@
                 group: 5,
                 grouporder: 3,
         }),
+        */
 
         new Etc.CustomKey({
                 title: 'Reblog',
