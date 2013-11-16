@@ -2,7 +2,7 @@
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.6
+// @version     1.0.7
 // @description ユーザスクリプトの概要を記入してください
 // 
 // @author      poochin
@@ -14,23 +14,11 @@
 (function Skelton() {
 
     var css = [
-        "#posts > .notification {",
-        "    overflow: visible;",
-        "}",
-        "#posts > .notification img.full {",
-        "    display: none !important;",
-        "    position: absolute !important;",
-        "    top: 0 !important;",
-        "    left: 32px !important;",
-        "    width: 150px !important;",
-        "    height: auto !important;",
-        "}",
-        "#posts > .notification:hover img.full {",
-        "    display: inline !important;",
-        "}",
+        "#posts > .notification,",
         ".ui_notes > div.ui_note {",
         "    overflow: visible;",
         "}",
+        "#posts > .notification img.full, ",
         ".ui_notes > div.ui_note img.full {",
         "    display: none !important;",
         "    position: absolute !important;",
@@ -39,6 +27,7 @@
         "    width: 150px !important;",
         "    height: auto !important;",
         "}",
+        "#posts > .notification:hover img.full,",
         ".ui_notes > div.ui_note:hover img.full {",
         "    display: inline !important;",
         "}",
