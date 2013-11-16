@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.58
+// @version     1.2.9.61
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -234,17 +234,20 @@
         "}",
         /* Reblog Button */
         ".reblog.loading {",
-        // "    background-position: -530px -270px !important;",
-        // "    -webkit-animation: reblogging 1s infinite;",
+         "    background-position: -530px -270px !important;",
+         "    -webkit-animation: reblogging 1s infinite;",
         "    -moz-animation: reblogging 1s infinite;",
         "}",
         "@-webkit-keyframes reblogging {",
+        "  0% { -webkit-transform: rotate(0deg); }",
+        /*
         "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
         "  25% { -webkit-transform: rotate(360deg) scale(1, 1); }",
         "  40% { -webkit-transform: rotate(360deg) scale(1, 1); }",
         "  50% { -webkit-transform: rotate(360deg) scale(1.1, 1.1); }",
         "  55% { -webkit-transform: rotate(360deg) scale(1, 1); }",
-        "  100% { -webkit-transform: rotate(360deg) scale(1, 1); }",
+        */
+        "  100% { -webkit-transform: rotate(360deg); }",
         "}",
         "@-moz-keyframes reblogging {",
         "  0% { -moz-transform: rotate(0deg) scale(1.5, 1.5); }",
@@ -1855,7 +1858,7 @@
                 token_secret: ''
             }
          */
-        apiReblog: function reblogAPI(post, state, target_blog_info) {
+        apiReblog: function reblogAPI(post, target_blog_info, options) {
             var hostname = target_blog_info.hostname;
             var url = 'http://api.tumblr.com/v2/blog/' + (hostname) + '/post/reblog';
             var id, reblog_key;
@@ -1871,11 +1874,27 @@
             var reblog_key = post.getAttribute('data-reblog-key'),
                 reblog_id = post.getAttribute('data-post-id');
     
+            var state;
+            switch (options.state) {
+                case '1': state = 'draft'; break;
+                case '2': state = 'queue'; break;
+                default:  state = options.state; break;
+            }
+
+            if (state == 'private') {
+                alert('Sorry, private API reblog is not enabled.')
+                return;
+            }
+
             var parameters = {
-                state: state,
+                state: 'private',
                 id: reblog_id,
                 reblog_key: reblog_key,
             };
+
+            if (state == 'on.2') {
+                parameters.publish_on = options.publish_on;
+            }
 
             var message = {method: 'POST', action: url, parameters: parameters};
             var request_body = OAuth.formEncode(message.parameters);
@@ -1885,11 +1904,11 @@
             function receiveRequestToken(xhr) {
                 if (xhr.readyState == 4) {
                     if (xhr.status == 201) {
-                        new Etc.PinNotification('Success: ' + (state || 'reblog') + ' to ' + hostname);
+                        new Etc.PinNotification('Success: ' + ({'0': 'reblog', 'on.2': 'publish_on'}[state] || state || 'reblog') + ' to ' + hostname);
                     }
                     else {
                         var json = JSON.parse(xhr.responseText);
-                        new Etc.PinNotification('Fails: ' + (state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
+                        new Etc.PinNotification('Fails: ' + ({'0': 'reblog', 'on.2': 'publish_on'}[state] || state || 'reblog') + ' to ' + hostname + '\n' + json.meta.msg);
                         alert(json.response.errors[0]);
                     }
                     reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
@@ -1936,7 +1955,7 @@
                             var num;
                             num = parseInt(e.target.name.match(/button(\d+)/)[1]) - 1;
 
-                            Tornado.funcs.apiReblog(post, state_text, Vals.oauth_operator.enabled_tumblelogs[num]);
+                            Tornado.funcs.apiReblog(post, Vals.oauth_operator.enabled_tumblelogs[num], {state: state_text});
                             dialog.close();
                         });
                         dialog_body.appendChild(button);
@@ -2025,12 +2044,25 @@
         reblog: function reblog(post, e, options) {
             var params = {};
 
-            Etc.dictUpdate(params, options.default_values);
-            Etc.dictUpdate(params, {
-                channel_id: Tornado.tumblelogs[0].name
-            });
+            if (Vals.oauth_operator.enabledLength()) {
+                Etc.dictUpdate(params, {
+                    state: options.default_values['post[state]']
+                });
+                if (params.state == 'on.2') {
+                    Etc.dictUpdate(params, {
+                        publish_on: options.default_values['post[publish_on]']
+                    });
+                }
+                Tornado.funcs.apiReblog(post, Vals.oauth_operator.enabled_tumblelogs[0], params);
+            }
+            else {
+                Etc.dictUpdate(params, options.default_values);
+                Etc.dictUpdate(params, {
+                    channel_id: Tornado.tumblelogs[0].name
+                });
 
-            Tornado.funcs.reblog(post, params);
+                Tornado.funcs.reblog(post, params);
+            }
         },
         reblogToChannel: function reblogToChannel(post, e, options) {
             Tornado.funcs.channelDialog(post, options.default_values);
@@ -2039,7 +2071,7 @@
             var channel_num = parseInt(String.fromCharCode(e.keyCode)) - 1;
             if (Vals.oauth_operator.enabledLength()) {
                 if (Vals.oauth_operator.enabled_tumblelogs[channel_num] != undefined) {
-                    Tornado.funcs.apiReblog(post, Vals.state_texts['0'], Vals.oauth_operator.enabled_tumblelogs[channel_num]);
+                    Tornado.funcs.apiReblog(post, Vals.oauth_operator.enabled_tumblelogs[channel_num], {state: Vals.state_texts['0']});
                 }
                 else {
                     new PinNotification('Not found such a numbe of tumblelog: ' + (channel_num + 1));
@@ -2300,7 +2332,7 @@
             });
         },
         topReload: function topReload() {
-            var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/drafts|queue|activity)?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
+            var reg_top_path = /^http:\/\/www.tumblr.com\/(?:dashboard|likes|(?:blog\/[^\/]+(?:\/(?:drafts|queue|activity))?)|(?:tagged\/[^?]+)|(?:show\/[^\/]+))/;
             var url = location.href.match(reg_top_path)[0];
             location.assign(url);
         },
