@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.9
+// @version     1.0.11
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -16,13 +16,20 @@
     var filter_value, filter_type, now_filtering, embed_css;
 
     document.head.appendChild(document.createElement('style')).textContent = [
-        "#posts .post.notesfilter_flagged {",
+        "#posts .post_container.notesfilter_flagged > .post {",
         "   opacity: 0.5;",
-        "   max-height: 1.5em !important;",
+        // "   max-height: 1.5em !important;",
+        "   overflow: hidden;",
         "}",
-        "#posts .post.notesfilter_flagged .post_content,",
-        "#posts .post.notesfilter_flagged .footer_links {",
+        "#posts .post_container.notesfilter_flagged:hover > .post {",
+        "   opacity: 1;",
+        "   overflow: visible;",
+        "}",
+        "#posts .post_container.notesfilter_flagged > .post .post_content {",
         "   display: none !important;",
+        "}",
+        "#posts .post_container.notesfilter_flagged:hover > .post .post_content {",
+        "   display: block !important;",
         "}",
     ].join('\n');
 
@@ -88,7 +95,7 @@
     function filter (elm) {
         var elm_notes, notes_count;
 
-        elm_notes = elm.querySelectorAll('.post_control.reblog_count span')[1];
+        elm_notes = elm.querySelector('.note_link_current');
         if (elm_notes == null) {
             return false;
         }
@@ -105,7 +112,7 @@
     }
 
     function launchFilter() {
-        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
+        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container)')).map(function(elm) {
             if (filter(elm) == false) {
                 elm.classList.add('notesfilter_flagged');
             }
@@ -113,7 +120,7 @@
     }
 
     function quitFilter() {
-        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post:not(.new_post)')).map(function(elm) {
+        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container)')).map(function(elm) {
             elm.classList.remove('notesfilter_flagged');
         });
     }
@@ -138,7 +145,7 @@
         postfound: {
             while (elm.tagName && elm.id != 'posts') {
                 if (elm.tagName.toUpperCase() == 'LI' &&
-                    /\bpost\b/.test(elm.className)) {
+                    /\bpost_container\b/.test(elm.className)) {
                     break postfound;
                 }
                 elm = elm.parentNode;
