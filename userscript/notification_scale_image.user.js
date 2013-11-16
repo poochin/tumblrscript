@@ -2,7 +2,7 @@
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
-// @version     1.0.3
+// @version     1.0.6
 // @description ユーザスクリプトの概要を記入してください
 // 
 // @author      poochin
@@ -22,7 +22,7 @@
         "    position: absolute !important;",
         "    top: 0 !important;",
         "    left: 32px !important;",
-        "    width: auto !important;",
+        "    width: 150px !important;",
         "    height: auto !important;",
         "}",
         "#posts > .notification:hover img.full {",
@@ -36,7 +36,7 @@
         "    position: absolute !important;",
         "    top: 0 !important;",
         "    left: 32px !important;",
-        "    width: auto !important;",
+        "    width: 150px !important;",
         "    height: auto !important;",
         "}",
         ".ui_notes > div.ui_note:hover img.full {",
@@ -47,85 +47,82 @@
     boot();
 
     function appendFullImage(elm) {
-        var preview_frame, sq_img, full_img;
+        var preview_frame, sq_img, large_img, img;
 
-        preview_frame = elm.querySelector('.preview_frame');
-        if (preview_frame) {
-
-            sq_img = preview_frame.querySelector('img');
-            if (sq_img) {
-                full_img = preview_frame.appendChild(document.createElement('img'));
-                full_img.setAttribute('src', sq_img.getAttribute('src').replace('_75sq.', '_250.'));
-                full_img.className = 'full';
-            }
+        if (preview_frame = elm.querySelector('.preview_frame')) {
+            /* Dashboard */
+            sq_img = preview_frame.querySelector('img').src;
         }
-    }
-
-    function appendFullImage_Activity(elm) {
-        var preview_frame, sq_img, full_img;
-
-        preview_frame = elm.querySelector('.ui_post_badge.photo');
-        if (preview_frame) {
+        else if (preview_frame = elm.querySelector('.ui_post_badge.photo')) {
+            /* Activity ページ */
             sq_img = preview_frame.style.backgroundImage.match(/\((.*)\)/)[1];
-            if (sq_img) {
-                sq_img = sq_img.replace(/"/g, '');
-                full_img = preview_frame.appendChild(document.createElement('img'));
-                full_img.setAttribute('src', sq_img.replace('_75sq.', '_250.'));
-                full_img.className = 'full';
-            }
+            sq_img = sq_img.replace(/\"/g, '');
         }
+        else {
+            return elm;
+        }
+        large_img = sq_img.replace('_75sq.', '_100.');
+
+        img = document.createElement('img');
+        img.src = large_img;
+        img.className = 'full';
+        preview_frame.appendChild(img);
+
+        return elm;
     }
 
     function addAltText(elm) {
-        var quote;
-        quote = elm.querySelector('em').textContent;
+        var quote_elm, quote;
+
+        if (quote_elm = elm.querySelector('.em')) {
+            /* Dashboard */
+            quote = quote_elm.textContent;
+        }
+        else if (quote_elm = elm.querySelector('.summary')) {
+            /* Activity */
+            quote = quote_elm.textContent;
+        }
+        else {
+            return elm;
+        }
         quote = quote.replace(/(\s|\r|\n)+/g, ' ');
+
         elm.setAttribute('title', quote);
+
+        return elm;
     }
 
-    function addAltText_Activity(elm) {
-        var summary = elm.querySelector('.summary');
-        if (!summary) {
-            return;
-        }
-
-        var quote = summary.textContent;
-        quote = quote.replace(/(\s|\r|\n)+/g, ' ');
-        elm.setAttribute('title', quote);
+    function notificationObserver(mutation) {
+        Array.apply(0, mutation[0].addedNodes)
+             .filter(function(elm) {return /\b(notification|ui_note)\b/.test(elm.className);})
+             .map(appendFullImage)
+             .map(addAltText);
     }
 
     function main() {
-        var style, notifications;
-        var base_elm;
+        var notes;
+        var observer, target, config;
 
-        style = document.head.appendChild(document.createElement('style'));
-        style.innerHTML = css;
+        document.head.appendChild(document.createElement('style'))
+                     .innerHTML = css;
 
-        base_elm = document.getElementById('posts');
-        if (base_elm) {
-            notifications = Array.prototype.slice.call(document.querySelectorAll('#posts > .notification'));
-            notifications.map(appendFullImage);
-            notifications.map(addAltText);
-            base_elm.addEventListener('DOMNodeInserted', function(e) {
-                var elm = e.target;
-                if (/\bnotification\b/.test(elm.className)) {
-                    appendFullImage(elm);
-                    addAltText(elm);
-                }
-            });
+        if (document.querySelector('#posts')) {
+            /* Dashboard */
+            target = document.querySelector('#posts');
+            notes = Array.apply(0, target.querySelectorAll('.notification'));
         }
         else {
-            notifications = Array.prototype.slice.call(document.querySelectorAll('.ui_notes > div.ui_note'));
-            notifications.map(appendFullImage_Activity);
-            notifications.map(addAltText_Activity);
-            document.querySelector('.ui_notes').addEventListener('DOMNodeInserted', function(e) {
-                var elm = e.target;
-                if (/\bui_note\b/.test(elm.className)) {
-                    appendFullImage_Activity(elm);
-                    addAltText_Activity(elm);
-                }
-            });
+            /* Activity */
+            target = document.querySelector('.ui_notes');
+            notes = Array.apply(0, document.querySelectorAll('div.ui_note'));
         }
+
+        observer = new MutationObserver(notificationObserver);
+        config = {childList: true};
+        observer.observe(target, config);
+
+        notes.map(appendFullImage)
+             .map(addAltText);
     }
 
     function isExecPage() {
