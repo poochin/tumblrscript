@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.16
+// @version     1.2.0.17
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -816,6 +816,7 @@
     }
 
     function getTumblelogKey(blog_name) {
+        console.log('http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted');
         GM_xmlhttpRequest({
             method: 'GET',
             url: 'http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted',
@@ -923,6 +924,7 @@
             "font-size: 12px;",
             "font-weight: 600;",
             "line-height: 18px;",
+            "z-index: 99999;",
         ].join('');
         dict['a_style'] = [
                 "color: white;",
