@@ -60,8 +60,17 @@
         return elm;
     }
 
+    function buildDate(epoch) {
+        var d = new Date(epoch * 1000);
+
+        return [d.getFullYear(), d.getMonth() + 1, d.getDate()].join('-')
+             + ' '
+             + [d.getHours(), d.getMinutes()].join(':');
+    }
+
     function addAltText(elm) {
         var quote_elm, quote;
+        var epoch, date;
 
         if (quote_elm = elm.querySelector('.em')) {
             /* Dashboard */
@@ -69,7 +78,10 @@
         }
         else if (quote_elm = elm.querySelector('.summary')) {
             /* Activity */
-            quote = quote_elm.textContent;
+            epoch = elm.getAttribute('data-timestamp');
+            date = buildDate(epoch);
+
+            quote = quote_elm.textContent + ' - ' + date;
         }
         else {
             return elm;
