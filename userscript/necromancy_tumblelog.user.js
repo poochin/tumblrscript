@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.17
+// @version     1.2.0.18
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -750,7 +750,7 @@
                             e.reblogged_from_name = e.reblogged_from_name || "";
                             e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
 
-                            e.source_domain = escapeTagQuote(e.source_url ? e.source_url.match(/https?:\/\/([^\/]+)/)[1] : "");
+                            e.source_domain = escapeTagQuote(e.source_url ? e.source_url.match(/https?:\/\/([^\/]+)/i)[1] : "");
                             e.source_url = escapeTagQuote((e.source_url || "").replace(/"/g, "'"));
                             e.source_title = escapeTagQuote(e.source_title || "");
 
