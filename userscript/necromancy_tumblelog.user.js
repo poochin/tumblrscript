@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.18
+// @version     1.2.0.19
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -720,6 +720,7 @@
                                 return str.replace(/</, '&lt;').replace(/"/, "&quot;");
                             }
                             function buildDate(date_str) {
+                                date_str = date_str.replace(/-/g, '/');
                                 var date = new Date(date_str);
                                 var m = [
                                     "January",
