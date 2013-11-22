@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.61
+// @version     1.2.9.62
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -234,20 +234,17 @@
         "}",
         /* Reblog Button */
         ".reblog.loading {",
-         "    background-position: -530px -270px !important;",
-         "    -webkit-animation: reblogging 1s infinite;",
+        "    background-position: -530px -270px !important;",
+        "    -webkit-animation: reblogging 1s infinite;",
         "    -moz-animation: reblogging 1s infinite;",
         "}",
         "@-webkit-keyframes reblogging {",
-        "  0% { -webkit-transform: rotate(0deg); }",
-        /*
         "  0% { -webkit-transform: rotate(0deg) scale(1.5, 1.5); }",
         "  25% { -webkit-transform: rotate(360deg) scale(1, 1); }",
         "  40% { -webkit-transform: rotate(360deg) scale(1, 1); }",
         "  50% { -webkit-transform: rotate(360deg) scale(1.1, 1.1); }",
         "  55% { -webkit-transform: rotate(360deg) scale(1, 1); }",
-        */
-        "  100% { -webkit-transform: rotate(360deg); }",
+        "  100% { -webkit-transform: rotate(360deg) scale(1, 1); }",
         "}",
         "@-moz-keyframes reblogging {",
         "  0% { -moz-transform: rotate(0deg) scale(1.5, 1.5); }",
@@ -1887,7 +1884,7 @@
             }
 
             var parameters = {
-                state: 'private',
+                state: state,
                 id: reblog_id,
                 reblog_key: reblog_key,
             };

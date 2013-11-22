@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.16
+// @version     1.2.0.19
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -720,6 +720,7 @@
                                 return str.replace(/</, '&lt;').replace(/"/, "&quot;");
                             }
                             function buildDate(date_str) {
+                                date_str = date_str.replace(/-/g, '/');
                                 var date = new Date(date_str);
                                 var m = [
                                     "January",
@@ -750,7 +751,7 @@
                             e.reblogged_from_name = e.reblogged_from_name || "";
                             e.reblogged_from_url  = e.reblogged_from_url  || e.post_url;
 
-                            e.source_domain = escapeTagQuote(e.source_url ? e.source_url.match(/https?:\/\/([^\/]+)/)[1] : "");
+                            e.source_domain = escapeTagQuote(e.source_url ? e.source_url.match(/https?:\/\/([^\/]+)/i)[1] : "");
                             e.source_url = escapeTagQuote((e.source_url || "").replace(/"/g, "'"));
                             e.source_title = escapeTagQuote(e.source_title || "");
 
@@ -816,6 +817,7 @@
     }
 
     function getTumblelogKey(blog_name) {
+        console.log('http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted');
         GM_xmlhttpRequest({
             method: 'GET',
             url: 'http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted',
@@ -923,6 +925,7 @@
             "font-size: 12px;",
             "font-weight: 600;",
             "line-height: 18px;",
+            "z-index: 99999;",
         ].join('');
         dict['a_style'] = [
                 "color: white;",
