@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.19
+// @version     1.2.0.20
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -243,18 +243,18 @@
             "                <div class=\"post_controls\" role=\"toolbar\">",
             "                    <div class=\"post_controls_inner\">",
             "                      ",
-            "                        <div class=\"post_control post_control_menu creator\" title=\"Post Options\">",
-            "                            <div class=\"popover popover_menu popover_gradient nipple_on_bottom popover_post_control\">",
-            "                                <ul class=\"popover_inner\">",
-            "                                    <li class=\"popover_menu_item\">",
-            "                                        <a class=\"post_control edit show_label\" title=\"Edit\" href=\"/edit/66047149103?redirect_to=%2Fblog%2Fpoochin\">Edit</a>",
-            "                                    </li>",
-            "                                    <li class=\"popover_menu_item\">",
-            "                                        <div class=\"post_control delete show_label\" title=\"Delete\" data-confirm=\"Are you sure you want to delete this post?\">Delete</div>",
-            "                                    </li>",
-            "                                </ul>",
-            "                            </div>",
-            "                        </div>",
+            // "                        <div class=\"post_control post_control_menu creator\" title=\"Post Options\">",
+            // "                            <div class=\"popover popover_menu popover_gradient nipple_on_bottom popover_post_control\">",
+            // "                                <ul class=\"popover_inner\">",
+            // "                                    <li class=\"popover_menu_item\">",
+            // "                                        <a class=\"post_control edit show_label\" title=\"Edit\" href=\"/edit/66047149103?redirect_to=%2Fblog%2Fpoochin\">Edit</a>",
+            // "                                    </li>",
+            // "                                    <li class=\"popover_menu_item\">",
+            // "                                        <div class=\"post_control delete show_label\" title=\"Delete\" data-confirm=\"Are you sure you want to delete this post?\">Delete</div>",
+            // "                                    </li>",
+            // "                                </ul>",
+            // "                            </div>",
+            // "                        </div>",
             "                        ",
             "                        <div class=\"post_control share share_social_button\" data-tumblelog-name=\"<%=blog_name%>\" data-post-id=\"<%=id%>\" id=\"share_social_button_<%=id%>\">",
             "                            <div class=\"popover popover_menu popover_gradient popover_share_social\">",

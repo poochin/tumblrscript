@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.62
+// @version     1.2.9.63
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -3327,18 +3327,18 @@
     /**
      * Opera 用に起動するべきページかどうかを判定しています
      */
-    if (window.document.body) {
-        if (Tornado.browser == 'opera') {
-            if (/^https?:\/\/www\.tumblr\.com\//.test(location)) {
-                main();
-            }
-        }
-        else {
+    if (Tornado.browser == 'opera') {
+        if (/^https?:\/\/www\.tumblr\.com\//.test(location)) {
             main();
         }
     }
     else {
-        window.document.addEventListener('DOMContentLoaded', main, false);
+        if (['complete', 'interactive'].indexOf(document.readyState) >= 0) {
+            main(); /* 既に DOM 構築済みなので直接呼び出します  */
+        }
+        else {
+            window.document.addEventListener('DOMContentLoaded', main, false);
+        }
     }
 
 })();
