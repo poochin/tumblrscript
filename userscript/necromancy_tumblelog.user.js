@@ -965,10 +965,10 @@
             method: 'GET',
             synchronous: false,
             onload: function(xhr) {
-                console.log('total post', xhr);
-
                 var json = JSON.parse(xhr.responseText);
                 Vals.total_posts = json.response.total_posts;
+
+                new Etc.PinNotification('There are ' + Vals.total_posts + ' posts.');
 
                 if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
                     Vals.is_userdata_fetched = true;
