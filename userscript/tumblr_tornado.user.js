@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.63
+// @version     1.2.9.64
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -623,7 +623,7 @@
             /* 入力エリア、またはリッチテキスト内では無効にします */
             if (e.target.tagName   === 'INPUT' ||
                 e.target.tagName   === 'TEXTAREA' ||
-                e.target.className === 'mceContentBody') {
+                /\bmceContentBody\b/.test(e.target.className)) {
                 return;
             }
 
