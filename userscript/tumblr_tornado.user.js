@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.64
+// @version     1.2.9.65
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -1718,91 +1718,100 @@
             });
 
             if (Tornado.browser != 'opera') {
-                new Ajax('http://www.tumblr.com/svc/post/fetch', {
-                    method: 'post',
-                    parameters: parameters,
+                new Ajax('http://www.tumblr.com/svc/secure_form_key', {
+                    method: 'POST',
+                    requestHeaders: ['X-tumblr-form-key', document.body.getAttribute('data-form-key')],
                     onSuccess: function(_xhr) {
-                        var name;
-                        var response_json = JSON.parse(_xhr.response);
-    
-                        var postdata = {
-                            channel_id: undefined,
-                            form_key: form_key,
-                            reblog_key: reblog_key,
-                            reblog_id: parseInt(reblog_id),
-                            reblog_post_id: reblog_id,
-                            detached: true,
-                            reblog: true,
-                            silent: true,
-                            context_id: "",
-                            // "is_rich_text[one]": "0",
-                            // "is_rich_text[two]": "0",
-                            // "is_rich_text[three]": "0",
-                            pre_upload: "",
-                            preuploaded_url: "",
-                            preuploaded_ch: "",
-                            "post[date]": "",
-                            "post[publish_on]": "",
-                            "post[state]": "0",
-                            "post[photoset_order]": "o1",
-                            valid_embed_code: "1",
-                            remove_album_art: "",
-                            album_art: "",
-                            MAX_FILE_SIZE: "10485760",
-                            custom_tweet: "[URL]",
-                        };
-                        Etc.dictUpdate(postdata, response_json);
-    
-                        for (name in postdata['post']) {
-                            postdata['post[' + name + ']'] = postdata['post'][name];
-                        }
-                        delete postdata['post'];
-    
-                        for (name in postdata['post[id3_tags]']) {
-                            postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
-                        }
-                        delete postdata['post[id3_tags]'];
+                        var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/)[0].split(': ')[1];
+                        var secure_form_key_header = ['X-tumblr-puppies', secure_form_key];
 
-                        Etc.dictUpdate(postdata, default_postdata);
-
-                        try {
-                            if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
-                                postdata['send_to_twitter'] = 'on';
-                                postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
-                            }
-                        } catch (e) { }
-    
-                        new Ajax('http://www.tumblr.com/svc/post/update', {
+                        new Ajax('http://www.tumblr.com/svc/post/fetch', {
                             method: 'post',
-                            parameters: JSON.stringify(postdata),
-                            requestHeaders: ['Content-Type', 'application/json'],
+                            parameters: parameters,
                             onSuccess: function(_xhr) {
-                                var dp, json;
-
-                                reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
-
-                                json = JSON.parse(_xhr.responseText);
-
-                                if (json.errors) {
-                                    if (typeof json.errors == 'string') {
-                                        alert(json.errors);
-                                    }
-                                    else if (json.errors.length) {
-                                        alert(json.errors[0]);
-                                    }
-                                    else {
-                                        console.log(json.errors);
-                                        alert(json.errors);
-                                    }
+                                var name;
+                                var response_json = JSON.parse(_xhr.response);
+    
+                                var postdata = {
+                                    channel_id: undefined,
+                                    form_key: form_key,
+                                    reblog_key: reblog_key,
+                                    reblog_id: parseInt(reblog_id),
+                                    reblog_post_id: reblog_id,
+                                    detached: true,
+                                    reblog: true,
+                                    silent: true,
+                                    context_id: "",
+                                    // "is_rich_text[one]": "0",
+                                    // "is_rich_text[two]": "0",
+                                    // "is_rich_text[three]": "0",
+                                    pre_upload: "",
+                                    preuploaded_url: "",
+                                    preuploaded_ch: "",
+                                    "post[date]": "",
+                                    "post[publish_on]": "",
+                                    "post[state]": "0",
+                                    "post[photoset_order]": "o1",
+                                    valid_embed_code: "1",
+                                    remove_album_art: "",
+                                    album_art: "",
+                                    MAX_FILE_SIZE: "10485760",
+                                    custom_tweet: "[URL]",
+                                };
+                                Etc.dictUpdate(postdata, response_json);
+    
+                                for (name in postdata['post']) {
+                                    postdata['post[' + name + ']'] = postdata['post'][name];
                                 }
-                                else {
-                                    var dp = default_postdata;
-                                    new Etc.PinNotification([
-                                        'Success: Reblogged',
-                                        ((dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) ||
-                                         (dp['post[state]'] == 'on.2' && 'on ' + dp['post[publish_on]'])) || '',
-                                        (dp['channel_id'] && dp['channel_id'] != '0' && 'to ' + dp['channel_id']) || ''].join(' '));
+                                delete postdata['post'];
+    
+                                for (name in postdata['post[id3_tags]']) {
+                                    postdata['id3_tags[' + name.toLowerCase() + ']'] = postdata['post[id3_tags]'][name];
                                 }
+                                delete postdata['post[id3_tags]'];
+
+                                Etc.dictUpdate(postdata, default_postdata);
+
+                                try {
+                                    if (Tornado.tumblelog_configs[postdata['channel_id']]['data-twitter-on'] == "true") {
+                                        postdata['send_to_twitter'] = 'on';
+                                        postdata['custom_tweet'] = Tornado.buildCustomTweet(postdata);
+                                    }
+                                } catch (e) { }
+    
+                                new Ajax('http://www.tumblr.com/svc/post/update', {
+                                    method: 'post',
+                                    parameters: JSON.stringify(postdata),
+                                    requestHeaders: ['Content-Type', 'application/json'].concat(secure_form_key_header),
+                                    onSuccess: function(_xhr) {
+                                        var dp, json;
+
+                                        reblog_button.className = reblog_button.className.replace(/\bloading\b/, 'reblogged');
+
+                                        json = JSON.parse(_xhr.responseText);
+
+                                        if (json.errors) {
+                                            if (typeof json.errors == 'string') {
+                                                alert(json.errors);
+                                            }
+                                            else if (json.errors.length) {
+                                                alert(json.errors[0]);
+                                            }
+                                            else {
+                                                console.log(json.errors);
+                                                alert(json.errors);
+                                            }
+                                        }
+                                        else {
+                                            var dp = default_postdata;
+                                            new Etc.PinNotification([
+                                                'Success: Reblogged',
+                                                ((dp['post[state]'] && Tornado.vals.state_texts[dp['post[state]']]) ||
+                                                 (dp['post[state]'] == 'on.2' && 'on ' + dp['post[publish_on]'])) || '',
+                                                (dp['channel_id'] && dp['channel_id'] != '0' && 'to ' + dp['channel_id']) || ''].join(' '));
+                                        }
+                                    },
+                                });
                             },
                         });
                     },
