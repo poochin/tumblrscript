@@ -13,6 +13,9 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
 
+
+// TODO: TargetTumblelogInfo Class を作成する
+
 /**
  * @namespace NecromancyTumblelog
  * @TODO ランダム機能を付けます
@@ -25,10 +28,91 @@
     var Vals = Necro.vals = {};
     var Etc = Necro.etc = {};
 
+    Necro.css = "";
+
+    /* Pin Notification */
+    Necro.css += [
+        "#pin_notification_board {",
+        "    position: fixed;",
+        "    right: 15px;",
+        "    bottom: 0;",
+        "}",
+        ".pin_notification.error {",
+        "    color: red;",
+        "}",
+        ".pin_notification {",
+        "    -webkit-animation: pin_notification_animation 3s forwards;",
+        "    -moz-animation: pin_notification_animation 3s forwards;",
+        "    -o-animation: pin_notification_animation 3s forwards;",
+        "    padding: 5px;",
+        "    border-left: 2px solid #888;",
+        "    border-right: 2px solid #888;",
+        "    border-bottom: 1px dashed #696;",
+        "    background: #efefef;",
+        "}",
+        ".pin_notification:first-child {",
+        "    border-top-left-radius: 5px;",
+        "    border-top-right-radius: 5px;",
+        "    border-top: 2px solid #888;",
+        "}",
+        ".pin_notification:last-child {",
+        "    margin-bottom: 8px;",
+        "    border-bottom-left-radius: 5px;",
+        "    border-bottom-right-radius: 5px;",
+        "    border-bottom: 2px solid #888;",
+        "}",
+        ".pin_notification:last-child:after {",
+        "    content: ' ';",
+        "    display: block;",
+        "    position: absolute;",
+        "    height: 0;",
+        "    width: 0;",
+        "    margin-top: 5px;",
+        "    margin-left: 5px;",
+        "    border: 8px solid #efefef;",
+        "    border-color: transparent;",
+        "    border-top-color: #888;",
+        "    border-bottom-width: 0px;",
+        "}",
+        "@-webkit-keyframes pin_notification_animation {",
+        "    0%   { opacity: 0; }",
+        "    5%   { opacity: 1; }",
+        "    90%  { opacity: 1; }",
+        "    100% { opacity: 0; }",
+        "}",
+        "@-moz-keyframes pin_notification_animation {",
+        "    0%   { opacity: 0; }",
+        "    5%   { opacity: 1; }",
+        "    90%  { opacity: 1; }",
+        "    100% { opacity: 0; }",
+        "}",
+        "@keyframes pin_notification_animation {",
+        "    0%   { opacity: 0; }",
+        "    5%   { opacity: 1; }",
+        "    90%  { opacity: 1; }",
+        "    100% { opacity: 0; }",
+        "}",
+    ].join('\n');
+
+    /**
+     * クライアントエリアの右下にピンバルーンメッセージを表示します
+     */
+    Etc.PinNotification = function PinNotification (message) {
+        var board = document.querySelector('#pin_notification_board');
+        if (!board) {
+            board = document.body.appendChild(document.createElement('div'));
+            board.id = 'pin_notification_board';
+        }
+    
+        var elm = board.appendChild(document.createElement('div'));
+        elm.className = 'pin_notification';
+        elm.appendChild(document.createTextNode(message));
+    
+        setTimeout(function() { board.removeChild(elm); }, 3000);
+    }
+
     Vals.API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
     Vals.LOAD_SCROLL_OFFSET = 5000;
-
-    Vals.tumblelog_observers = [];
 
     Vals.browser =
         ( window.opera                                ? 'opera'
@@ -50,6 +134,21 @@
     Vals.total_posts = -1;
     Vals.tumblelog_key = "";
     Vals.avatar_url = "";
+
+    /**
+     * {
+     *   name: {
+     *     tumblelog_key,
+     *     avatar_url,
+     *     total_posts,
+     *     offset,
+     *     is_random,
+     *     tag,
+     *     type,
+     *   }
+     * }
+     */
+    Vals.tumblelog_infos = { };
 
     /**
      *  /blog/
@@ -805,7 +904,8 @@
             method: 'GET',
             url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar/128',
             onload: function(f) {
-                console.log(f);
+                console.log('avatar icon', f);
+
                 Vals.avatar_url = f.finalUrl;
 
                 if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
@@ -822,6 +922,8 @@
             method: 'GET',
             url: 'http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted',
             onload: function(f) {
+                console.log('tumblelog key', f);
+
                 var l = JSON.parse(f.responseText);
                 var d = document.createElement('div');
 
@@ -869,6 +971,8 @@
                 var json = JSON.parse(xhr.responseText);
                 Vals.total_posts = json.response.total_posts;
 
+                new Etc.PinNotification('There are ' + Vals.total_posts + ' posts.');
+
                 if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
                     Vals.is_userdata_fetched = true;
                     necromancyPaginator(null, true);
@@ -878,10 +982,22 @@
     }
 
     /**
+     * css を登録します
+     */
+    function addNecroCSS() {
+        var style = document.createElement('style');
+
+        style.innerText = Necro.css;
+        document.head.appendChild(style);
+    }
+
+    /**
      * ユーザスクリプトが実行された際に呼び出される関数です
      */
     /* function initNecromancy */
     function necromancyInitialize() {
+
+        addNecroCSS();
 
         execScript('AutoPaginator.stop(); Tumblr.Events.unbind("post:like");');
         window.addEventListener('scroll', necromancyPaginator);
