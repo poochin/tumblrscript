@@ -13,6 +13,9 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/necromancy_tumblelog.user.js
 // ==/UserScript==
 
+
+// TODO: TargetTumblelogInfo Class を作成する
+
 /**
  * @namespace NecromancyTumblelog
  * @TODO ランダム機能を付けます
