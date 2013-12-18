@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.20
+// @version     1.2.0.21
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -743,6 +743,43 @@
         return url + params.join('/');
     }
 
+    function note_str(count) {
+        return (count == 0 ? ""
+              : count == 1 ? "1 note"
+                           : (count + " notes"));
+    }
+
+    function escapeTagQuote(str) {
+        return str.replace(/</g, '&lt;').replace(/"/g, "&quot;");
+    }
+
+    function buildDate(date_str) {
+        date_str = date_str.replace(/-/g, '/');
+        var date = new Date(date_str);
+        var m = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ][date.getMonth()];
+        var d = date.getDate() + ["st", "nd", "rd", "th"][Math.min(4, date.getDate()) - 1];
+        var y = date.getFullYear();
+        var h = (date.getHours() > 12 ? (date.getHours() % 12) : date.getHours());
+        var min = ('0' + date.getMinutes()).slice(-2);
+        var hm = h + ':' + min;
+        var ampm = ['am', 'pm'][parseInt(date.getHours() / 12)];
+        
+        return [m, d, y + ',', hm + ampm].join(' ');
+    }
+
     /**
      * スクロール位置として次ページの読み込みを監視します
      * @param {Object} pe PeriodicalExecuter オブジェクト.
@@ -807,44 +844,64 @@
                 method: 'GET',
                 onload: function (xhr) {
                     var json = JSON.parse(xhr.responseText);
-                    var new_posts_html = json.response.posts
-                        .filter(function(e) {return e.type!=='answer';})
-                        .map(function(e) {
-                            function note_str(count) {
-                                return (count == 0 ? ""
-                                      : count == 1 ? "1 note"
-                                                   : (count + " notes"));
-                            }
-                            function escapeTagQuote(str) {
-                                return str.replace(/</, '&lt;').replace(/"/, "&quot;");
-                            }
-                            function buildDate(date_str) {
-                                date_str = date_str.replace(/-/g, '/');
-                                var date = new Date(date_str);
-                                var m = [
-                                    "January",
-                                    "February",
-                                    "March",
-                                    "April",
-                                    "May",
-                                    "June",
-                                    "July",
-                                    "August",
-                                    "September",
-                                    "October",
-                                    "November",
-                                    "December",
-                                ][date.getMonth()];
-                                var d = date.getDate() + ["st", "nd", "rd", "th"][Math.min(4, date.getDate()) - 1];
-                                var y = date.getFullYear();
-                                var h = (date.getHours() > 12 ? (date.getHours() % 12) : date.getHours());
-                                var min = ('0' + date.getMinutes()).slice(-2);
-                                var hm = h + ':' + min;
-                                var ampm = ['am', 'pm'][parseInt(date.getHours() / 12)];
-                                
-                                return [m, d, y + ',', hm + ampm].join(' ');
-                            }
 
+                    /**
+                     * malicious script check list
+                     * チェック済み(/), 未チェック(-)
+                     *  - tumblr set
+                     *    - id
+                     *    - type
+                     *    - tumblelog_key
+                     *    - note_count_str
+                     *    - note_less_str
+                     *    - note_more_str
+                     *    - photo_full.height
+                     *    - photo_full.url
+                     *    - photo_full.width
+                     *    - reblog_key
+                     *    - reblogged_from_name
+                     *    - root_id
+                     *    - short_url
+                     *  - this script set
+                     *    - permalink_date
+                     *  - user set
+                     *   - all
+                     *    - post_url
+                     *    - reblogged_from_url
+                     *    - source
+                     *    - source_url
+                     *    - source_domain
+                     *    - source_title
+                     *   - text
+                     *    - title
+                     *    - body
+                     *   - photo
+                     *    - caption
+                     *   - quote
+                     *    - text
+                     *   - audio
+                     *    - caption
+                     *    - embed
+                     *   - video
+                     *    - caption
+                     *    - embed_code
+                     *    - thumbnail_height
+                     *    - thumbnail_url
+                     *    - thumbnail_width
+                     *   - chat
+                     *    - title
+                     *    - *.name
+                     *    - *.phrase
+                     *   - link
+                     *    - title
+                     *    - url
+                     *    - description
+                     *   - any type
+                     *  - unknown
+                     */
+                    json.response.posts
+                        .filter(function(e) {return e.type!=='answer';})
+                        .map(function dataSettings(e) {
 
                             e.root_id = (e.reblogged_root_url || e.post_url).match(/(?:\/post\/|private_)(\d+)/)[1];
                             e.reblogged_from_name = e.reblogged_from_name || "";
@@ -873,19 +930,47 @@
                             }
                             if (e.type == 'video') {
                                 e.embed_code = e.player[2].embed_code.replace(/"/g, "'");
+                                e.thumbnail_width = e.thumbnail_width || 500;
+                                e.thumbnail_height = e.thumbnail_height || 'auto';
+                                e.thumbnail_url = e.thumbnail_url || '';
                             }
                             return e;
                         })
-                        .map(function(e) {
+                        .map(function htmlEntities(e) {
+                            if (e.type == 'link') {
+                                e.title = escapeTagQuote(e.title);
+                                e.url = escapeTagQuote(e.url);
+                                console.log(e.title, e.url);
+                            }
+
+                            return e;
+                        })
+                        .map(function insertElement(e) {
                             console.log(e);
+
                             var template = Vals.post_template_head + Vals.post_template_bodies[e.type] + Vals.post_template_tail;
                             var html = Etc.tmpl(template, e);
                             var d = document.createElement('div');
+                            var elm;
+
                             d.innerHTML = html;
-                            $$('#posts')[0].appendChild(d.children[0]);
-                            return html;
+                            elm = $$('#posts')[0].appendChild(d.children[0]);
+
+                            return elm;
                         })
-                        .join('');
+                        .map(function trimScript(e) {
+                            if (['video', 'audio'].indexOf(e.children[0].getAttribute('data-type')) == -1) {
+                                Array.apply(0, e.querySelectorAll('.post_title *, .post_body *')).map(function(elm) {
+                                    Array.apply(0, elm.attributes).map(function(attr) {
+                                        if (/^on/.test(attr.name)) {
+                                            elm.removeAttribute(attr.name);
+                                        }
+                                    });
+                                });
+                            }
+
+                            return e;
+                        });
 
                     execScript("AutoPaginator.trigger('after');");
 
