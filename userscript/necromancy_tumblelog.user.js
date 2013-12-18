@@ -845,6 +845,60 @@
                 onload: function (xhr) {
                     var json = JSON.parse(xhr.responseText);
 
+                    /**
+                     * malicious script check list
+                     * チェック済み(/), 未チェック(-)
+                     *  - tumblr set
+                     *    - id
+                     *    - type
+                     *    - tumblelog_key
+                     *    - note_count_str
+                     *    - note_less_str
+                     *    - note_more_str
+                     *    - photo_full.height
+                     *    - photo_full.url
+                     *    - photo_full.width
+                     *    - reblog_key
+                     *    - reblogged_from_name
+                     *    - root_id
+                     *    - short_url
+                     *  - this script set
+                     *    - permalink_date
+                     *  - user set
+                     *   - all
+                     *    - post_url
+                     *    - reblogged_from_url
+                     *    - source
+                     *    - source_url
+                     *    - source_domain
+                     *    - source_title
+                     *   - text
+                     *    - title
+                     *    - body
+                     *   - photo
+                     *    - caption
+                     *   - quote
+                     *    - text
+                     *   - audio
+                     *    - caption
+                     *    - embed
+                     *   - video
+                     *    - caption
+                     *    - embed_code
+                     *    - thumbnail_height
+                     *    - thumbnail_url
+                     *    - thumbnail_width
+                     *   - chat
+                     *    - title
+                     *    - *.name
+                     *    - *.phrase
+                     *   - link
+                     *    - title
+                     *    - url
+                     *    - description
+                     *   - any type
+                     *  - unknown
+                     */
                     json.response.posts
                         .filter(function(e) {return e.type!=='answer';})
                         .map(function dataSettings(e) {
