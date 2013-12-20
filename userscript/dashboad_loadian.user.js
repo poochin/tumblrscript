@@ -4,7 +4,7 @@
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/show*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.5
+// @version     1.1.0
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -13,11 +13,14 @@
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/dashboad_loadian.user.js
 // ==/UserScript==
 
+
+
+
 (function DashboardLoadian() {
     'use strict';
 
     var loadian = {
-        OFFSET: 10000, /* 読み込みを開始する下からのスクロール位置 */
+        OFFSET: 10000, /* デフォルトの読み込みを開始する下からのスクロール位置 */
         form: null
     };
 
@@ -42,39 +45,42 @@
         return elm;
     }
 
-    /**
-     * クライアントエリアのスクロール位置、画面サイズを取得します
-     * @return {Object} left, top, width, height を備えた辞書を返します
-     */
-    function viewportRect() {
-        return {
-            left: document.documentElement.scrollLeft || document.body.scrollLeft,
-            top: document.documentElement.scrollTop || document.body.scrollTop,
-            width: document.documentElement.clientWidth,
-            height: document.documentElement.clientHeight};
-    }
 
     /**
-     * 読み込み可能な状態ならば次ページの読み込みを開始させます。
-     * この関数はクライアントページで実行させるため、
-     * ユーザスクリプト上にない変数・関数を用いています。
+     * クライアント領域で Script を実行します
+     * @param {String} code 実行したいコード
      */
-    var loadAsPossible = function() {
-        if (!loading_next_page) {
-            loading_next_page = true;
-            retry_auto_paginator_request();
-        }
+    function execScript(code) {
+        var script = document.createElement('script');
+        script.setAttribute('type', 'text/javascript');
+        script.innerHTML = code;
+        script.addEventListener('onload', function(e) {
+            (function letit(elm) {
+                elm.parentNode.removeChild(elm);
+            })(e.target);
+        });
+        document.body.appendChild(script);
     };
 
     /**
-     * Scroll Event 時にスクロール位置を元に次ページの読み込みを開始するか決めます。
+     * Dashboard で次ページ読み込みを開始するかどうかを判定する関数をラップします
      */
-    function onscroll() {
-        var vr = viewportRect();
-        if (document.documentElement.offsetHeight - (vr.top + vr.height) < loadian.OFFSET) {
-            location.assign('javascript: void ' + loadAsPossible + '()');
+    function wrapperAutoPaginator() {
+      var f = Tumblr.Events._events['DOMEventor:flatscroll'][1].callback;
+      Tumblr.Events._events['DOMEventor:flatscroll'][1].callback = function(n){
+        if (document.querySelector('[name=dashboard_loadian_on]').checked === false) {
+          f(n);
         }
-    }
+        else {
+          var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
+          var originY = n.windowScrollY;
+          n.windowScrollY += (isNaN(offset) ? 0 : offset);
+          f(n);
+          n.windowScrollY = originY;
+          f(n);
+          }
+      };
+    };
 
     /**
      * 読み込みを開始するスクロール位置をカスタマイズするフォームを埋め込みます。
@@ -84,9 +90,10 @@
 
         form_html = [
             '<legend>Dashboard Loadian</legend>',
-            'Offset(px):',
+            '<label><input type="checkbox" name="dashboard_loadian_on">On</label>: ',
             '<input size="3" type="text" name="offset" value="10000"/>',
-            '<button class="update_button">Update</button>'].join('');
+            'px(Offset)',
+            ].join('');
 
         loadian.form = buildElement('fieldset',
             {id: 'dashboard_loadian_custom_form;',
@@ -95,16 +102,12 @@
 
         right_column = document.querySelector('#right_column');
         right_column.appendChild(loadian.form);
-
-        loadian.form.querySelector('button.update_button').addEventListener('click', function(e){
-            loadian.OFFSET = parseInt(loadian.form.querySelector('[name=offset]').value);
-        }, false);
     }
 
     /** main 関数です */
     function main() {
-        window.addEventListener('scroll', onscroll, false);
         embedCustomForm();
+        execScript('void ' + wrapperAutoPaginator + '()');
     }
 
     /**
