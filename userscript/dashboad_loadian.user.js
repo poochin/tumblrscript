@@ -4,7 +4,7 @@
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/show*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.1.0
+// @version     1.1.1
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -12,9 +12,6 @@
 // @updated     2012-06-16
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/dashboad_loadian.user.js
 // ==/UserScript==
-
-
-
 
 (function DashboardLoadian() {
     'use strict';
@@ -45,7 +42,6 @@
         return elm;
     }
 
-
     /**
      * クライアント領域で Script を実行します
      * @param {String} code 実行したいコード
@@ -68,17 +64,11 @@
     function wrapperAutoPaginator() {
       var f = Tumblr.Events._events['DOMEventor:flatscroll'][1].callback;
       Tumblr.Events._events['DOMEventor:flatscroll'][1].callback = function(n){
-        if (document.querySelector('[name=dashboard_loadian_on]').checked === false) {
-          f(n);
-        }
-        else {
+        if (document.querySelector('[name=dashboard_loadian_on]').checked) {
           var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
-          var originY = n.windowScrollY;
-          n.windowScrollY += (isNaN(offset) ? 0 : offset);
-          f(n);
-          n.windowScrollY = originY;
-          f(n);
-          }
+          n = jQuery.extend({}, n, {windowScrollY: n.windowScrollY + (isNaN(offset) ? 0 : offset)});
+        }
+        f(n);
       };
     };
 
@@ -130,8 +120,8 @@
             return;
         }
 
-        if (window.document.body) {
-            main();
+        if (['complete', 'interactive'].indexOf(document.readyState) >= 0) {
+            main(); /* 既に DOM 構築済みなので直接呼び出します  */
         }
         else {
             window.document.addEventListener('DOMContentLoaded', main, false);
