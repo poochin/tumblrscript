@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.65
+// @version     1.2.9.66
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -2967,7 +2967,10 @@
             var oldest_id = 264102; // http://ku.tumblr.com/post/264102
             var name = 'endless_summer';
 
-            if (ShareValue.get(name, false) === "false") {
+            if (!/^\/dashboard/.test(location.pathname)) {
+                return;
+            }
+            else if (ShareValue.get(name, false) === "false") {
                 return;
             }
 
@@ -2978,6 +2981,44 @@
 
             var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
             next_page = '/dashboard/' + (page + 1) + '/' + next_id;
+            document.querySelector('#next_page_link').setAttribute('href', next_page);
+        },
+        function endlessSummer_Likes() {
+            var likes_count,
+                next_page_id;
+            var name = 'endless_summer';
+
+            if (!/^\/likes/.test(location.pathname)) {
+                return;
+            }
+            else if (ShareValue.get(name, false) === "false") {
+                return;
+            }
+
+            likes_count = +document.querySelector('.likes div').getAttribute('data-count');
+            next_page_id = parseInt(Math.random() * (likes_count/10)) + 1;
+
+            next_page = '/likes/page/' + next_page_id;
+            document.querySelector('#next_page_link').setAttribute('href', next_page);
+        },
+        function endlessSummer_LikedBy() {
+            var tumblelog_name;
+            var likes_count,
+                next_page_id;
+            var name = 'endless_summer';
+
+            if (!/^\/liked\/by\//.test(location.pathname)) {
+                return
+            }
+            else if (ShareValue.get(name, false) === "false") {
+                return;
+            }
+
+            tumblelog_name = location.pathname.match(/^\/liked\/by\/([^\/]+)/)[1];
+            likes_count = +document.querySelector('.dashboard_header').textContent.match(/\d+/)[0];
+            next_page_id = parseInt(Math.random() * (likes_count/10)) + 1;
+
+            next_page = '/liked/by/' + tumblelog_name + '/page/' + next_page_id;
             document.querySelector('#next_page_link').setAttribute('href', next_page);
         },
         /**
@@ -3018,6 +3059,8 @@
         'BeforeAutoPaginationQueue.push(dsbdPjax);',
         'BeforeAutoPaginationQueue.push(prependPageLink);',
         'BeforeAutoPaginationQueue.push(endlessSummer);',
+        'BeforeAutoPaginationQueue.push(endlessSummer_Likes);',
+        'BeforeAutoPaginationQueue.push(endlessSummer_LikedBy);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' + 
