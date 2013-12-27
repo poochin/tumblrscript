@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.66
+// @version     1.2.9.67
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -3015,7 +3015,7 @@
             }
 
             tumblelog_name = location.pathname.match(/^\/liked\/by\/([^\/]+)/)[1];
-            likes_count = +document.querySelector('.dashboard_header').textContent.match(/\d+/)[0];
+            likes_count = +document.querySelector('.dashboard_header').textContent.match(/[\d,.]+/)[0].replace(/[,.]/g, '');
             next_page_id = parseInt(Math.random() * (likes_count/10)) + 1;
 
             next_page = '/liked/by/' + tumblelog_name + '/page/' + next_page_id;
