@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.67
+// @version     1.2.9.68
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -138,6 +138,8 @@
     };
     Tornado.vals.key_input_time = 0;
     Tornado.vals.key_follows = []
+
+    Tornado.vals.last_publish_on_time = null;
     
     Vals.SHORTCUT_GROUPS = {
         OTHER: 0,
@@ -2092,8 +2094,16 @@
                 var d = (epoch ? new Date(epoch * 1000) : new Date());
                 return [d.getFullYear(), d.getMonth()+1, d.getDate()].join('/') + ' ' + [d.getHours(), d.getMinutes()].join(':');
             }
-            var default_time = buildTime();
-            var date = prompt('Input time to publish on?', default_time);
+            var cur_date = buildTime(),
+                date,
+                prompt_time;
+
+            prompt_time = (Tornado.vals.last_publish_on_time ? Tornado.vals.last_publish_on_time : cur_date);
+            date = prompt('Input time to publish on?', prompt_time);
+
+            if (prompt_time != date) {
+                Tornado.vals.last_publish_on_time = date;
+            }
 
             if (date === null) {
                 new Etc.PinNotification('Cancel Publish on');
