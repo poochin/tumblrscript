@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.68
+// @version     1.2.9.69
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -3191,21 +3191,19 @@
 
             button_delete.addEventListener('click', function(e) {
                 var button = e.target;
-                var i = parseInt(button.className.match(/button(\d+)/)[1]);
 
-                var dst = Vals.oauth_operator.tumblelog_infos[i];
+                var dst = tumblelog_info;
 
-                Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(_,n){
-                    return n != i;
+                Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(t,n){
+                    return !(t.oauth_token == dst.oauth_token);
                 });
                 Vals.oauth_operator.exclude_tumblelogs = Vals.oauth_operator.exclude_tumblelogs.filter(function(t) {
-                    return !(t.base_account_ == dst.base_account &&
-                             t.hostname == dst.hostname);
+                    return !(t.oauth_token == dst.oauth_token);
                 });
                 Vals.oauth_operator.save();
                 Vals.oauth_operator.reload();
 
-                li.parentNode.removeChild(li);
+                tr.parentNode.removeChild(tr);
             });
         });
         config_dialog.centering();
