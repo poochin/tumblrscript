@@ -3,8 +3,9 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/show*
+// @include     http://www.tumblr.com/likes*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.1.1
+// @version     1.1.2
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -80,8 +81,8 @@
 
         form_html = [
             '<legend>Dashboard Loadian</legend>',
-            '<label><input type="checkbox" name="dashboard_loadian_on">On</label>: ',
-            '<input size="3" type="text" name="offset" value="10000"/>',
+            '<label><input type="checkbox" name="dashboard_loadian_on" checked>On</label>: ',
+            '<input size="3" type="text" name="offset" value="2000"/>',
             'px(Offset)',
             ].join('');
 
@@ -108,6 +109,7 @@
     function isExecPage() {
         return /^https?:\/\/www\.tumblr\.com\/dashboard.*/.test(location) ||
                /^https?:\/\/www\.tumblr\.com\/show.*/.test(location) ||
+               /^https?:\/\/www\.tumblr\.com\/likes.*/.test(location) ||
                /^https?:\/\/www\.tumblr\.com\/tagged.*/.test(location);
     }
 
