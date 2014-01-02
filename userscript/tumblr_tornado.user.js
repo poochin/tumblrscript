@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.72
+// @version     1.2.9.73
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -3094,7 +3094,7 @@
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
-        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
+        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id],#search_posts>.post_container>.post").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
         "setTimeout(function(){Tumblr.Events.unbind('post:like');}, 50);",
         'UrlContainerAlways();',
@@ -3389,20 +3389,27 @@
         try {
             showShortcutHelp();
         } catch (e) {
-            // thru
+            console.error('Error: show shortcut help');
         }
 
-        Etc.execScript(Tornado.clientfuncs.join(''));
+        try {
+            Etc.execScript(Tornado.clientfuncs.join(''));
+        } catch (e) {
+            console.error('Error: client funcs');
+        }
 
-        Etc.execScript(Tornado.clientlaunches.map(function(code) {
-            if (typeof code === 'string') {
-                return code + ';\n';
-            }
-            else if (typeof code === 'function') {
-                return '(' + (code) + ')();\n';
-            }
-        }).join(''));
-
+        try {
+            Etc.execScript(Tornado.clientlaunches.map(function(code) {
+                if (typeof code === 'string') {
+                    return code + ';\n';
+                }
+                else if (typeof code === 'function') {
+                    return '(' + (code) + ')();\n';
+                }
+            }).join(''));
+        } catch (e) {
+            console.error('Error: client launches');
+        }
 
         if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
             Etc.verifyAccessToken();
