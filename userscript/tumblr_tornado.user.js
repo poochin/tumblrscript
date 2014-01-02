@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.71
+// @version     1.2.9.72
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -1645,6 +1645,13 @@
         return prefix + truncate(body, length, '\u2026') + suffix;
     };
 
+    Etc.elementOffsetLeft = function elementOffsetLeft(elm) {
+        if (elm.offsetParent && elm.offsetParent.tagName != 'BODY') {
+            return elm.offsetLeft + Etc.elementOffsetLeft(elm.offsetParent);
+        }
+        return elm.offsetLeft;
+    }
+
     Etc.elementOffsetTop = function elementOffsetTop(elm) {
         if (elm.offsetParent && elm.offsetParent.tagName != 'BODY') {
             return elm.offsetTop + Etc.elementOffsetTop(elm.offsetParent);
@@ -1978,8 +1985,8 @@
                         });
                         dialog_body.appendChild(button);
                 });
-                dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
-                dialog.dialog.style.left = (post.offsetLeft + 20) + 'px';
+                dialog.dialog.style.top = (Etc.elementOffsetTop(post) + 37) + 'px';
+                dialog.dialog.style.left = (Etc.elementOffsetLeft(post) + 20) + 'px';
     
                 dialog_body.querySelector('input[type="button"]').focus();
             }
