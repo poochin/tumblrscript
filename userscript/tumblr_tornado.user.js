@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.70
+// @version     1.2.9.71
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     http://www.tumblr.com/dashboard
 // @include     http://www.tumblr.com/dashboard?tumblelog*
@@ -1645,6 +1645,13 @@
         return prefix + truncate(body, length, '\u2026') + suffix;
     };
 
+    Etc.elementOffsetTop = function elementOffsetTop(elm) {
+        if (elm.offsetParent && elm.offsetParent.tagName != 'BODY') {
+            return elm.offsetTop + Etc.elementOffsetTop(elm.offsetParent);
+        }
+        return elm.offsetTop;
+    }
+
     /**
       * 入力されたキーによってコマンドを実行します
       * @param {Object} e Eventオブジェクト
@@ -1661,8 +1668,10 @@
             return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
         })[0];
         */
-        post = $$('#posts > .post_container:not(.new_post) > .post').filter(function(elm) {
-            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
+        post = $$('#posts > .post_container:not(.new_post) > .post,'+
+                  '#search_posts > .post_container > .post').filter(function(elm) {
+            var elm_offset_top = Etc.elementOffsetTop(elm);
+            return Math.abs(vr.top - (elm_offset_top - margin_top)) < 5;
         })[0];
         if (!post) {
             console.info('Post not found');
@@ -3370,7 +3379,11 @@
         style.className = 'tumblr_userscript';
         style.innerHTML = Tornado.css;
 
-        showShortcutHelp();
+        try {
+            showShortcutHelp();
+        } catch (e) {
+            // thru
+        }
 
         Etc.execScript(Tornado.clientfuncs.join(''));
 
