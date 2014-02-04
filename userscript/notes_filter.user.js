@@ -3,7 +3,8 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard*
 // @include     http://www.tumblr.com/tagged*
-// @version     1.0.11
+// @include     http://www.tumblr.com/search/*
+// @version     1.0.12
 // @description Dashboard フィルター(Notes Filter)
 //
 // @author      poochin
@@ -89,11 +90,15 @@
             quitFilter();
         });
 
-        document.body.querySelector('#right_column').appendChild(fieldset);
+        fieldset.style.clear = 'both';
+
+        document.body.querySelector('#right_column, .right_controls').appendChild(fieldset);
     }
 
     function filter (elm) {
         var elm_notes, notes_count;
+
+        console.log(elm);
 
         elm_notes = elm.querySelector('.note_link_current');
         if (elm_notes == null) {
@@ -112,7 +117,7 @@
     }
 
     function launchFilter() {
-        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container)')).map(function(elm) {
+        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container), #search_posts > .post_container')).map(function(elm) {
             if (filter(elm) == false) {
                 elm.classList.add('notesfilter_flagged');
             }
@@ -120,7 +125,7 @@
     }
 
     function quitFilter() {
-        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container)')).map(function(elm) {
+        Array.prototype.slice.call(document.querySelectorAll('#posts > li.post_container:not(.new_post_buttons_container), #search_posts > .post_container')).map(function(elm) {
             elm.classList.remove('notesfilter_flagged');
         });
     }
@@ -162,8 +167,8 @@
         filter_type = 'over';
         now_filtering = false;
 
-        document.querySelector('#posts').addEventListener('DOMNodeInserted', filterEvent);
-        document.querySelector('#posts').addEventListener('dblclick', postDoubleClick, true);
+        document.querySelector('#posts, #search_posts').addEventListener('DOMNodeInserted', filterEvent);
+        document.querySelector('#posts, #search_posts').addEventListener('dblclick', postDoubleClick, true);
 
         embedCustomOperator();
     }
@@ -171,7 +176,8 @@
     function isExecPage() {
         /* for Opera function */
         return (/^https?:\/\/www\.tumblr\.com\/dashboard\/?/.test(location) ||
-                /^https?:\/\/www\.tumblr\.com\/tagged\/?/.test(location));
+                /^https?:\/\/www\.tumblr\.com\/tagged\/?/.test(location) ||
+                /^https?:\/\/www\.tumblr\.com\/search\/?/.test(location));
     }
 
     function boot() {

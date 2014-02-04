@@ -3,7 +3,7 @@
 // @namespace   https://github.com/poochin
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.21
+// @version     1.2.0.22
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -23,6 +23,7 @@
  * @TODO font タグを除去します
  */
 (function NecromancyTumblelog() {
+
     var Necro = {};
 
     var Vals = Necro.vals = {};
@@ -111,6 +112,20 @@
         setTimeout(function() { board.removeChild(elm); }, 3000);
     }
 
+    /**
+     * Copyright (c) 2011 David Mzareulyan
+     * μDeferred library
+     * https://github.com/davidmz/microDeferred
+     */
+    var $D; /* Etc.Deferred へのショートハンド */
+    $D = Etc.Deferred = (function() {
+        var Deferred;
+
+        (function(){var e=function(){return this}();Deferred=typeof e.jQuery!=="undefined"&&typeof e.jQuery.Deferred!=="undefined"?e.jQuery.Deferred:function(){if(!(this instanceof arguments.callee))return new e.Deferred;var i=[0,[],[]],c=0,j,b=null,g,d=this,h=function(a,f,b){if(!c){c=a;j=f;for(a=i[a];a.length;)a.shift().apply(b,j);i=null;return d}},k=function(a,b){c==a?b.apply(this,j):c||i[a].push(b);return this};d.promise=function(a){if(!a&&b)return b;b=a?a:b?b:{};for(var f in g)g.hasOwnProperty(f)&&(b[f]=g[f]);return b};d.resolve=function(){return h(1,arguments,b)};d.reject=function(){return h(2,arguments,b)};d.resolveWith=function(){var a=arguments.shift();return h(1,arguments,a)};d.rejectWith=function(){var a=arguments.shift();return h(2,arguments,a)};g={done:function(a){return k.call(this,1,a)},fail:function(a){return k.call(this,2,a)},then:function(a,b){return this.done(a).fail(b)},always:function(a){return this.then(a,a)},isResolved:function(){return c==1},isRejected:function(){return c==2}}}})();
+
+        return Deferred;
+    })();
+
     Vals.API_KEY = 'lu2Ix2DNWK19smIYlTSLCFopt2YDGPMiESEzoN2yPhUSKbYlpV';
     Vals.LOAD_SCROLL_OFFSET = 5000;
 
@@ -130,10 +145,10 @@
     Vals.loading_next_page = false;
     Vals.pagenator_interval_id = null;
 
-    Vals.is_userdata_fetched = false;
     Vals.total_posts = -1;
     Vals.tumblelog_key = "";
     Vals.avatar_url = "";
+    Vals.parsed_path = {};
 
     /**
      * {
@@ -792,10 +807,6 @@
         if (Vals.loading_next_page) {
             return;
         }
-        if (!Vals.is_userdata_fetched) {
-            return;
-        }
-
 
         var posts;
         if (force ||
@@ -984,7 +995,10 @@
         }
     }
 
-    function getAvatarURL(blog_name) {
+    function getAvatarURL() {
+        var deferred = new $D;
+        var blog_name = Vals.parsed_path.blog_name;
+
         GM_xmlhttpRequest({
             method: 'GET',
             url: 'http://api.tumblr.com/v2/blog/' + blog_name + '.tumblr.com/avatar/128',
@@ -993,15 +1007,17 @@
 
                 Vals.avatar_url = f.finalUrl;
 
-                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
-                    Vals.is_userdata_fetched = true;
-                    necromancyPaginator(null, true);
-                }
+                deferred.resolve();
             },
         });
+
+        return deferred.promise();
     }
 
-    function getTumblelogKey(blog_name) {
+    function getTumblelogKey() {
+        var deferred = new $D;
+        var blog_name = Vals.parsed_path.blog_name;
+
         console.log('http://www.tumblr.com/svc/' + blog_name + '/posts/highlighted');
         GM_xmlhttpRequest({
             method: 'GET',
@@ -1015,15 +1031,16 @@
                 d.innerHTML = l[0];
                 Vals.tumblelog_key = d.children[0].getAttribute('data-tumblelog-key');
 
-                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
-                    Vals.is_userdata_fetched = true;
-                    necromancyPaginator(null, true);
-                }
+                deferred.resolve();
             }
         });
+
+        return deferred.promise();
     }
 
     function getTotalPost() {
+        var deferred = new $D;
+
         var next_page_parsed = location.href.match(Vals.PATH_PARSER);
         var tumblelog = next_page_parsed[1];
         var tag = next_page_parsed[2] || '';
@@ -1053,17 +1070,19 @@
             method: 'GET',
             synchronous: false,
             onload: function(xhr) {
+                console.log('getTotalPost', xhr);
+
                 var json = JSON.parse(xhr.responseText);
                 Vals.total_posts = json.response.total_posts;
+                Vals.parsed_path.blog_name = json.response.blog.name;
 
                 new Etc.PinNotification('There are ' + Vals.total_posts + ' posts.');
 
-                if (Vals.total_posts != -1 && Vals.avatar_url && Vals.tumblelog_key) {
-                    Vals.is_userdata_fetched = true;
-                    necromancyPaginator(null, true);
-                }
+                deferred.resolve();
             },
         });
+
+        return deferred.promise();
     }
 
     /**
@@ -1093,10 +1112,19 @@
 
         var m = location.href.match(Vals.PATH_PARSER);
         Vals.next_page = buildNecromancyURL(m[1], m[2] || '', m[3] || '', m[4] || 0);
+        Vals.parsed_path = {
+            blog_name: m[1],
+            tag: m[2] || '',
+            type: m[3] || '',
+            offset: m[4] || 0
+        };
 
-        getTotalPost();
-        getTumblelogKey(m[1]);
-        getAvatarURL(m[1]);
+        getTotalPost()
+        .then(getTumblelogKey)
+        .then(getAvatarURL)
+        .then(function() {
+            necromancyPaginator(null, true);
+         });
 
         // var form_key = document.head.querySelector('#tumblr_form_key').getAttribute('content');
     }

@@ -1,19 +1,17 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.65
+// @version     1.2.9.75
 // @description Tumblr にショートカットを追加するユーザスクリプト
-// @include     http://www.tumblr.com/dashboard
-// @include     http://www.tumblr.com/dashboard?tumblelog*
-// @include     http://www.tumblr.com/dashboard?oauth_token=*
-// @include     http://www.tumblr.com/dashboard/*
-// @include     http://www.tumblr.com/reblog/*
-// @include     http://www.tumblr.com/likes
-// @include     http://www.tumblr.com/likes/*
-// @include     http://www.tumblr.com/blog/*
-// @include     http://www.tumblr.com/tagged/*
-// @include     http://www.tumblr.com/show/*
-// @include     http://www.tumblr.com/liked/by/*
+// @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
+// @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
+// @include     /https?:\/\/www\.tumblr\.com\/(reblog|likes|liked\/by|blog|tagged)(\/.*)?/
+// @include     /https?:\/\/www\.tumblr\.com\/search.*/
+// @grant       GM_xmlhttpRequest
+// @grant       GM_getValue
+// @grant       GM_settValue
+// @grant       GM_deleteValue
+// 
 // @require     http://static.tumblr.com/lf1ujxx/bczmf4vbs/sha1.js
 // @require     http://static.tumblr.com/lf1ujxx/5bBmf4vcf/oauth.js
 //
@@ -138,6 +136,8 @@
     };
     Tornado.vals.key_input_time = 0;
     Tornado.vals.key_follows = []
+
+    Tornado.vals.last_publish_on_time = null;
     
     Vals.SHORTCUT_GROUPS = {
         OTHER: 0,
@@ -1642,6 +1642,20 @@
         return prefix + truncate(body, length, '\u2026') + suffix;
     };
 
+    Etc.elementOffsetLeft = function elementOffsetLeft(elm) {
+        if (elm.offsetParent && elm.offsetParent.tagName != 'BODY') {
+            return elm.offsetLeft + Etc.elementOffsetLeft(elm.offsetParent);
+        }
+        return elm.offsetLeft;
+    }
+
+    Etc.elementOffsetTop = function elementOffsetTop(elm) {
+        if (elm.offsetParent && elm.offsetParent.tagName != 'BODY') {
+            return elm.offsetTop + Etc.elementOffsetTop(elm.offsetParent);
+        }
+        return elm.offsetTop;
+    }
+
     /**
       * 入力されたキーによってコマンドを実行します
       * @param {Object} e Eventオブジェクト
@@ -1658,8 +1672,10 @@
             return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
         })[0];
         */
-        post = $$('#posts > .post_container:not(.new_post) > .post').filter(function(elm) {
-            return Math.abs(vr.top - (elm.offsetTop - margin_top)) < 5;
+        post = $$('#posts > .post_container:not(.new_post) > .post,'+
+                  '#search_posts > .post_container > .post').filter(function(elm) {
+            var elm_offset_top = Etc.elementOffsetTop(elm);
+            return Math.abs(vr.top - (elm_offset_top - margin_top)) < 5;
         })[0];
         if (!post) {
             console.info('Post not found');
@@ -1966,8 +1982,8 @@
                         });
                         dialog_body.appendChild(button);
                 });
-                dialog.dialog.style.top = (post.offsetTop + 37) + 'px';
-                dialog.dialog.style.left = (post.offsetLeft + 20) + 'px';
+                dialog.dialog.style.top = (Etc.elementOffsetTop(post) + 37) + 'px';
+                dialog.dialog.style.left = (Etc.elementOffsetLeft(post) + 20) + 'px';
     
                 dialog_body.querySelector('input[type="button"]').focus();
             }
@@ -2092,8 +2108,16 @@
                 var d = (epoch ? new Date(epoch * 1000) : new Date());
                 return [d.getFullYear(), d.getMonth()+1, d.getDate()].join('/') + ' ' + [d.getHours(), d.getMinutes()].join(':');
             }
-            var default_time = buildTime();
-            var date = prompt('Input time to publish on?', default_time);
+            var cur_date = buildTime(),
+                date,
+                prompt_time;
+
+            prompt_time = (Tornado.vals.last_publish_on_time ? Tornado.vals.last_publish_on_time : cur_date);
+            date = prompt('Input time to publish on?', prompt_time);
+
+            if (prompt_time != date) {
+                Tornado.vals.last_publish_on_time = date;
+            }
 
             if (date === null) {
                 new Etc.PinNotification('Cancel Publish on');
@@ -2967,7 +2991,10 @@
             var oldest_id = 264102; // http://ku.tumblr.com/post/264102
             var name = 'endless_summer';
 
-            if (ShareValue.get(name, false) === "false") {
+            if (!/^\/dashboard/.test(location.pathname)) {
+                return;
+            }
+            else if (ShareValue.get(name, false) === "false") {
                 return;
             }
 
@@ -2978,6 +3005,44 @@
 
             var next_id = parseInt(Math.random() * window.endless_summer_first_post_id + oldest_id);
             next_page = '/dashboard/' + (page + 1) + '/' + next_id;
+            document.querySelector('#next_page_link').setAttribute('href', next_page);
+        },
+        function endlessSummer_Likes() {
+            var likes_count,
+                next_page_id;
+            var name = 'endless_summer';
+
+            if (!/^\/likes/.test(location.pathname)) {
+                return;
+            }
+            else if (ShareValue.get(name, false) === "false") {
+                return;
+            }
+
+            likes_count = +document.querySelector('.likes div').getAttribute('data-count');
+            next_page_id = parseInt(Math.random() * (likes_count/10)) + 1;
+
+            next_page = '/likes/page/' + next_page_id;
+            document.querySelector('#next_page_link').setAttribute('href', next_page);
+        },
+        function endlessSummer_LikedBy() {
+            var tumblelog_name;
+            var likes_count,
+                next_page_id;
+            var name = 'endless_summer';
+
+            if (!/^\/liked\/by\//.test(location.pathname)) {
+                return
+            }
+            else if (ShareValue.get(name, false) === "false") {
+                return;
+            }
+
+            tumblelog_name = location.pathname.match(/^\/liked\/by\/([^\/]+)/)[1];
+            likes_count = +document.querySelector('.dashboard_header').textContent.match(/[\d,.]+/)[0].replace(/[,.]/g, '');
+            next_page_id = parseInt(Math.random() * (likes_count/10)) + 1;
+
+            next_page = '/liked/by/' + tumblelog_name + '/page/' + next_page_id;
             document.querySelector('#next_page_link').setAttribute('href', next_page);
         },
         /**
@@ -3018,13 +3083,15 @@
         'BeforeAutoPaginationQueue.push(dsbdPjax);',
         'BeforeAutoPaginationQueue.push(prependPageLink);',
         'BeforeAutoPaginationQueue.push(endlessSummer);',
+        'BeforeAutoPaginationQueue.push(endlessSummer_Likes);',
+        'BeforeAutoPaginationQueue.push(endlessSummer_LikedBy);',
         'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
             'Tumblr.enable_dashboard_key_commands = true;' +
             'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' + 
         '}',
         '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
         'window.ison_endless_summer = false;',
-        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id]").getAttribute("data-post-id"));',
+        'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id],#search_posts>.post_container>.post").getAttribute("data-post-id"));',
         'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
         "setTimeout(function(){Tumblr.Events.unbind('post:like');}, 50);",
         'UrlContainerAlways();',
@@ -3138,21 +3205,19 @@
 
             button_delete.addEventListener('click', function(e) {
                 var button = e.target;
-                var i = parseInt(button.className.match(/button(\d+)/)[1]);
 
-                var dst = Vals.oauth_operator.tumblelog_infos[i];
+                var dst = tumblelog_info;
 
-                Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(_,n){
-                    return n != i;
+                Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(t,n){
+                    return !(t.oauth_token == dst.oauth_token);
                 });
                 Vals.oauth_operator.exclude_tumblelogs = Vals.oauth_operator.exclude_tumblelogs.filter(function(t) {
-                    return !(t.base_account_ == dst.base_account &&
-                             t.hostname == dst.hostname);
+                    return !(t.oauth_token == dst.oauth_token);
                 });
                 Vals.oauth_operator.save();
                 Vals.oauth_operator.reload();
 
-                li.parentNode.removeChild(li);
+                tr.parentNode.removeChild(tr);
             });
         });
         config_dialog.centering();
@@ -3314,19 +3379,30 @@
         style.className = 'tumblr_userscript';
         style.innerHTML = Tornado.css;
 
-        showShortcutHelp();
+        try {
+            showShortcutHelp();
+        } catch (e) {
+            console.error('Error: show shortcut help');
+        }
 
-        Etc.execScript(Tornado.clientfuncs.join(''));
+        try {
+            Etc.execScript(Tornado.clientfuncs.join(''));
+        } catch (e) {
+            console.error('Error: client funcs');
+        }
 
-        Etc.execScript(Tornado.clientlaunches.map(function(code) {
-            if (typeof code === 'string') {
-                return code + ';\n';
-            }
-            else if (typeof code === 'function') {
-                return '(' + (code) + ')();\n';
-            }
-        }).join(''));
-
+        try {
+            Etc.execScript(Tornado.clientlaunches.map(function(code) {
+                if (typeof code === 'string') {
+                    return code + ';\n';
+                }
+                else if (typeof code === 'function') {
+                    return '(' + (code) + ')();\n';
+                }
+            }).join(''));
+        } catch (e) {
+            console.error('Error: client launches');
+        }
 
         if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
             Etc.verifyAccessToken();
