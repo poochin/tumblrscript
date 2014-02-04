@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.75
+// @version     1.2.9.76
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -2370,7 +2370,7 @@
             Tornado.funcs.shutterEffect(post);
 
             new Ajax(
-                'http://www.tumblr.com/svc/post/delete',
+                location.protocol + '//www.tumblr.com/svc/post/delete',
                 {
                     method: 'POST',
                     parameters: JSON.stringify({
