@@ -1,7 +1,9 @@
 // ==UserScript==
 // @name        Notification Full Image
 // @match       http://www.tumblr.com/dashboard
+// @match       https://www.tumblr.com/dashboard
 // @match       http://www.tumblr.com/blog/*
+// @match       https://www.tumblr.com/blog/*
 // @version     1.0.7
 // @description ユーザスクリプトの概要を記入してください
 // 

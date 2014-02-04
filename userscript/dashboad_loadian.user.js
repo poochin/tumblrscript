@@ -1,11 +1,8 @@
 // ==UserScript==
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
-// @include     http://www.tumblr.com/dashboard*
-// @include     http://www.tumblr.com/show*
-// @include     http://www.tumblr.com/likes*
-// @include     http://www.tumblr.com/tagged*
-// @version     1.1.2
+// @include     /https?:\/\/www\.tumblr\.com\/(dashboard|likes|tagged).*/
+// @version     1.1.3
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
