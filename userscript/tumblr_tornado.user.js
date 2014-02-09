@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.78
+// @version     1.2.9.79
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -468,6 +468,13 @@
         "  width: 800px;",
         "  background-color: #fff;",
         "  padding: 10px;",
+        "  font-size: 16px;",
+        "  line-height: 1em;",
+        "  font-family:'ＭＳ Ｐゴシック','ＭＳＰゴシック','MSPゴシック','MS Pゴシック', 'IPA MonaPGothic', 'Mona';",
+        "}",
+        "#posts .post.quote_aa span.quote {",
+        "  display: block;",
+        "  text-rendering: auto;",
         "}",
     ].join('\n');
 
