@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.77
+// @version     1.2.9.78
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -462,6 +462,12 @@
         "}",
         ".empty_post.same_user_as_last {",
         "  margin-top: 7px;",
+        "}",
+        /* Quote AA */
+        "#posts .post.quote_aa .post_title {",
+        "  width: 800px;",
+        "  background-color: #fff;",
+        "  padding: 10px;",
         "}",
     ].join('\n');
 
@@ -2210,10 +2216,7 @@
         },
         scaleImage: function scaleImage(post) {
             var type = post.getAttribute('data-type');
-            if (type != "photo" && type != 'photoset' && type != "video") {
-                return;
-            }
-    
+
             if (type == "photo" || type == 'photoset') {
                 (function letit(elm){
                     // from Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
@@ -2230,6 +2233,14 @@
             else if (type == 'video') {
                 Etc.toggleVideoEmbed(post);
             }   
+            else if (type == 'quote') {
+                if (post.classList.contains('quote_aa')) {
+                    post.classList.remove('quote_aa');
+                }
+                else {
+                    post.classList.add('quote_aa');
+                }
+            }
         },
         cleanPosts: function cleanPosts(/* post */) {
             var vr = Etc.viewportRect(),
