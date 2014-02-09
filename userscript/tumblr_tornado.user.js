@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.79
+// @version     1.2.9.80
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -2908,7 +2908,14 @@
                 has_selector: '.post_control.queue',
                 usehelp: 'hide',
                 group: 4
-        })
+        }),
+        new Etc.CustomKey({
+                key_bind: ['s-l'],
+                func: function() {
+                    location.assign('/logout');
+                },
+                title: 'ログアウトします',
+        }),
     ];
     
     Tornado._shortcuts = Tornado.shortcuts.slice();
