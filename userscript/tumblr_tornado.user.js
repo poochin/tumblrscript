@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.77
+// @version     1.2.9.82
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -9,7 +9,7 @@
 // @include     /https?:\/\/www\.tumblr\.com\/search.*/
 // @grant       GM_xmlhttpRequest
 // @grant       GM_getValue
-// @grant       GM_settValue
+// @grant       GM_setValue
 // @grant       GM_deleteValue
 // 
 // @require     http://static.tumblr.com/lf1ujxx/bczmf4vbs/sha1.js
@@ -462,6 +462,19 @@
         "}",
         ".empty_post.same_user_as_last {",
         "  margin-top: 7px;",
+        "}",
+        /* Quote AA */
+        "#posts .post.quote_aa .post_title {",
+        "  width: 800px;",
+        "  background-color: #fff;",
+        "  padding: 10px;",
+        "  font-size: 16px;",
+        "  line-height: 1em;",
+        "  font-family:'ＭＳ Ｐゴシック','ＭＳＰゴシック','MSPゴシック','MS Pゴシック', 'IPA MonaPGothic', 'Mona';",
+        "}",
+        "#posts .post.quote_aa span.quote {",
+        "  display: block;",
+        "  text-rendering: auto;",
         "}",
     ].join('\n');
 
@@ -1734,14 +1747,14 @@
             });
 
             if (Tornado.browser != 'opera') {
-                new Ajax('http://www.tumblr.com/svc/secure_form_key', {
+                new Ajax(location.protocol + '//www.tumblr.com/svc/secure_form_key', {
                     method: 'POST',
                     requestHeaders: ['X-tumblr-form-key', document.body.getAttribute('data-form-key')],
                     onSuccess: function(_xhr) {
-                        var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/)[0].split(': ')[1];
+                        var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/i)[0].split(': ')[1];
                         var secure_form_key_header = ['X-tumblr-puppies', secure_form_key];
 
-                        new Ajax('http://www.tumblr.com/svc/post/fetch', {
+                        new Ajax(location.protocol + '//www.tumblr.com/svc/post/fetch', {
                             method: 'post',
                             parameters: parameters,
                             onSuccess: function(_xhr) {
@@ -1795,7 +1808,7 @@
                                     }
                                 } catch (e) { }
     
-                                new Ajax('http://www.tumblr.com/svc/post/update', {
+                                new Ajax(location.protocol + '//www.tumblr.com/svc/post/update', {
                                     method: 'post',
                                     parameters: JSON.stringify(postdata),
                                     requestHeaders: ['Content-Type', 'application/json'].concat(secure_form_key_header),
@@ -2210,10 +2223,7 @@
         },
         scaleImage: function scaleImage(post) {
             var type = post.getAttribute('data-type');
-            if (type != "photo" && type != 'photoset' && type != "video") {
-                return;
-            }
-    
+
             if (type == "photo" || type == 'photoset') {
                 (function letit(elm){
                     // from Tumblr.like_post http://assets.tumblr.com/javascript/jquery.application_src.js
@@ -2230,6 +2240,14 @@
             else if (type == 'video') {
                 Etc.toggleVideoEmbed(post);
             }   
+            else if (type == 'quote') {
+                if (post.classList.contains('quote_aa')) {
+                    post.classList.remove('quote_aa');
+                }
+                else {
+                    post.classList.add('quote_aa');
+                }
+            }
         },
         cleanPosts: function cleanPosts(/* post */) {
             var vr = Etc.viewportRect(),
@@ -2400,7 +2418,7 @@
             new Etc.PinNotification('Publishing...');
 
             new Ajax(
-                'http://www.tumblr.com/publish',
+                location.protocol + '//www.tumblr.com/publish',
                 {
                     method: 'POST',
                     parameters: {
@@ -2421,7 +2439,7 @@
             new Etc.PinNotification('Enqueueing...');
 
             new Ajax(
-                'http://www.tumblr.com/publish',
+                location.protocol + '//www.tumblr.com/publish',
                 {
                     method: 'POST',
                     parameters: {
@@ -2890,7 +2908,14 @@
                 has_selector: '.post_control.queue',
                 usehelp: 'hide',
                 group: 4
-        })
+        }),
+        new Etc.CustomKey({
+                key_bind: ['s-l'],
+                func: function() {
+                    location.assign('/logout');
+                },
+                title: 'ログアウトします',
+        }),
     ];
     
     Tornado._shortcuts = Tornado.shortcuts.slice();
