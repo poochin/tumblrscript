@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.81
+// @version     1.2.9.82
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -1747,14 +1747,14 @@
             });
 
             if (Tornado.browser != 'opera') {
-                new Ajax('http://www.tumblr.com/svc/secure_form_key', {
+                new Ajax(location.protocol + '//www.tumblr.com/svc/secure_form_key', {
                     method: 'POST',
                     requestHeaders: ['X-tumblr-form-key', document.body.getAttribute('data-form-key')],
                     onSuccess: function(_xhr) {
-                        var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/)[0].split(': ')[1];
+                        var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/i)[0].split(': ')[1];
                         var secure_form_key_header = ['X-tumblr-puppies', secure_form_key];
 
-                        new Ajax('http://www.tumblr.com/svc/post/fetch', {
+                        new Ajax(location.protocol + '//www.tumblr.com/svc/post/fetch', {
                             method: 'post',
                             parameters: parameters,
                             onSuccess: function(_xhr) {
@@ -1808,7 +1808,7 @@
                                     }
                                 } catch (e) { }
     
-                                new Ajax('http://www.tumblr.com/svc/post/update', {
+                                new Ajax(location.protocol + '//www.tumblr.com/svc/post/update', {
                                     method: 'post',
                                     parameters: JSON.stringify(postdata),
                                     requestHeaders: ['Content-Type', 'application/json'].concat(secure_form_key_header),
@@ -2418,7 +2418,7 @@
             new Etc.PinNotification('Publishing...');
 
             new Ajax(
-                'http://www.tumblr.com/publish',
+                location.protocol + '//www.tumblr.com/publish',
                 {
                     method: 'POST',
                     parameters: {
@@ -2439,7 +2439,7 @@
             new Etc.PinNotification('Enqueueing...');
 
             new Ajax(
-                'http://www.tumblr.com/publish',
+                location.protocol + '//www.tumblr.com/publish',
                 {
                     method: 'POST',
                     parameters: {
