@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.83
+// @version     1.2.9.84
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -3249,11 +3249,16 @@
                 var dst = tumblelog_info;
 
                 Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(t,n){
-                    return !(t.oauth_token == dst.oauth_token);
+                    return !(t.oauth_token  == dst.oauth_token &&
+                             t.base_account == dst.base_account &&
+                             t.hostname     == dst.hostname);
                 });
                 Vals.oauth_operator.exclude_tumblelogs = Vals.oauth_operator.exclude_tumblelogs.filter(function(t) {
-                    return !(t.oauth_token == dst.oauth_token);
+                    return !(t.oauth_token  == dst.oauth_token &&
+                             t.base_account == dst.base_account &&
+                             t.hostname     == dst.hostname);
                 });
+
                 Vals.oauth_operator.save();
                 Vals.oauth_operator.reload();
 
