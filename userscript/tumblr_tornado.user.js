@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.82
+// @version     1.2.9.84
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -557,6 +557,20 @@
              break;
        }
     };
+
+    /**
+     * Copyright (c) 2011 David Mzareulyan
+     * μDeferred library
+     * https://github.com/davidmz/microDeferred
+     */
+    var $D; /* Etc.Deferred へのショートハンド */
+    $D = Etc.Deferred = (function() {
+        var Deferred;
+
+        (function(){var e=function(){return this}();Deferred=typeof e.jQuery!=="undefined"&&typeof e.jQuery.Deferred!=="undefined"?e.jQuery.Deferred:function(){if(!(this instanceof arguments.callee))return new e.Deferred;var i=[0,[],[]],c=0,j,b=null,g,d=this,h=function(a,f,b){if(!c){c=a;j=f;for(a=i[a];a.length;)a.shift().apply(b,j);i=null;return d}},k=function(a,b){c==a?b.apply(this,j):c||i[a].push(b);return this};d.promise=function(a){if(!a&&b)return b;b=a?a:b?b:{};for(var f in g)g.hasOwnProperty(f)&&(b[f]=g[f]);return b};d.resolve=function(){return h(1,arguments,b)};d.reject=function(){return h(2,arguments,b)};d.resolveWith=function(){var a=arguments.shift();return h(1,arguments,a)};d.rejectWith=function(){var a=arguments.shift();return h(2,arguments,a)};g={done:function(a){return k.call(this,1,a)},fail:function(a){return k.call(this,2,a)},then:function(a,b){return this.done(a).fail(b)},always:function(a){return this.then(a,a)},isResolved:function(){return c==1},isRejected:function(){return c==2}}}})();
+
+        return Deferred;
+    })();
 
     /**
      * Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です
@@ -1820,6 +1834,7 @@
                                         json = JSON.parse(_xhr.responseText);
 
                                         if (json.errors) {
+                                            console.log(json);
                                             if (typeof json.errors == 'string') {
                                                 alert(json.errors);
                                             }
@@ -3234,11 +3249,16 @@
                 var dst = tumblelog_info;
 
                 Vals.oauth_operator.tumblelog_infos = Vals.oauth_operator.tumblelog_infos.filter(function(t,n){
-                    return !(t.oauth_token == dst.oauth_token);
+                    return !(t.oauth_token  == dst.oauth_token &&
+                             t.base_account == dst.base_account &&
+                             t.hostname     == dst.hostname);
                 });
                 Vals.oauth_operator.exclude_tumblelogs = Vals.oauth_operator.exclude_tumblelogs.filter(function(t) {
-                    return !(t.oauth_token == dst.oauth_token);
+                    return !(t.oauth_token  == dst.oauth_token &&
+                             t.base_account == dst.base_account &&
+                             t.hostname     == dst.hostname);
                 });
+
                 Vals.oauth_operator.save();
                 Vals.oauth_operator.reload();
 
