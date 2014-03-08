@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.85
+// @version     1.2.9.87
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -1138,7 +1138,7 @@
         getRequestToken: function getRequestToken() {
             var deferred = new $D;
 
-            var url = 'http://www.tumblr.com/oauth/request_token';
+            var url = location.protocol + '//www.tumblr.com/oauth/request_token';
             var accessor = {
                 consumerKey: Tornado.vals.CONSUMER_KEY,
                 consumerSecret: Tornado.vals.CONSUMER_SECRET
@@ -1148,6 +1148,7 @@
             var request_body = OAuth.formEncode(message.parameters);
             OAuth.completeRequest(message, accessor);
 
+            console.log(message);
             console.log(OAuth.getAuthorizationHeader('', message.parameters));
 
             GM_xmlhttpRequest({
@@ -1193,6 +1194,8 @@
 
         },
         getAccessToken: function getAccessToken() {
+            var deferred = new $D;
+
             var tokens = OAuth.decodeForm(location.search.slice(1));
             var tokenSecret = GM_getValue('oauth_token_secret');
     
@@ -1217,7 +1220,26 @@
     
             var request_body = OAuth.formEncode(message.parameters);
             OAuth.completeRequest(message, accessor);
+
+            GM_xmlhttpRequest({
+                url: message.action,
+                method: message.method,
+                headers: {
+                    'Authorization': OAuth.getAuthorizationHeader('', message.parameters)
+                },
+                onload: function(gm_response) {
+                    var response = OAuth.decodeForm(gm_response.responseText);
+                    var access_tokens = {};
     
+                    access_tokens[response[0][0]] = response[0][1];
+                    access_tokens[response[1][0]] = response[1][1];
+
+                    deferred.resolve(access_tokens);
+                },
+            });
+
+            return deferred.promise();
+
             var a = new Ajax(message.action, {
                 method: message.method,
                 parameters: message.parameters,
@@ -1277,57 +1299,59 @@
     };
 
     Etc.verifyAccessToken = function verifyAccessToken() {
-        var access_tokens = Vals.oauth_operator.getAccessToken();
+        Vals.oauth_operator
+            .getAccessToken()
+            .done(function(access_tokens) {
+                var base_account = document.querySelector('#search_field [name=t]').value,
+                    oauth_token = access_tokens.oauth_token,
+                    oauth_token_secret = access_tokens.oauth_token_secret;
      
-        var base_account = document.querySelector('#search_field [name=t]').value,
-            oauth_token = access_tokens.oauth_token,
-            oauth_token_secret = access_tokens.oauth_token_secret;
+                var tumblelog_infos = $$('#popover_blogs .item a').map(function(item){
+                    return new Etc.OAuthTumblelogInfo(
+                        base_account,
+                        item.text.trim(),
+                        item.href.split('/').slice(-1)[0] + '.tumblr.com',
+                        oauth_token,
+                        oauth_token_secret
+                    );
+                });
      
-        var tumblelog_infos = $$('#popover_blogs .item a').map(function(item){
-            return new Etc.OAuthTumblelogInfo(
-                base_account,
-                item.text.trim(),
-                item.href.split('/').slice(-1)[0] + '.tumblr.com',
-                oauth_token,
-                oauth_token_secret
-            );
-        });
+                var new_setting = new LiteDialog('New OAuth Settings');
+                var setting_body = new_setting.dialog.querySelector('.lite_dialog_body');
      
-        var new_setting = new LiteDialog('New OAuth Settings');
-        var setting_body = new_setting.dialog.querySelector('.lite_dialog_body');
+                setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
+                setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
      
-        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token: ' + access_tokens.oauth_token));
-        setting_body.appendChild(Etc.buildElement('p', {}, 'OAuth token secret: ' + access_tokens.oauth_token_secret));
-     
-        var tumblelog_list = setting_body.appendChild(Etc.buildElement('ul'));
+                var tumblelog_list = setting_body.appendChild(Etc.buildElement('ul'));
 
-        tumblelog_infos.map(function(tumblelog) {
-            tumblelog_list.appendChild(Etc.buildElement('li', {},
-                'Name: ' + tumblelog.tumblelog_title + '<br />' +
-                'Host name: ' + tumblelog.hostname + '<br />'));
-        });
+                tumblelog_infos.map(function(tumblelog) {
+                    tumblelog_list.appendChild(Etc.buildElement('li', {},
+                        'Name: ' + tumblelog.tumblelog_title + '<br />' +
+                        'Host name: ' + tumblelog.hostname + '<br />'));
+                });
      
-        var ok = setting_body.appendChild(Etc.buildElement('button', {}, 'この設定を保存します'));
+                var ok = setting_body.appendChild(Etc.buildElement('button', {}, 'この設定を保存します'));
      
-        ok.addEventListener('click', function() {
-            tumblelog_infos.map(function(tumblelog_info) {
-                Vals.oauth_operator.tumblelog_infos.push(tumblelog_info);
+                ok.addEventListener('click', function() {
+                    tumblelog_infos.map(function(tumblelog_info) {
+                        Vals.oauth_operator.tumblelog_infos.push(tumblelog_info);
+                    });
+                    Vals.oauth_operator.save();
+                    Vals.oauth_operator.reload();
+     
+                    GM_deleteValue('oauth_token_secret');
+     
+                    new_setting.dialog.parentNode.removeChild(new_setting.dialog);
+     
+                    new Etc.PinNotification('認証情報を保存しました。');
+                    new Etc.PinNotification('3 秒後にリロードします。');
+                    new Etc.PinNotification('設定は [conf] から確認できます。');
+     
+                    setTimeout(function(){location.href = '/dashboard'}, 3000);
+                }, false);
+     
+                new_setting.centering();
             });
-            Vals.oauth_operator.save();
-            Vals.oauth_operator.reload();
-     
-            GM_deleteValue('oauth_token_secret');
-     
-            new_setting.dialog.parentNode.removeChild(new_setting.dialog);
-     
-            new Etc.PinNotification('認証情報を保存しました。');
-            new Etc.PinNotification('3 秒後にリロードします。');
-            new Etc.PinNotification('設定は [conf] から確認できます。');
-     
-            setTimeout(function(){location.href = '/dashboard'}, 3000);
-        }, false);
-     
-        new_setting.centering();
     };
 
     /**
