@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.84
+// @version     1.2.9.85
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -2476,7 +2476,9 @@
         },
     };
     
-    Tornado.shortcuts = [
+    Tornado.shortcuts = [];
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['j'],
                 // func: CustomFuncs.default, 
@@ -2495,7 +2497,9 @@
                 },
                 group: 1,
                 grouporder: 1,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-j'],
                 func: CustomFuncs.halfdown,
@@ -2506,8 +2510,9 @@
                     en: 'Half scroll down'
                 },
                 group: 5
-        }),
+        });
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['k'],
                 func: CustomFuncs.default,
@@ -2518,7 +2523,9 @@
                 },
                 group: 1,
                 grouporder: 2,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-k'],
                 func: CustomFuncs.halfup,
@@ -2531,6 +2538,7 @@
                 group: 5
         }),
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['l'],
                 func: function like(post) {
@@ -2557,8 +2565,9 @@
                 },
                 group: 1,
                 grouporder: 3,
-        }),
+        });
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 'g'],
                 func: CustomFuncs.goTop,
@@ -2570,7 +2579,9 @@
                 },
                 group: 5,
                 grouporder: 1,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-g'],
                 func: CustomFuncs.goBottom, 
@@ -2582,7 +2593,7 @@
                 },
                 group: 5,
                 grouporder: 2,
-        }),
+        });
         /*
         new Etc.CustomKey({
                 key_bind: ['s-o'],
@@ -2598,6 +2609,7 @@
         }),
         */
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 title: 'Reblog',
                 key_bind: ['t'],
@@ -2613,7 +2625,9 @@
                 },
                 group: 2,
                 grouporder: 1,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['h'],
                 func: CustomFuncs.fast_reblog,
@@ -2624,7 +2638,9 @@
                 },
                 group: 2,
                 grouporder: 2,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 title: 'Draft',
                 key_bind: ['d'],
@@ -2640,7 +2656,9 @@
                 },
                 group: 2,
                 grouporder: 3,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['q'],
                 func: CustomFuncs.reblog,
@@ -2656,7 +2674,9 @@
                 },
                 group: 2,
                 grouporder: 5,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['p'],
                 func: CustomFuncs.reblog,
@@ -2672,7 +2692,9 @@
                 },
                 group: 2,
                 grouporder: 5,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['o'],
                 func: CustomFuncs.publishOn,
@@ -2685,7 +2707,9 @@
                 // func: function() {console.log('Publish on');}, // CustomFuncs.publishon,
                 help: 'hide',
                 desc: 'Publish on ... a post'
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-o'],
                 title: 'Publishing Little by Little',
@@ -2698,10 +2722,11 @@
                 },
                 help: 'hide',
                 desc: '少しずつ公開されるように Queue へ追加します',
-        }),
+        });
 
 
         /* FIXME */
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: [/[1-9]/],
                 func: CustomFuncs.directReblogToChannel,
@@ -2710,8 +2735,10 @@
                 usehelp: 'hide',
                 group: 3,
                 grouporder: 5,
-        }),
+        });
 
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 't'],
                 func: CustomFuncs.reblogToChannel,
@@ -2727,7 +2754,9 @@
                 },
                 group: 3,
                 grouporder: 1,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 'd'],
                 func: CustomFuncs.reblogToChannel,
@@ -2743,7 +2772,9 @@
                 },
                 group: 3,
                 grouporder: 2,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 'q'],
                 func: CustomFuncs.reblogToChannel,
@@ -2759,7 +2790,9 @@
                 },
                 group: 3,
                 grouporder: 3,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 'p'],
                 func: CustomFuncs.reblogToChannel,
@@ -2775,8 +2808,9 @@
                 },
                 group: 3,
                 grouporder: 4,
-        }),
+        });
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['i'],
                 func: CustomFuncs.scaleImage,
@@ -2786,7 +2820,9 @@
                     en: 'Scale image or Open video'
                 },
                 group: 0
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['m'],
                 func: CustomFuncs.rootInfo,
@@ -2797,7 +2833,9 @@
                 },
                 usehelp: 'hide',
                 group: 0
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['v'],
                 func: CustomFuncs.viewPostPageInBackground,
@@ -2808,8 +2846,9 @@
                 },
                 usehelp: 'hide',
                 group: 5
-        }),
+        });
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['c'],
                 func: CustomFuncs.cleanPosts,
@@ -2821,7 +2860,9 @@
                 },
                 group: 6,
                 grouporder: 1,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-c'],
                 func: CustomFuncs.removePosts,
@@ -2833,7 +2874,9 @@
                 },
                 group: 6,
                 grouporder: 2,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['g', 's-c'],
                 func: CustomFuncs.removeBottomPosts,
@@ -2845,8 +2888,9 @@
                 },
                 group: 6,
                 grouporder: 3,
-        }),
+        });
 
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['n'],
                 func: CustomFuncs.default,
@@ -2858,13 +2902,17 @@
                 },
                 group: 1,
                 grouporder: 4,
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-r'],
                 func: CustomFuncs.topReload,
                 usehelp: 'hide',
                 group: 0
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-s'],
                 func: CustomFuncs.endlessSummer,
@@ -2873,9 +2921,10 @@
                     ja: 'ダッシュボードの下降をランダムにします',
                 },
                 group: 0
-        }),
+        });
 
         /* FIXME */
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['d'],
                 func: CustomFuncs.delete,
@@ -2887,7 +2936,9 @@
                 has_selector: '.post_control.delete',
                 usehelp: 'hide',
                 group: 4
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-d'],
                 func: CustomFuncs.forceDelete,
@@ -2899,7 +2950,9 @@
                 has_selector: '.post_control.delete',
                 usehelp: 'hide',
                 group: 4
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['p'],
                 func: CustomFuncs.publish,
@@ -2911,7 +2964,9 @@
                 has_selector: '.post_control.publish',
                 usehelp: 'hide',
                 group: 4
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['q'],
                 func: CustomFuncs.enqueue,
@@ -2923,17 +2978,18 @@
                 has_selector: '.post_control.queue',
                 usehelp: 'hide',
                 group: 4
-        }),
+        });
+
+    Tornado.shortcuts[Tornado.shortcuts.length] = 
         new Etc.CustomKey({
                 key_bind: ['s-l'],
                 func: function() {
                     location.assign('/logout');
                 },
                 title: 'ログアウトします',
-        }),
-    ];
+        });
     
-    Tornado._shortcuts = Tornado.shortcuts.slice();
+    Tornado._shortcuts = Tornado.shortcuts.slice();  /* copy */
     Tornado._shortcuts.sort(function(a, b){
         return (a.group || 10) - (b.group || 10) ||
                (a.grouporder) - (b.grouporder);
