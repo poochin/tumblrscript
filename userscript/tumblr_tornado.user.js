@@ -567,7 +567,10 @@
     $D = Etc.Deferred = (function() {
         var Deferred;
 
-        (function(){var e=function(){return this}();Deferred=typeof e.jQuery!=="undefined"&&typeof e.jQuery.Deferred!=="undefined"?e.jQuery.Deferred:function(){if(!(this instanceof arguments.callee))return new e.Deferred;var i=[0,[],[]],c=0,j,b=null,g,d=this,h=function(a,f,b){if(!c){c=a;j=f;for(a=i[a];a.length;)a.shift().apply(b,j);i=null;return d}},k=function(a,b){c==a?b.apply(this,j):c||i[a].push(b);return this};d.promise=function(a){if(!a&&b)return b;b=a?a:b?b:{};for(var f in g)g.hasOwnProperty(f)&&(b[f]=g[f]);return b};d.resolve=function(){return h(1,arguments,b)};d.reject=function(){return h(2,arguments,b)};d.resolveWith=function(){var a=arguments.shift();return h(1,arguments,a)};d.rejectWith=function(){var a=arguments.shift();return h(2,arguments,a)};g={done:function(a){return k.call(this,1,a)},fail:function(a){return k.call(this,2,a)},then:function(a,b){return this.done(a).fail(b)},always:function(a){return this.then(a,a)},isResolved:function(){return c==1},isRejected:function(){return c==2}}}})();
+        (function(){
+            var e=window;
+            Deferred=typeof e.jQuery!=="undefined"&&typeof e.jQuery.Deferred!=="undefined"?e.jQuery.Deferred:
+                function(){if(this == window || this == undefined)return new e.Deferred;var i=[0,[],[]],c=0,j,b=null,g,d=this,h=function(a,f,b){if(!c){c=a;j=f;for(a=i[a];a.length;)a.shift().apply(b,j);i=null;return d}},k=function(a,b){c==a?b.apply(this,j):c||i[a].push(b);return this};d.promise=function(a){if(!a&&b)return b;b=a?a:b?b:{};for(var f in g)g.hasOwnProperty(f)&&(b[f]=g[f]);return b};d.resolve=function(){return h(1,arguments,b)};d.reject=function(){return h(2,arguments,b)};d.resolveWith=function(){var a=arguments.shift();return h(1,arguments,a)};d.rejectWith=function(){var a=arguments.shift();return h(2,arguments,a)};g={done:function(a){return k.call(this,1,a)},fail:function(a){return k.call(this,2,a)},then:function(a,b){return this.done(a).fail(b)},always:function(a){return this.then(a,a)},isResolved:function(){return c==1},isRejected:function(){return c==2}}}})();
 
         return Deferred;
     })();
@@ -1133,6 +1136,8 @@
             return this.enabled_tumblelogs.length;
         },
         getRequestToken: function getRequestToken() {
+            var deferred = new $D;
+
             var url = 'http://www.tumblr.com/oauth/request_token';
             var accessor = {
                 consumerKey: Tornado.vals.CONSUMER_KEY,
@@ -1142,7 +1147,31 @@
             var message = { method: 'GET', action: url};
             var request_body = OAuth.formEncode(message.parameters);
             OAuth.completeRequest(message, accessor);
+
+            console.log(OAuth.getAuthorizationHeader('', message.parameters));
+
+            GM_xmlhttpRequest({
+                url: message.action,
+                method: message.method,
+                headers: {
+                    'Authorization': OAuth.getAuthorizationHeader('', message.parameters),
+                },
+                onload: function(gm_response) {
+                    console.log(gm_response);
+                    var response = OAuth.decodeForm(gm_response.responseText);
+                    var result = {};
     
+                    result[response[0][0]] = response[0][1];
+                    result[response[1][0]] = response[1][1];
+                    result[response[2][0]] = response[2][1];
+    
+                    return deferred.resolve(result);
+                },
+            });
+
+            return deferred.promise();
+
+            /*
             var a = new Ajax(message.action, {
                 method: message.method, 
                 asynchronous: false,
@@ -1151,6 +1180,7 @@
                     'Authorization', OAuth.getAuthorizationHeader('', message.parameters),
                 ],
             })
+            */
     
             var response = OAuth.decodeForm(a.xhr.responseText);
             var result = {};
@@ -1160,6 +1190,7 @@
             result[response[2][0]] = response[2][1];
     
             return result;
+
         },
         getAccessToken: function getAccessToken() {
             var tokens = OAuth.decodeForm(location.search.slice(1));
@@ -3213,10 +3244,20 @@
 
         var request_button = dialog_body.appendChild(Etc.buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 認証します', en: 'Authorize OAuth'})));
         request_button.addEventListener('click', function() {
+            Vals.oauth_operator
+              .getRequestToken()
+              .done(function(request_accessor) {
+                console.log(request_accessor);
+                GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
+
+                location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
+              });
+            /*
             var request_accessor = Vals.oauth_operator.getRequestToken();
             GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
 
             location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
+            */
         });
 
         var reset_button = dialog_body.appendChild(Etc.buildElement('button', {}, Tornado.funcs.i18n({ja: 'OAuth 情報を消去します', en: 'Clear OAuth information'})));
