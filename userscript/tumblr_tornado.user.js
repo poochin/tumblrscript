@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.9.87
+// @version     1.2.10.0
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -3224,6 +3224,26 @@
             })).observe(document.querySelector('.new_post_buttons'), {childList: true});
         },
         Etc.buildElement,
+        function runBeforeAutoPaginationQueue(m) {
+            if (window.next_page == null) {
+                return;
+            }
+            if (window.loading_next_page) {
+                return;
+            }
+
+            if (!((m.documentHeight - m.windowScrollY) < m.windowHeight * 3)) {
+                return;
+            }
+
+            try {
+                var f = function(){};
+                window.BeforeAutoPaginationQueue.map(f.call.bind(f.call));
+            }
+            catch (e) {
+                console.error(e);
+            }
+        }
     ];
 
     /**
@@ -3231,6 +3251,8 @@
      * 文字列は文字列の成すように、関数は関数を実行します。
      */
     Tornado.clientlaunches = [
+        'var fl = Tumblr.Events._events[\'DOMEventor:flatscroll\']; fl.splice(fl.indexOf(fl.filter(function(f){return f.callback.name==\'f\';})[0]), 0, {callback: runBeforeAutoPaginationQueue});',
+        'BeforeAutoPaginationQueue = window.BeforeAutoPaginationQueue || []',
         'BeforeAutoPaginationQueue.push(dsbdPjax);',
         'BeforeAutoPaginationQueue.push(prependPageLink);',
         'BeforeAutoPaginationQueue.push(endlessSummer);',
