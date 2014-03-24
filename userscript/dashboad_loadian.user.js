@@ -2,7 +2,8 @@
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
 // @include     /https?:\/\/www\.tumblr\.com\/(dashboard|likes|tagged).*/
-// @version     1.1.3
+// @include     /https?:\/\/www\.tumblr\.com\/(reblog|likes|liked\/by|blog|tagged)(\/.*)?/
+// @version     1.1.5
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -16,7 +17,7 @@
 
     var loadian = {
         OFFSET: 10000, /* デフォルトの読み込みを開始する下からのスクロール位置 */
-        form: null
+        form: null,
     };
 
     boot();
@@ -66,27 +67,38 @@
         document.body.appendChild(script);
     };
 
-
-    /**
-     * Dashboard で次ページ読み込みを開始するかどうかを判定する関数をラップします
-     */
-
-    function wrapperAutoPaginator() {
-
-      var f = Tumblr.Events._events['DOMEventor:flatscroll'][1].callback;
-
-      Tumblr.Events._events['DOMEventor:flatscroll'][1].callback = function dashboardLoadian(n) {
+    function dashboardLoadian_BeforePagination(n) {
 
         if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_on]').checked) {
+            var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
+            n.windowScrollY = n.windowScrollY + (isNaN(offset) ? 0 : offset);
+        }
+    }
 
-          var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
-          n = jQuery.extend({}, n, {windowScrollY: n.windowScrollY + (isNaN(offset) ? 0 : offset)});
+    function dashboardLoadian_AfterPagination(n) {
 
+        if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_on]').checked) {
+            var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
+            n.windowScrollY = n.windowScrollY - (isNaN(offset) ? 0 : offset);
+        }
+    }
+
+    function initDashboardLoadianInClientArea() {
+
+        var i, fl;
+
+        fl = Tumblr.Events._events['DOMEventor:flatscroll'];
+
+        fl.splice(1, 0, {callback: dashboardLoadian_BeforePagination});
+
+        for (i = 0; i < fl.length; ++i) {
+            if (fl[i].callback.name == 'f') {
+                break;
+            }
         }
 
-        f(n);
-      };
-    };
+        fl.splice(i + 1, 0, {callback: dashboardLoadian_AfterPagination});
+    }
 
     function dashboardLoadian_autoLoader() {
 
@@ -103,11 +115,9 @@
         if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_auto]').checked) {
 
             try {
-                f = Tumblr.Events._events['DOMEventor:flatscroll'].filter(function(o) {
-                    return o.callback.name == 'dashboardLoadian';
-                })[0].callback;
-
-                f(n);
+                Tumblr.Events._events['DOMEventor:flatscroll'].map(function(o) {
+                    o.callback(n);
+                });
             }
             catch (e) { console.error(e); }
 
@@ -150,25 +160,12 @@
 
         embedCustomForm();
 
-        execScript('void ' + wrapperAutoPaginator + '()');
+        // execScript('void ' + wrapperAutoPaginator + '()');
+        execScript(dashboardLoadian_BeforePagination);
+        execScript(dashboardLoadian_AfterPagination);
+        execScript(initDashboardLoadianInClientArea + '; initDashboardLoadianInClientArea();');
         execScript(dashboardLoadian_autoLoader + '; dashboardLoadian_autoLoader()');
     }
-
-
-    /**
-     * 実行すべきページかどうかを判断します。
-     * Opera 用のコードです。
-     *
-     * @return {Bool} 実行すべきページなら true を返します
-     */
-    function isExecPage() {
-
-        return /^https?:\/\/www\.tumblr\.com\/dashboard.*/.test(location) ||
-               /^https?:\/\/www\.tumblr\.com\/show.*/.test(location) ||
-               /^https?:\/\/www\.tumblr\.com\/likes.*/.test(location) ||
-               /^https?:\/\/www\.tumblr\.com\/tagged.*/.test(location);
-    }
-
 
     /**
      * 始めに呼び出される関数です。
@@ -176,10 +173,6 @@
      */
 
     function boot() {
-
-        if (isExecPage() === false) {
-            return;
-        }
 
         if (['complete', 'interactive'].indexOf(document.readyState) >= 0) {
             main(); /* 既に DOM 構築済みなので直接呼び出します  */
