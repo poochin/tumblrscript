@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        Dashboard Loadian
 // @namespace   https://github.com/poochin
-// @include     /https?:\/\/www\.tumblr\.com\/(dashboard|likes|tagged).*/
+// @include     /https?:\/\/www\.tumblr\.com\/(dashboard|likes|tagged|search).*/
 // @include     /https?:\/\/www\.tumblr\.com\/(reblog|likes|liked\/by|blog|tagged)(\/.*)?/
-// @version     1.1.5
+// @version     1.2.0
 // @description ダッシュボードの読み込み位置を前倒しします
 // 
 // @author      poochin
@@ -70,15 +70,16 @@
     function dashboardLoadian_BeforePagination(n) {
 
         if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_on]').checked) {
-            var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
+            var offset = parseInt(document.querySelector('#right_column [name=offset], .right_controls [name=offset]').value);
             n.windowScrollY = n.windowScrollY + (isNaN(offset) ? 0 : offset);
         }
+
     }
 
     function dashboardLoadian_AfterPagination(n) {
 
         if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_on]').checked) {
-            var offset = parseInt(document.querySelector('#right_column [name=offset]').value);
+            var offset = parseInt(document.querySelector('#right_column [name=offset], .right_controls [name=offset]').value);
             n.windowScrollY = n.windowScrollY - (isNaN(offset) ? 0 : offset);
         }
     }
@@ -93,6 +94,9 @@
 
         for (i = 0; i < fl.length; ++i) {
             if (fl[i].callback.name == 'f') {
+                break;
+            }
+            if (fl[i].ctx && fl[i].ctx.auto_pager) {
                 break;
             }
         }
@@ -116,7 +120,13 @@
 
             try {
                 Tumblr.Events._events['DOMEventor:flatscroll'].map(function(o) {
-                    o.callback(n);
+                    console.log(o);
+                    if (o.ctx) {
+                        o.callback.apply(o.ctx, [n]);
+                    }
+                    else {
+                        o.callback(n);
+                    }
                 });
             }
             catch (e) { console.error(e); }
@@ -124,6 +134,16 @@
         }
 
         setTimeout(dashboardLoadian_autoLoader, 1000);
+    }
+
+    function dashboardLoadian_autoLoaderInSearch() {
+
+        if (document.querySelector('#dashboard_loadian_custom_form [name=dashboard_loadian_auto]').checked) {
+
+            Tumblr.Autopager.prototype.should_auto_paginate();
+        }
+
+        setTimeout(dashboardLoadian_autoLoaderInSearch, 1000);
     }
 
     /**
@@ -136,7 +156,7 @@
         form_html = [
             '<legend>Dashboard Loadian</legend>',
             '<label><input type="checkbox" name="dashboard_loadian_on" checked>On</label>: ',
-            '<input size="3" type="text" name="offset" value="2000"/>',
+            '<input size="3" type="text" name="offset" value="2000" />',
             'px(Offset)',
             '<br />',
             '<label><input type="checkbox" name="dashboard_loadian_auto">Auto Loader</label>',
@@ -148,7 +168,39 @@
             form_html);
 
         right_column = document.querySelector('#right_column');
-        right_column.appendChild(loadian.form);
+        if (right_column) {
+
+            right_column.appendChild(loadian.form);
+        }
+        else {
+
+            loadian.form.style.clear = 'both';
+
+            right_column = document.querySelector('.right_controls');
+            right_column.appendChild(loadian.form);
+
+            loadian.form.querySelector('[name=dashboard_loadian_on]').setAttribute('onchange', "Tumblr.Autopager.prototype.options.offset = document.querySelector('.right_controls [name=offset]').value * this.checked;");
+            loadian.form.querySelector('[name=offset]').setAttribute('onkeyup', "Tumblr.Autopager.prototype.options.offset = this.value;");
+        }
+    }
+
+
+    function initInDashboard() {
+
+        embedCustomForm();
+
+        execScript(dashboardLoadian_BeforePagination);
+        execScript(dashboardLoadian_AfterPagination);
+        execScript(initDashboardLoadianInClientArea + '; initDashboardLoadianInClientArea();');
+        execScript(dashboardLoadian_autoLoader + '; dashboardLoadian_autoLoader()');
+    }
+
+    function initInSearch() {
+
+        embedCustomForm();
+
+        execScript(dashboardLoadian_autoLoaderInSearch + '; dashboardLoadian_autoLoaderInSearch()');
+        execScript("Tumblr.Autopager.prototype.options.offset = document.querySelector('.right_controls [name=offset]').value;");
     }
 
 
@@ -158,13 +210,14 @@
 
     function main() {
 
-        embedCustomForm();
+        if (document.querySelector('#right_column')) {
 
-        // execScript('void ' + wrapperAutoPaginator + '()');
-        execScript(dashboardLoadian_BeforePagination);
-        execScript(dashboardLoadian_AfterPagination);
-        execScript(initDashboardLoadianInClientArea + '; initDashboardLoadianInClientArea();');
-        execScript(dashboardLoadian_autoLoader + '; dashboardLoadian_autoLoader()');
+            initInDashboard();
+        }
+        else {
+
+            initInSearch();
+        }
     }
 
     /**
