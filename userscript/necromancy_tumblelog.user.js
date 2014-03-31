@@ -4,7 +4,7 @@
 // @include     http://www.tumblr.com/dashboard?tumblelog/*
 // @include     https://www.tumblr.com/dashboard?tumblelog/*
 // @include     http://*.tumblr.com/
-// @version     1.2.0.23
+// @version     1.2.0.24
 // @description 他人の tumblelog を自分の blog ページの様に表示させます
 //
 // @author      poochin
@@ -1105,6 +1105,7 @@
         addNecroCSS();
 
         execScript('AutoPaginator.stop(); Tumblr.Events.unbind("post:like");');
+        execScript('next_page = null;');
         window.addEventListener('scroll', necromancyPaginator);
 
         $$('#posts > li:not(.new_post_buttons_container)').map(function(elm) {
