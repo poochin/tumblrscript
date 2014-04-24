@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.0
+// @version     1.2.10.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -164,6 +164,8 @@ var Tornado = {};
             SCROLL: 5,
             VISIBLE: 6,
         };
+
+        Vals.data_form_key = document.querySelector('#tumblr_form_key').getAttribute('content');
     
         /*---------------------------------
          * Variable
@@ -177,7 +179,7 @@ var Tornado = {};
         Vals.left_click.initEvent('click', true, true);
     
         /* Reblog 時 XHR のヘッダに埋め込む Content Type を指定する用の配列です */
-        var HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
+        Vals.HeaderContentType = ["Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"];
 
         /*---------------------------------
          * Function
@@ -1676,7 +1678,7 @@ var Tornado = {};
                     options.requestHeaders.indexOf('Content-Type') < 0 ||
                     options.requestHeaders.indexOf('Content-type') < 0 ||
                     options.requestHeaders.indexOf('content-type') < 0) {
-                    options.requestHeaders = (options.requestHeaders || []).concat(HeaderContentType);
+                    options.requestHeaders = (options.requestHeaders || []).concat(Vals.HeaderContentType);
                     // FIXME: ここ Content-Type 設定してても入っちゃいます
                 }
             }
@@ -1866,7 +1868,8 @@ var Tornado = {};
                 var reblog_id, reblog_key, form_key;
                 reblog_id = post.getAttribute('data-post-id');
                 reblog_key = post.getAttribute('data-reblog-key');
-                form_key = document.body.getAttribute('data-form-key');
+                // form_key = document.body.getAttribute('data-form-key');
+                form_key = Vals.data_form_key;
     
                 var parameters = JSON.stringify({
                     reblog_id: reblog_id,
@@ -1878,7 +1881,7 @@ var Tornado = {};
                 if (Tornado.browser != 'opera') {
                     new Ajax(location.protocol + '//www.tumblr.com/svc/secure_form_key', {
                         method: 'POST',
-                        requestHeaders: ['X-tumblr-form-key', document.body.getAttribute('data-form-key')],
+                        requestHeaders: ['X-tumblr-form-key', Vals.data_form_key],
                         onSuccess: function(_xhr) {
                             var secure_form_key = _xhr.getAllResponseHeaders().match(/X-tumblr.*/i)[0].split(': ')[1];
                             var secure_form_key_header = ['X-tumblr-puppies', secure_form_key];
@@ -1993,7 +1996,7 @@ var Tornado = {};
                             new Ajax(form.action, {
                                 method: form.method,
                                 parameters: Etc.buildQueryString(postdata),
-                                requestHeaders: HeaderContentType,
+                                requestHeaders: Vals.HeaderContentType,
                                 onSuccess: function(_xhr) {
                                     var response_elm = Etc.buildElementBySource(_xhr.responseText);
                 
@@ -2170,7 +2173,7 @@ var Tornado = {};
             submitPublish: function(form, onSuccess, onFailure) {
                 new Ajax(form.action, {
                     method: form.method,
-                    requestHeaders: HeaderContentType,
+                    requestHeaders: Vals.HeaderContentType,
                     parameters: Etc.buildQueryString(Etc.gatherFormValues(form)),
                     onSuccess: onSuccess,
                     onFailure: onFailure});
@@ -2180,7 +2183,8 @@ var Tornado = {};
                 Etc.dictUpdate(default_ajax_options, {
                     post_id: post.getAttribute('data-post-id'),
                     channel_id: post.getAttribute('data-tumblelog-name'),
-                    form_key: document.body.getAttribute('data-form-key'),
+                    // form_key: document.body.getAttribute('data-form-key'),
+                    form_key: Vals.data_form_key
                 });
     
                 new Ajax(url, default_ajax_options);
@@ -2324,7 +2328,8 @@ var Tornado = {};
                 var reblog_button = post.querySelector('a.reblog');
                 var reblog_key = post.getAttribute('data-reblog-key'),
                     reblog_id = post.getAttribute('data-post-id'),
-                    form_key = document.body.getAttribute('data-form-key');
+                    // form_key = document.body.getAttribute('data-form-key');
+                    form_key = Vals.data_form_key;
         
                 Tornado.funcs.shutterEffect(post);
                 reblog_button.className += ' loading';
@@ -2524,7 +2529,8 @@ var Tornado = {};
                         parameters: JSON.stringify({
                             post_id: post.getAttribute('data-post-id'),
                             channel_id: post.getAttribute('data-tumblelog-name'),
-                            form_key: document.body.getAttribute('data-form-key'),
+                            // form_key: document.body.getAttribute('data-form-key'),
+                            form_key: Vals.data_form_key,
                         }),
                         onSuccess: function(_xhr) {
                             new Etc.PinNotification('Success to delete post: ' + post.getAttribute('data-post-id'));
@@ -2553,7 +2559,8 @@ var Tornado = {};
                         method: 'POST',
                         parameters: {
                             id: post.getAttribute('data-post-id'),
-                            form_key: document.body.getAttribute('data-form-key'),
+                            // form_key: document.body.getAttribute('data-form-key'),
+                            form_key: Vals.data_form_key,
                         },
                         onSuccess: function(_xhr) {
                             new Etc.PinNotification('Success to publish post: ' + post.getAttribute('data-post-id'));
@@ -2574,7 +2581,8 @@ var Tornado = {};
                         method: 'POST',
                         parameters: {
                             id: post.getAttribute('data-post-id'),
-                            form_key: document.body.getAttribute('data-form-key'),
+                            // form_key: document.body.getAttribute('data-form-key'),
+                            form_key: Vals.data_form_key,
                             queue: 'queue',
                         },
                         onSuccess: function(_xhr) {
