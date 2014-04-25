@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.1
+// @version     1.2.10.2
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -491,12 +491,7 @@ var Tornado = {};
 
             var value = tmp.splice(old_index, 1)[0];
 
-            if (old_index < new_index) {
-                tmp.splice(new_index, 0, value);
-            }
-            else {
-                tmp.splice(new_index - 1, 0, value);
-            }
+            tmp.splice(new_index, 0, value);
 
             return tmp;
         };
