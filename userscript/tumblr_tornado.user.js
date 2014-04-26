@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.2
+// @version     1.2.10.3
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -3558,11 +3558,11 @@ var Tornado = {};
                 '<div style="text-align: right;">',
                 'Tumblr Tornado Repositories',
                 '(',
-                '<a href="https://userscripts.org/scripts/show/137667">stable</a>',
+                '<a target="_blank" href="https://userscripts.org/scripts/show/137667">stable</a>',
                 ', ',
-                '<a href="https://github.com/poochin/tumblrscript/blob/master/userscript/tumblr_tornado.user.js">beta</a>',
+                '<a target="_blank" href="https://github.com/poochin/tumblrscript/blob/master/userscript/tumblr_tornado.user.js">beta</a>',
                 ', ',
-                '<a href="https://github.com/poochin/tumblrscript/blob/dev/userscript/tumblr_tornado.user.js">alpha</a>',
+                '<a target="_blank" href="https://github.com/poochin/tumblrscript/blob/dev/userscript/tumblr_tornado.user.js">alpha</a>',
                 ')',
                 '</div>',
             ].join('\n');
