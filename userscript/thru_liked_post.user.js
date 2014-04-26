@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name        Thru liked post
 // @namespace   https://github.com/poochin
-// @version     1.0.0
+// @version     1.0.1
 // @description Dashboard で like 済みのポストを消します
 // @include     http://www.tumblr.com/dashboard*
+// @include     https://www.tumblr.com/dashboard*
 //
 // @author      poochin
 // @license     MIT
