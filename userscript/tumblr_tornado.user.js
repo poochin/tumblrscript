@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.4
+// @version     1.2.10.5
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -3321,10 +3321,8 @@ var Tornado = {};
             'BeforeAutoPaginationQueue.push(endlessSummer);',
             'BeforeAutoPaginationQueue.push(endlessSummer_Likes);',
             'BeforeAutoPaginationQueue.push(endlessSummer_LikedBy);',
-            'if (/^\\/blog\\/[^\\/]+\\/queue/.test(location.pathname)) {' +
-                'Tumblr.enable_dashboard_key_commands = true;' +
-                'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();' + 
-            '}',
+            'Tumblr.enable_dashboard_key_commands = true;' +
+            'Tumblr.KeyCommands = new Tumblr.KeyCommandsConstructor();',
             '(window.Tumblr) && (Tumblr.KeyCommands) && (Tumblr.KeyCommands.scroll_speed=20);',
             'window.ison_endless_summer = false;',
             'window.endless_summer_first_post_id = parseInt(document.querySelector("#posts>.post_container>.post[data-post-id],#search_posts>.post_container>.post").getAttribute("data-post-id"));',
@@ -3646,18 +3644,22 @@ var Tornado = {};
                 console.error('Error: client funcs');
             }
     
-            try {
-                Etc.execScript(Tornado.clientlaunches.map(function(code) {
-                    if (typeof code === 'string') {
-                        return code + ';\n';
-                    }
-                    else if (typeof code === 'function') {
-                        return '(' + (code) + ')();\n';
-                    }
-                }).join(''));
-            } catch (e) {
-                console.error('Error: client launches');
-            }
+            Tornado.clientlaunches.map(function(code) {
+                var run_code;
+
+                if (typeof code === 'string') {
+                    run_code = code + ';\n';
+                }
+                else if (typeof code === 'function') {
+                    run_code = '(' + (code) + ')();\n';
+                }
+
+                try {
+                    Etc.execScript(run_code);
+                } catch (e) {
+                    console.error('Error: client launches', code);
+                }
+            });
     
             if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
                 Etc.verifyAccessToken();
