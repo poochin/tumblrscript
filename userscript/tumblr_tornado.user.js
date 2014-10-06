@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.5
+// @version     1.2.10.6
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -3196,7 +3196,8 @@ var Tornado = {};
              */
             function dsbdPjax() {
                 next_pageCorrection();
-                history.pushState('', '', next_page);
+                // history.pushState('', '', next_page);
+                history.replaceState('', '', next_page);
             },
             /**
              * Dashboard をランダムに降下する為の機能です
@@ -3287,6 +3288,7 @@ var Tornado = {};
                 })).observe(document.querySelector('.new_post_buttons'), {childList: true});
             },
             Etc.buildElement,
+            Etc.PinNotification,
             function runBeforeAutoPaginationQueue(m) {
                 if (window.next_page == null) {
                     return;
@@ -3300,12 +3302,15 @@ var Tornado = {};
                 }
     
                 try {
-                    var f = function(){};
-                    window.BeforeAutoPaginationQueue.map(f.call.bind(f.call));
+                    window.BeforeAutoPaginationQueue.map(function(f) {
+                        f(m);
+                    });
                 }
                 catch (e) {
                     console.error(e);
                 }
+
+                return m;
             }
         ];
     
@@ -3314,7 +3319,8 @@ var Tornado = {};
          * 文字列は文字列の成すように、関数は関数を実行します。
          */
         Tornado.clientlaunches = [
-            'var fl = Tumblr.Events._events[\'DOMEventor:flatscroll\']; fl.splice(fl.indexOf(fl.filter(function(f){return f.callback.name==\'f\';})[0]), 0, {callback: runBeforeAutoPaginationQueue});',
+            'var fl = Tumblr.Events.on(\'DOMEventor:flatscroll\', runBeforeAutoPaginationQueue);',
+            'Tumblr.Events._events["DOMEventor:flatscroll"].unshift(Tumblr.Events._events["DOMEventor:flatscroll"].pop());',
             'BeforeAutoPaginationQueue = window.BeforeAutoPaginationQueue || []',
             'BeforeAutoPaginationQueue.push(dsbdPjax);',
             'BeforeAutoPaginationQueue.push(prependPageLink);',
