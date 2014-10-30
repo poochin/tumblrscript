@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.10.6
+// @version     1.2.11.1
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
@@ -142,6 +142,9 @@ var Tornado = {};
     
         Tornado.vals.KEY_MAX_FOLLOWS = 2;
         Tornado.vals.KEY_CONTINUAL_TIME = 2000;
+
+        /* Tornado.vals.scroll_offset = 7;  /* legacy */
+        Tornado.vals.scroll_offset = 68;  /* identity-refresh */
     
         Tornado.vals.prev_cursor = null;
         Tornado.vals.state_texts = {
@@ -352,7 +355,7 @@ var Tornado = {};
           */
         Tornado.keyevent = function keyevent(e) {
             var post,
-                margin_top = 7,
+                margin_top = Vals.scroll_offset,
                 vr = Etc.viewportRect();
     
             Etc.KeyEventCache.add(e);
@@ -2317,7 +2320,7 @@ var Tornado = {};
             jumpToLastCursor: function jumpToLastCursor() {
                 var y = Tornado.vals.prev_cursor.offsetTop;
                 Tornado.vals.prev_cursor = null;
-                window.scroll(0, y - 7);
+                window.scroll(0, y - Vals.scroll_offset);
             },
             fast_reblog: function fastReblog(post) {
                 var reblog_button = post.querySelector('a.reblog');
@@ -2384,7 +2387,7 @@ var Tornado = {};
                     i = 0;
         
                 $$('#posts > li:not(.new_post)').filter(function(post) {
-                    return (post.offsetTop - 7) < vr.top;
+                    return (post.offsetTop - Vals.scroll_offset) < vr.top;
                 }).map(function(src_post) {
                     var post = document.createElement('li');
                     post.className = ['empty_post', src_post.className.match(/\bsame_user_as_last\b/)].join(' ');
@@ -2403,7 +2406,7 @@ var Tornado = {};
                     del_count = 0;
         
                 $$('#posts > li:not(.new_post_buttons_container)').filter(function(post) {
-                    return (post.offsetTop - 7) < vr.top;
+                    return (post.offsetTop - Vals.scroll_offset) < vr.top;
                 }).map(function(post) {
                     del_count++;
                     dsbd.removeChild(post);
@@ -2412,7 +2415,7 @@ var Tornado = {};
                 var firstpost = document.querySelector('#posts > li:not(.new_post_buttons_container)');
                 firstpost.className = firstpost.className.replace('same_user_as_last', '');
         
-                window.scrollTo(0, document.querySelector('#posts>li.post_container:not(.new_post_buttons_container)').offsetTop - 7);
+                window.scrollTo(0, document.querySelector('#posts>li.post_container:not(.new_post_buttons_container)').offsetTop - Vals.scroll_offset);
         
                 new Etc.PinNotification(del_count + '件のポストを削除しました。');
             },
@@ -2425,7 +2428,7 @@ var Tornado = {};
                 document.body.style.marginBottom = '500px';
         
                 $$('#posts > li:not(.new_post)').filter(function(post) {
-                    return (post.offsetTop - 7) > vr.top;
+                    return (post.offsetTop - Vals.scroll_offset) > vr.top;
                 }).map(function(post) {
                     del_count++;
                     dsbd.removeChild(post);
