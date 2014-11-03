@@ -1,8 +1,9 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.1
+// @version     1.2.11.2
 // @description Tumblr にショートカットを追加するユーザスクリプト
+// 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard\?(tumblelog.*|oauth_token=.*)?/
 // @include     /https?:\/\/www\.tumblr\.com\/(reblog|likes|liked\/by|blog|tagged)(\/.*)?/
@@ -169,6 +170,7 @@ var Tornado = {};
         };
 
         Vals.data_form_key = document.querySelector('#tumblr_form_key').getAttribute('content');
+
     
         /*---------------------------------
          * Variable
@@ -187,7 +189,31 @@ var Tornado = {};
         /*---------------------------------
          * Function
          *-------------------------------*/
-    
+
+        /**
+         * /search ページで JK が動作するように、各 post に data-pageable 属性を付与します
+         */
+        Etc.AddPageable = function AddPageable() {
+            var f, of, observer;
+
+            f = function(elm) {
+                var post_id;
+                post_id = elm.querySelector('.post.post_full').id;
+                elm.setAttribute('data-pageable', post_id);
+            };
+
+            of = function(mutations) {
+                if (mutations[0].addedNodes) {
+                    Array.apply(0, mutations[0].addedNodes).map(f);
+                }
+            };
+
+            observer = new MutationObserver(of);
+            observer.observe(document.querySelector('#search_posts'), {childList: true});
+
+            Array.apply(0, document.querySelectorAll('#search_posts > .post_container')).map(f);
+        }
+
         /**
          * オブジェクトをシリアライズします
          * http://blog.stchur.com/2007/04/06/serializing-objects-in-javascript/
@@ -246,7 +272,7 @@ var Tornado = {};
                  break;
            }
         };
-    
+
         /**
          * Copyright (c) 2011 David Mzareulyan
          * μDeferred library
@@ -276,6 +302,20 @@ var Tornado = {};
                   ));
         };
 
+        /*---------------------------------
+         * Vals (例外的にここに記述します)
+         *-------------------------------*/
+
+        /* 特定のページで特定の関数を実行します */
+        /* url_match: regexp, funcs: [function, function, ...] */
+        Vals.boot_on_page = [
+            {
+                url_match: /^https:\/\/www.tumblr.com\/search\//,
+                funcs: [
+                    Etc.AddPageable
+                ]
+            }
+        ];
 
         /*---------------------------------
          * Class or Object
@@ -3274,6 +3314,7 @@ var Tornado = {};
                 page_info.innerHTML = ['page:<a href="', next_page ,'">', next_page.replace(/https?:\/\/www\.tumblr\.com/,'') ,'</a>'].join('');
                 posts.appendChild(li)
             },
+
             /**
              * Url Container を常に表示し続けます
              */
@@ -3673,6 +3714,15 @@ var Tornado = {};
             if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
                 Etc.verifyAccessToken();
             }
+
+            Vals.boot_on_page.map(function(config) {
+                if (location.href.match(config.url_match)) {
+                    config.funcs.map(function(f) {
+                        console.log('bood', config);
+                        f(config);
+                    });
+                }
+            });
         }
     
         /**
