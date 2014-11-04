@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.2
+// @version     1.2.11.3
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -193,23 +193,36 @@ var Tornado = {};
         /**
          * /search ページで JK が動作するように、各 post に data-pageable 属性を付与します
          */
-        Etc.AddPageable = function AddPageable() {
-            var f, of, observer;
 
-            f = function(elm) {
+        Etc.SearchPagePostsObserve = function SearchPagePostsObserve() {
+            var f, of, op, new_post_observer, refresh_observer;
+
+            f = function add_data_ageable(elm) {
                 var post_id;
-                post_id = elm.querySelector('.post.post_full').id;
-                elm.setAttribute('data-pageable', post_id);
+
+                if (elm.classList.contains('post_container')) {
+                    post_id = elm.querySelector('.post.post_full').id;
+                    elm.setAttribute('data-pageable', post_id);
+                }
             };
 
-            of = function(mutations) {
+            of = function observePost_Container(mutations) {
                 if (mutations[0].addedNodes) {
                     Array.apply(0, mutations[0].addedNodes).map(f);
                 }
             };
 
-            observer = new MutationObserver(of);
-            observer.observe(document.querySelector('#search_posts'), {childList: true});
+            op = function observePageRefresh(mutations) {
+                if (mutations[0].addedNodes) {
+                    Etc.execScript('Tumblr.KeyCommands.resume()');
+                }
+            }
+
+            new_post_observer = new MutationObserver(of);
+            new_post_observer.observe(document.querySelector('#posts'), {childList: true, subtree: true});
+
+            refresh_observer = new MutationObserver(op);
+            refresh_observer.observe(document.querySelector('#posts'), {childList: true, subtree: true});
 
             Array.apply(0, document.querySelectorAll('#search_posts > .post_container')).map(f);
         }
@@ -312,7 +325,7 @@ var Tornado = {};
             {
                 url_match: /^https:\/\/www.tumblr.com\/search\//,
                 funcs: [
-                    Etc.AddPageable
+                    Etc.SearchPagePostsObserve
                 ]
             }
         ];
