@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.4
+// @version     1.2.11.5
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -2082,7 +2082,7 @@ var Tornado = {};
              */
             apiReblog: function reblogAPI(post, target_blog_info, options) {
                 var hostname = target_blog_info.hostname;
-                var url = 'http://api.tumblr.com/v2/blog/' + (hostname) + '/post/reblog';
+                var url = location.protocol + '//api.tumblr.com/v2/blog/' + (hostname) + '/post/reblog';
                 var id, reblog_key;
     
                 var accessor = {
@@ -2533,7 +2533,7 @@ var Tornado = {};
                 var blog_name = permalink.match(/[^\/]*(?=\/(?:post|private))/)[0];
                 var qs = Etc.buildQueryString({id: post_id , /* jsonp: 'jsonpRootInfo', */ reblog_info: 'true', api_key: Tornado.vals.CONSUMER_KEY});
                 var url = [
-                    'http://api.tumblr.com/v2/blog',
+                    location.protocol + '//api.tumblr.com/v2/blog',
                     blog_name,
                     'posts?' + qs].join('/');
     
@@ -3423,7 +3423,7 @@ var Tornado = {};
                     console.log(request_accessor);
                     GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
     
-                    location.href = 'http://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
+                    location.href = location.protocol + '://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
                   });
                 /*
                 var request_accessor = Vals.oauth_operator.getRequestToken();
