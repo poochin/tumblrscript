@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.3
+// @version     1.2.11.4
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -18,7 +18,7 @@
 //
 // @author      poochin
 // @license     MIT
-// @updated     2013-03-20
+// @updated     2014-11-17
 // @updateURL   https://github.com/poochin/tumblrscript/raw/master/userscript/tumblr_tornado.user.js
 // ==/UserScript==
 
@@ -27,6 +27,8 @@
 // TODO: self を that に変えます
 // TODO: tumblelog_infos を gm_setvalue と gm_setvalue で入れたり戻したりできるようにします
 // TODO: var CustomFuncs を定義し Tornado.customfuncs とつなげます
+
+// TODO: queue を shift-D すると publish してしまっているかも
 
 /**
  * oauth_config = {
@@ -1331,8 +1333,8 @@ var Tornado = {};
             },
             getRequestToken: function getRequestToken() {
                 var deferred = new $D;
-    
                 var url = location.protocol + '//www.tumblr.com/oauth/request_token';
+
                 var accessor = {
                     consumerKey: Tornado.vals.CONSUMER_KEY,
                     consumerSecret: Tornado.vals.CONSUMER_SECRET
@@ -1344,7 +1346,7 @@ var Tornado = {};
     
                 console.log(message);
                 console.log(OAuth.getAuthorizationHeader('', message.parameters));
-    
+
                 GM_xmlhttpRequest({
                     url: message.action,
                     method: message.method,
@@ -1393,7 +1395,7 @@ var Tornado = {};
                 var tokens = OAuth.decodeForm(location.search.slice(1));
                 var tokenSecret = GM_getValue('oauth_token_secret');
         
-                var url = 'http://www.tumblr.com/oauth/access_token';
+                var url = location.protocol + '//www.tumblr.com/oauth/access_token';
         
                 var accessor = {
                     consumerKey: Tornado.vals.CONSUMER_KEY,
@@ -1407,7 +1409,7 @@ var Tornado = {};
                 };
         
                 var message = {
-                    method: 'POST',
+                    method: 'GET',
                     action: url,
                     parameters: parameters,
                 };
@@ -1422,6 +1424,7 @@ var Tornado = {};
                         'Authorization': OAuth.getAuthorizationHeader('', message.parameters)
                     },
                     onload: function(gm_response) {
+                        console.log(gm_response);
                         var response = OAuth.decodeForm(gm_response.responseText);
                         var access_tokens = {};
         
