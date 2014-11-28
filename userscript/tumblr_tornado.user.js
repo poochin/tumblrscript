@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.5
+// @version     1.2.11.6
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -3423,7 +3423,7 @@ var Tornado = {};
                     console.log(request_accessor);
                     GM_setValue('oauth_token_secret', request_accessor.oauth_token_secret);
     
-                    location.href = location.protocol + '://www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
+                    location.href = location.protocol + '//www.tumblr.com/oauth/authorize?oauth_token=' + request_accessor.oauth_token;
                   });
                 /*
                 var request_accessor = Vals.oauth_operator.getRequestToken();
