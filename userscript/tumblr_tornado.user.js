@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.6
+// @version     1.2.11.7
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -366,6 +366,7 @@ var Tornado = {};
                     /\bmceContentBody\b/.test(e.target.className)) {
                     return;
                 }
+
     
                 ch = String.fromCharCode(e.keyCode);
                 if (e.shiftKey) {
@@ -413,6 +414,12 @@ var Tornado = {};
                 margin_top = Vals.scroll_offset,
                 vr = Etc.viewportRect();
     
+            /* 新 post 作成中か、Reblog 編集画面が表示されている間は無効にします */
+            if ($$('.post-forms-glass')[0].style.display == 'block' ||
+                $$('.post-forms-modal')[0].style.display == 'block') {
+                return;
+            }
+
             Etc.KeyEventCache.add(e);
     
             /*
