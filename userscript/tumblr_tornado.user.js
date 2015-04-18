@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.9
+// @version     1.2.11.10
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -1480,12 +1480,13 @@ var Tornado = {};
              */
     
             if (/^\/dashboard/.test(location.pathname)) {
-                tumblelogs = Array.apply(0, document.querySelectorAll('.tab_blogs > .tab_blog.item[id]')).map(function(elm) {
-                    var channel_id = elm.id.slice(9);
-                    var title_elm = elm.querySelector('a');
-    
-                    title_elm.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
-                    var title = (title_elm.textContent || title_elm.innerText).replace(/^\s*|\s*$/g, '');
+                var rawelm = Array.apply(0, $$('script[crossorigin]+script')).filter(function(elm){return /^require/.test(elm.innerHTML.trim());})[0];
+                var rawdata = rawelm.innerHTML.match(/"tumblelogs":(\[[^\]]*])/)[1];
+                var rawobj = JSON.parse(rawdata);
+
+                tumblelogs = rawobj.map(function(obj) {
+                    var channel_id = obj.name;
+                    var title = obj.title;
     
                     return {
                         'name': channel_id,
@@ -1510,14 +1511,16 @@ var Tornado = {};
                         oauth_token = access_tokens.oauth_token,
                         oauth_token_secret = access_tokens.oauth_token_secret;
 
-                    var tumblelog_infos = $$('.tab_blogs > .tab_blog.item[id]').map(function(item) {
+                    var rawelm = Array.apply(0, $$('script[crossorigin]+script')).filter(function(elm){return /^require/.test(elm.innerHTML.trim());})[0];
+                    var rawdata = rawelm.innerHTML.match(/"tumblelogs":(\[[^\]]*])/)[1];
+                    var blogs_obj = JSON.parse(rawdata);
 
-                        item.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
+                    var tumblelog_infos = blogs_obj.map(function(item) {
 
                         return new Etc.OAuthTumblelogInfo(
                             base_account,
-                            (item.textContent || item.innerText).trim(),
-                            item.id.slice(9) + '.tumblr.com',
+                            item.title,
+                            item.name + '.tumblr.com',
                             oauth_token,
                             oauth_token_secret
                         );
