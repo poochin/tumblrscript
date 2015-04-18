@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.7
+// @version     1.2.11.9
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -433,7 +433,7 @@ var Tornado = {};
                 return Math.abs(vr.top - (elm_offset_top - margin_top)) < 5;
             })[0];
             if (!post) {
-                console.info('Post not found');
+                console.log('Post not found');
             }
     
             Tornado.shortcuts.some(function(shortcut) {
@@ -1480,7 +1480,7 @@ var Tornado = {};
              */
     
             if (/^\/dashboard/.test(location.pathname)) {
-                tumblelogs = Array.apply(0, document.querySelectorAll('ul.blog_menu #popover_blogs .popover_menu_item:not(#button_new_blog)')).map(function(elm) {
+                tumblelogs = Array.apply(0, document.querySelectorAll('.tab_blogs > .tab_blog.item[id]')).map(function(elm) {
                     var channel_id = elm.id.slice(9);
                     var title_elm = elm.querySelector('a');
     
@@ -1509,12 +1509,15 @@ var Tornado = {};
                     var base_account = document.querySelector('#search_field [name=t]').value,
                         oauth_token = access_tokens.oauth_token,
                         oauth_token_secret = access_tokens.oauth_token_secret;
-         
-                    var tumblelog_infos = $$('#popover_blogs .item a').map(function(item){
+
+                    var tumblelog_infos = $$('.tab_blogs > .tab_blog.item[id]').map(function(item) {
+
+                        item.textContent; /* この行を入れないと下行で textContent におけるエラーが発生します */
+
                         return new Etc.OAuthTumblelogInfo(
                             base_account,
-                            item.text.trim(),
-                            item.href.split('/').slice(-1)[0] + '.tumblr.com',
+                            (item.textContent || item.innerText).trim(),
+                            item.id.slice(9) + '.tumblr.com',
                             oauth_token,
                             oauth_token_secret
                         );
