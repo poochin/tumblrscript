@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.10
+// @version     1.2.11.11
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -3169,7 +3169,8 @@ var Tornado = {};
                     usehelp: 'hide',
                     group: 4
             });
-    
+
+        /*
         Tornado.shortcuts[Tornado.shortcuts.length] = 
             new Etc.CustomKey({
                     key_bind: ['s-l'],
@@ -3178,7 +3179,8 @@ var Tornado = {};
                     },
                     title: 'ログアウトします',
             });
-        
+        */
+
         Tornado._shortcuts = Tornado.shortcuts.slice();  /* copy */
         Tornado._shortcuts.sort(function(a, b){
             return (a.group || 10) - (b.group || 10) ||
