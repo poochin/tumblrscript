@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.11
+// @version     1.2.11.12
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -2593,12 +2593,14 @@ var Tornado = {};
                     location.protocol + '//www.tumblr.com/svc/post/delete',
                     {
                         method: 'POST',
-                        parameters: JSON.stringify({
+                        parameters: {
                             post_id: post.getAttribute('data-post-id'),
                             channel_id: post.getAttribute('data-tumblelog-name'),
-                            // form_key: document.body.getAttribute('data-form-key'),
-                            form_key: Vals.data_form_key,
-                        }),
+                        },
+                        requestHeaders: [
+                            'x-tumblr-form-key', Vals.data_form_key,
+                            'x-requested-with', 'XMLHttpRequest',
+                        ],
                         onSuccess: function(_xhr) {
                             new Etc.PinNotification('Success to delete post: ' + post.getAttribute('data-post-id'));
                         },
