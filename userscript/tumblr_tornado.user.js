@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.13
+// @version     1.2.11.14
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -1479,28 +1479,25 @@ var Tornado = {};
              * 取得したものは localStorage で活用します
              */
     
-            if (false && /^\/dashboard/.test(location.pathname)) {
-                var rawelm = Array.apply(0, $$('script[crossorigin]+script')).filter(function(elm){return /^require/.test(elm.innerHTML.trim());})[0];
-                var rawdata = rawelm.innerHTML.match(/"tumblelogs":(\[[^\]]*])/)[1];
-                var rawobj = JSON.parse(rawdata);
+            if (/^\/dashboard/.test(location.pathname)) {
+                var tumblelog_list = Tumblr.Events._events['tumblelog:follow'][0].ctx.channels.models;
+                var elm_trim_htmlentitiy = document.createElement('div');
 
-                tumblelogs = rawobj.map(function(obj) {
-                    var channel_id = obj.name;
-                    var title = obj.title;
-    
+                tumblelogs = tumblelog_list.map(function(item) {
+                    var channel_id = item.id;
+                    var title = item.attributes.directory_safe_title;
+
+                    elm_trim_htmlentitiy.innerHTML = title;
+                    title = elm_trim_htmlentitiy.innerText || elm_trim_htmlentitiy.textContent;
+
                     return {
                         'name': channel_id,
                         'title': title
                     };
                 });
-    
+
                 localStorage.setItem('tornado_tumblelogs', JSON.stringify(tumblelogs));
             }
-            else {
-                tumblelogs = JSON.parse(localStorage.getItem('tornado_tumblelogs')) || [];
-            }
-    
-            Tornado.tumblelogs = tumblelogs;
         };
     
         Etc.verifyAccessToken = function verifyAccessToken() {
@@ -1511,9 +1508,8 @@ var Tornado = {};
                         oauth_token = access_tokens.oauth_token,
                         oauth_token_secret = access_tokens.oauth_token_secret;
 
-                    var rawelm = Array.apply(0, $$('script[crossorigin]+script')).filter(function(elm){return /^require/.test(elm.innerHTML.trim());})[0];
-                    var rawdata = rawelm.innerHTML.match(/"tumblelogs":(\[[^\]]*])/)[1];
-                    var blogs_obj = JSON.parse(rawdata);
+                    // NOTE: localStorage 機能がなければここで落ちる
+                    var blogs_obj = JSON.parse(localStorage.getItem('tornado_tumblelogs'));
 
                     var tumblelog_infos = blogs_obj.map(function(item) {
 
@@ -3388,7 +3384,8 @@ var Tornado = {};
                 }
 
                 return m;
-            }
+            },
+            Etc.tumblelogCollection
         ];
     
         /**
@@ -3412,6 +3409,7 @@ var Tornado = {};
             'ShareValue = ' + Etc.serialize(Etc.ShareValue) + ';',
             "setTimeout(function(){Tumblr.Events.unbind('post:like');}, 50);",
             'UrlContainerAlways();',
+            'tumblelogCollection();',
         ];
     
     
@@ -3707,7 +3705,7 @@ var Tornado = {};
     
             Tornado.initTumblelogConfigs();
     
-            Etc.tumblelogCollection();
+            // Etc.tumblelogCollection();
     
             document.addEventListener('keydown', Tornado.keyevent, true);
     
@@ -3743,6 +3741,9 @@ var Tornado = {};
                     console.error('Error: client launches', code);
                 }
             });
+
+            // 暫定的にここに設定処理を挿入
+            Tornado.tumblelogs = JSON.parse(localStorage.getItem('tornado_tumblelogs')) || [];
     
             if (typeof OAuth != 'undefined' && /dashboard\?oauth_token=/.test(location)) {
                 Etc.verifyAccessToken();
