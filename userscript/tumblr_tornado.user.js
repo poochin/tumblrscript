@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        Tumblr Tornado
 // @namespace   https://github.com/poochin
-// @version     1.2.11.12
+// @version     1.2.11.13
 // @description Tumblr にショートカットを追加するユーザスクリプト
 // 
 // @include     /https?:\/\/www\.tumblr\.com\/dashboard(\/.*)?/
@@ -1479,7 +1479,7 @@ var Tornado = {};
              * 取得したものは localStorage で活用します
              */
     
-            if (/^\/dashboard/.test(location.pathname)) {
+            if (false && /^\/dashboard/.test(location.pathname)) {
                 var rawelm = Array.apply(0, $$('script[crossorigin]+script')).filter(function(elm){return /^require/.test(elm.innerHTML.trim());})[0];
                 var rawdata = rawelm.innerHTML.match(/"tumblelogs":(\[[^\]]*])/)[1];
                 var rawobj = JSON.parse(rawdata);
